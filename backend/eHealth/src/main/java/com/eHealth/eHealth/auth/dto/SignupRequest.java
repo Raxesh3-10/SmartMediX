@@ -1,4 +1,5 @@
 package com.eHealth.eHealth.auth.dto;
+
 import com.eHealth.eHealth.auth.enumRole.Role;
 
 public class SignupRequest {
@@ -8,7 +9,6 @@ public class SignupRequest {
     private String password;
     private Role role;
 
-    // getters & setters
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
@@ -18,6 +18,6 @@ public class SignupRequest {
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
 
-    public String getRole() { return role; }
+    public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }
 }
