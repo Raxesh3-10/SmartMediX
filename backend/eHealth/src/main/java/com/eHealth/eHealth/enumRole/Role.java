@@ -1,4 +1,4 @@
-package com.eHealth.eHealth.auth.enumRole;
+package com.eHealth.eHealth.enumRole;
 
 public enum Role {
     ADMIN,
