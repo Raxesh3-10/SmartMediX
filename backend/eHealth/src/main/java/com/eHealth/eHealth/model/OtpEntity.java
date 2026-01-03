@@ -2,6 +2,7 @@ package com.eHealth.eHealth.model;
 
 import java.time.Instant;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "otp_store")
@@ -12,6 +13,8 @@ public class OtpEntity {
 
     private String target; // email or mobile
     private String otp;
+    
+    @Indexed(expireAfter = "0")
     private Instant expiryTime;
 
     public String getId() { return id; }
