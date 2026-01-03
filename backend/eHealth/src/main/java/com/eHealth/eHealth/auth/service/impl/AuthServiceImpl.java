@@ -8,6 +8,7 @@ import com.eHealth.eHealth.auth.service.AuthService;
 import com.eHealth.eHealth.utility.JwtUtil;
 import com.eHealth.eHealth.dto.LoginRequest;
 import com.eHealth.eHealth.dto.SignupRequest;
+import com.eHealth.eHealth.dto.UpdateProfileRequest;
 import com.eHealth.eHealth.dto.VerifyOtpRequest;
 import com.eHealth.eHealth.model.JwtSession;
 import com.eHealth.eHealth.model.User;
@@ -68,6 +69,50 @@ public class AuthServiceImpl implements AuthService {
         userRepository.save(user);
 
         return "Signup successful";
+    }
+    @Override
+    public String updateProfile(UpdateProfileRequest request) {
+        User user = userRepository.findByEmail(request.getCurrentEmail())
+            .orElseThrow(() -> new RuntimeException("User not found"));
+        boolean isEmailChange = request.getNewEmail() != null &&
+                            !request.getNewEmail().equals(user.getEmail());
+
+    /* ---------------- EMAIL CHANGE FLOW ---------------- */
+        if (isEmailChange) {
+        // Check email availability
+            if (userRepository.findByEmail(request.getNewEmail()).isPresent()) {
+                return "Email already in use";
+            }
+        // OTP not yet provided → SEND OTP
+            if (request.getOtp() == null) {
+                otpService.sendEmailOtp(request.getNewEmail());
+                return "OTP sent to new email";
+            }
+        // OTP provided → VERIFY
+            boolean validOtp = otpService.verifyOtp(
+                    request.getNewEmail(),
+                    request.getOtp()
+            );
+            if (!validOtp) {
+            return "Invalid or expired OTP";
+            }
+        // Update email
+        user.setEmail(request.getNewEmail());
+        }
+    /* ---------------- NAME CHANGE FLOW ---------------- */
+        if (request.getNewName() != null &&
+            !request.getNewName().equals(user.getName())) {
+            user.setName(request.getNewName());
+            }
+        userRepository.save(user);
+        return "Profile updated successfully";
+    }
+
+    @Override
+    public String logout(String token) {
+        String jwt = token.replace("Bearer ", "");
+        jwtRepo.deleteByJwt(jwt);
+        return "Logout successful";
     }
 
     @Override
