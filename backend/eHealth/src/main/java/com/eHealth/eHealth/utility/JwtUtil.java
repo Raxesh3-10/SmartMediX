@@ -64,4 +64,10 @@ public class JwtUtil {
     public static boolean isAdmin(String token) {
         return isTokenValid(token) && getRole(token) == Role.ADMIN;
     }
+    public static boolean isPatient(String token) {
+        return isTokenValid(token) && getRole(token) == Role.PATIENT;
+    }
+    public static boolean isDoctor(String token) {
+        return isTokenValid(token) && getRole(token) == Role.DOCTOR;
+    }
 }
