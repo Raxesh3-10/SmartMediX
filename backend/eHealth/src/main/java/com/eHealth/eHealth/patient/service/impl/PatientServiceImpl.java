@@ -2,7 +2,10 @@ package com.eHealth.eHealth.patient.service.impl;
 
 import java.time.Instant;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.eHealth.eHealth.model.Patient;
 import com.eHealth.eHealth.patient.service.PatientService;
 import com.eHealth.eHealth.repository.PatientRepository;
@@ -51,16 +54,19 @@ public class PatientServiceImpl implements PatientService {
         return patientRepo.findById(patientId).orElse(null);
     }
 
-    @Override
-    public Patient getMyPatientProfile(String jwt) {
+@Override
+public Patient getMyPatientProfile(String jwt) {
+    String email = validatePatientJwt(jwt);
 
-        String email = validatePatientJwt(jwt);
+    return patientRepo.findByUserId(email)
+            .orElseThrow(() ->
+                new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Patient profile not created"
+                )
+            );
+}
 
-        return patientRepo.findAll().stream()
-                .filter(p -> email.equals(p.getUserId()))
-                .findFirst()
-                .orElse(null);
-    }
 
     // ================= UPDATE =================
     @Override

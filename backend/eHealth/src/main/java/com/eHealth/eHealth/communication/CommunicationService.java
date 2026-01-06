@@ -1,6 +1,7 @@
 package com.eHealth.eHealth.communication;
 
 import com.eHealth.eHealth.model.ChatMessage;
+import com.eHealth.eHealth.repository.AppointmentRepository;
 import com.eHealth.eHealth.repository.ChatRepository;
 import org.springframework.stereotype.Service;
 
@@ -10,27 +11,34 @@ import java.time.Instant;
 public class CommunicationService {
 
     private final ChatRepository chatRepository;
+    private final AppointmentRepository appointmentRepository;
 
-    public CommunicationService(ChatRepository chatRepository) {
+    public CommunicationService(ChatRepository chatRepository,AppointmentRepository appointmentRepository) {
         this.chatRepository = chatRepository;
+        this.appointmentRepository=appointmentRepository;
     }
 
     /* ================= CHAT ================= */
 
-    public ChatMessage sendMessage(String appointmentId,
-                                   String senderId,
-                                   String receiverId,
-                                   String message) {
+public ChatMessage sendMessage(String appointmentId,
+                               String senderId,
+                               String receiverId,
+                               String message) {
 
-        ChatMessage chat = new ChatMessage();
-        chat.setAppointmentId(appointmentId);
-        chat.setSenderId(senderId);
-        chat.setReceiverId(receiverId);
-        chat.setMessage(message);
-        chat.setSentAt(Instant.now());
-
-        return chatRepository.save(chat);
+    if (!appointmentRepository.existsById(appointmentId)) {
+        throw new RuntimeException("Chat allowed only after appointment");
     }
+
+    ChatMessage chat = new ChatMessage();
+    chat.setAppointmentId(appointmentId);
+    chat.setSenderId(senderId);
+    chat.setReceiverId(receiverId);
+    chat.setMessage(message);
+    chat.setSentAt(Instant.now());
+
+    return chatRepository.save(chat);
+}
+
 
     /* ================= VOICE CALL (WebRTC) ================= */
 

@@ -2,7 +2,9 @@ package com.eHealth.eHealth.doctor.service.impl;
 
 import java.time.Instant;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.eHealth.eHealth.doctor.service.DoctorService;
 import com.eHealth.eHealth.model.Doctor;
@@ -49,15 +51,20 @@ public class DoctorServiceImpl implements DoctorService {
         return doctorRepo.findById(doctorId).orElse(null);
     }
 
-    @Override
-    public Doctor getDoctorByUser(String jwt) {
-        validateDoctorJwt(jwt);
-        String userEmail = JwtUtil.getEmail(jwt);
-        return doctorRepo.findAll().stream()
-                .filter(d -> userEmail.equals(d.getUserId()))
-                .findFirst()
-                .orElse(null);
-    }
+@Override
+public Doctor getDoctorByUser(String jwt) {
+    validateDoctorJwt(jwt);
+    String email = JwtUtil.getEmail(jwt);
+
+    return doctorRepo.findByUserId(email)
+            .orElseThrow(() ->
+                new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Doctor profile not created"
+                )
+            );
+}
+
 
     // ================= UPDATE =================
     @Override
