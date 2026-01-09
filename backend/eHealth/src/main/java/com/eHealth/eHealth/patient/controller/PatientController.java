@@ -23,7 +23,7 @@ public class PatientController {
     }
 
     // ================= READ =================
-    @GetMapping("/me")
+    @GetMapping("/about/me")
     public Patient getMyProfile(@RequestHeader("JWT") String jwt) {
         return patientService.getMyPatientProfile(jwt);
     }

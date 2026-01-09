@@ -9,20 +9,23 @@ import org.springframework.web.server.ResponseStatusException;
 import com.eHealth.eHealth.model.Patient;
 import com.eHealth.eHealth.patient.service.PatientService;
 import com.eHealth.eHealth.repository.PatientRepository;
+import com.eHealth.eHealth.repository.UserRepository;
 import com.eHealth.eHealth.utility.JwtUtil;
 
 @Service
 public class PatientServiceImpl implements PatientService {
 
     private final PatientRepository patientRepo;
+    private final UserRepository userRepo;
 
-    public PatientServiceImpl(PatientRepository patientRepo) {
+    public PatientServiceImpl(PatientRepository patientRepo,UserRepository userRepo) {
         this.patientRepo = patientRepo;
+        this.userRepo=userRepo;
     }
 
     // ================= VALIDATION =================
     private String validatePatientJwt(String jwt) {
-        if (!JwtUtil.isPatient(jwt)) {
+        if (!JwtUtil.isPatient(jwt,userRepo)) {
             throw new RuntimeException("PATIENT access only");
         }
         return JwtUtil.getEmail(jwt);
@@ -48,7 +51,7 @@ public class PatientServiceImpl implements PatientService {
     @Override
     public Patient getPatientById(String patientId, String jwt) {
 
-        if (!JwtUtil.isAdmin(jwt)) {
+        if (!JwtUtil.isAdmin(jwt,userRepo)) {
             throw new RuntimeException("ADMIN only access");
         }
         return patientRepo.findById(patientId).orElse(null);
@@ -88,7 +91,7 @@ public Patient getMyPatientProfile(String jwt) {
     @Override
     public String deletePatient(String patientId, String jwt) {
 
-        if (!JwtUtil.isAdmin(jwt)) {
+        if (!JwtUtil.isAdmin(jwt,userRepo)) {
             throw new RuntimeException("ADMIN only operation");
         }
         patientRepo.deleteById(patientId);

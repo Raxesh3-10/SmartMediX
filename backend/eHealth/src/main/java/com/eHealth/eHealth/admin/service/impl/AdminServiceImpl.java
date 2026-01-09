@@ -24,7 +24,7 @@ public class AdminServiceImpl implements AdminService {
     }
 
     private void validateAdmin(String jwt) {
-        if (!JwtUtil.isAdmin(jwt)) {
+        if (!JwtUtil.isAdmin(jwt,userRepo)) {
             throw new RuntimeException("ADMIN only");
         }
     }

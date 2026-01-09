@@ -16,7 +16,7 @@ public class DoctorController {
     }
 
     // ================= CREATE =================
-    @PostMapping("/")
+    @PostMapping
     public Doctor createDoctor(@RequestBody Doctor doctor,
                                @RequestHeader("JWT") String jwt) {
         return doctorService.createDoctorProfile(doctor, jwt);
