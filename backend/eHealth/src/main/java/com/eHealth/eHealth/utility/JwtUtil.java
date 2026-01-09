@@ -3,6 +3,8 @@ package com.eHealth.eHealth.utility;
 import java.security.Key;
 import java.util.Date;
 
+import org.springframework.stereotype.Component;
+
 import com.eHealth.eHealth.enumRole.Role;
 import com.eHealth.eHealth.model.User;
 import com.eHealth.eHealth.repository.UserRepository;
@@ -12,6 +14,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 
+@Component
 public class JwtUtil {
 
     // ================= CONFIG =================
@@ -20,20 +23,29 @@ public class JwtUtil {
     private static final Key SECRET_KEY =
             Keys.secretKeyFor(SignatureAlgorithm.HS256);
 
+    private final UserRepository userRepository;
+
+    // ================= CONSTRUCTOR =================
+    public JwtUtil(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+
     // ================= TOKEN GENERATION =================
-    public static String generateToken(String email, Role role) {
+    public String generateToken(String email, Role role) {
 
         return Jwts.builder()
                 .setSubject(email)
                 // role is NOT trusted anymore
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
+                .setExpiration(
+                        new Date(System.currentTimeMillis() + EXPIRATION_TIME)
+                )
                 .signWith(SECRET_KEY)
                 .compact();
     }
 
     // ================= TOKEN PARSING =================
-    private static Claims getClaims(String token) {
+    private Claims getClaims(String token) {
 
         return Jwts.parserBuilder()
                 .setSigningKey(SECRET_KEY)
@@ -43,7 +55,7 @@ public class JwtUtil {
     }
 
     // ================= VALIDATION =================
-    public static boolean isTokenValid(String token) {
+    public boolean isTokenValid(String token) {
         try {
             getClaims(token);
             return true;
@@ -53,15 +65,12 @@ public class JwtUtil {
     }
 
     // ================= DATA EXTRACTION =================
-    public static String getEmail(String token) {
+    public String getEmail(String token) {
         return getClaims(token).getSubject();
     }
 
-    /**
-     * UPDATED METHOD
-     * Role is resolved from database using email from JWT
-     */
-    public static Role getRole(String token, UserRepository userRepository) {
+    // ================= ROLE RESOLUTION =================
+    public Role getRole(String token) {
 
         String email = getEmail(token);
 
@@ -74,15 +83,15 @@ public class JwtUtil {
     }
 
     // ================= ROLE CHECKS =================
-    public static boolean isAdmin(String token, UserRepository userRepository) {
-        return isTokenValid(token) && getRole(token, userRepository) == Role.ADMIN;
+    public boolean isAdmin(String token) {
+        return isTokenValid(token) && getRole(token) == Role.ADMIN;
     }
 
-    public static boolean isPatient(String token, UserRepository userRepository) {
-        return isTokenValid(token) && getRole(token, userRepository) == Role.PATIENT;
+    public boolean isPatient(String token) {
+        return isTokenValid(token) && getRole(token) == Role.PATIENT;
     }
 
-    public static boolean isDoctor(String token, UserRepository userRepository) {
-        return isTokenValid(token) && getRole(token, userRepository) == Role.DOCTOR;
+    public boolean isDoctor(String token) {
+        return isTokenValid(token) && getRole(token) == Role.DOCTOR;
     }
 }
