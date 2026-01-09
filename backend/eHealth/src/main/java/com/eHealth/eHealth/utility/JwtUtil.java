@@ -4,6 +4,8 @@ import java.security.Key;
 import java.util.Date;
 
 import com.eHealth.eHealth.enumRole.Role;
+import com.eHealth.eHealth.model.User;
+import com.eHealth.eHealth.repository.UserRepository;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -23,7 +25,7 @@ public class JwtUtil {
 
         return Jwts.builder()
                 .setSubject(email)
-                .claim("role", role.name())
+                // role is NOT trusted anymore
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .signWith(SECRET_KEY)
@@ -55,19 +57,32 @@ public class JwtUtil {
         return getClaims(token).getSubject();
     }
 
-    public static Role getRole(String token) {
-        String role = getClaims(token).get("role", String.class);
-        return Role.valueOf(role);
+    /**
+     * UPDATED METHOD
+     * Role is resolved from database using email from JWT
+     */
+    public static Role getRole(String token, UserRepository userRepository) {
+
+        String email = getEmail(token);
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new RuntimeException("User not found for email: " + email)
+                );
+
+        return user.getRole();
     }
 
-    // ================= ADMIN CHECK =================
-    public static boolean isAdmin(String token) {
-        return isTokenValid(token) && getRole(token) == Role.ADMIN;
+    // ================= ROLE CHECKS =================
+    public static boolean isAdmin(String token, UserRepository userRepository) {
+        return isTokenValid(token) && getRole(token, userRepository) == Role.ADMIN;
     }
-    public static boolean isPatient(String token) {
-        return isTokenValid(token) && getRole(token) == Role.PATIENT;
+
+    public static boolean isPatient(String token, UserRepository userRepository) {
+        return isTokenValid(token) && getRole(token, userRepository) == Role.PATIENT;
     }
-    public static boolean isDoctor(String token) {
-        return isTokenValid(token) && getRole(token) == Role.DOCTOR;
+
+    public static boolean isDoctor(String token, UserRepository userRepository) {
+        return isTokenValid(token) && getRole(token, userRepository) == Role.DOCTOR;
     }
 }
