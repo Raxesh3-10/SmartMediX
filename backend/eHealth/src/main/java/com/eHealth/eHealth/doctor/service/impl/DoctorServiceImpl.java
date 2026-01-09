@@ -9,6 +9,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.eHealth.eHealth.doctor.service.DoctorService;
 import com.eHealth.eHealth.model.Doctor;
 import com.eHealth.eHealth.repository.DoctorRepository;
+import com.eHealth.eHealth.repository.JwtSessionRepository;
 import com.eHealth.eHealth.repository.UserRepository;
 import com.eHealth.eHealth.utility.JwtUtil;
 
@@ -17,18 +18,20 @@ public class DoctorServiceImpl implements DoctorService {
 
     private final DoctorRepository doctorRepo;
     private final UserRepository userRepo;
+    private final JwtSessionRepository jwtRepo;
 
-    public DoctorServiceImpl(DoctorRepository doctorRepo,UserRepository userRepo) {
+    public DoctorServiceImpl(DoctorRepository doctorRepo,UserRepository userRepo,JwtSessionRepository JwtRepo) {
         this.doctorRepo = doctorRepo;
         this.userRepo=userRepo;
+        this.jwtRepo=JwtRepo;
     }
 
     // ================= VALIDATION =================
     private String validateDoctorJwt(String jwt) {
-        if (!JwtUtil.isDoctor(jwt,userRepo)) {
+        if (!JwtUtil.isDoctor(jwt,userRepo,jwtRepo)) {
             throw new RuntimeException("DOCTOR access only");
         }
-        return JwtUtil.getEmail(jwt); // used as unique identity
+        return JwtUtil.getEmail(jwt,jwtRepo); // used as unique identity
     }
 
     // ================= CREATE =================
@@ -36,30 +39,21 @@ public class DoctorServiceImpl implements DoctorService {
     public Doctor createDoctorProfile(Doctor doctor, String jwt) {
 
         validateDoctorJwt(jwt);
-
+        String userId=JwtUtil.getUserId(jwt, userRepo, jwtRepo);
         // Enforce ONE doctor profile per user
         if (doctorRepo.findByUserId(doctor.getUserId()).isPresent()) {
             throw new RuntimeException("Doctor profile already exists for this user");
         }
-
+        doctor.setUserId(userId);
         doctor.setDoctorId(null);
         doctor.setCreatedAt(Instant.now());
         return doctorRepo.save(doctor);
     }
 
-    // ================= READ =================
-    @Override
-    public Doctor getDoctorById(String doctorId, String jwt) {
-        if (!JwtUtil.isAdmin(jwt,userRepo)) {
-            throw new RuntimeException("ADMIN only access");
-        }
-        return doctorRepo.findById(doctorId).orElse(null);
-    }
-
 @Override
 public Doctor getDoctorByUser(String jwt) {
     validateDoctorJwt(jwt);
-    String email = JwtUtil.getEmail(jwt);
+    String email = JwtUtil.getEmail(jwt,jwtRepo);
 
     return doctorRepo.findByUserId(email)
             .orElseThrow(() ->
@@ -92,7 +86,7 @@ public Doctor getDoctorByUser(String jwt) {
     @Override
     public String deleteDoctor(String doctorId, String jwt) {
 
-        if (!JwtUtil.isAdmin(jwt,userRepo)) {
+        if (!JwtUtil.isAdmin(jwt,userRepo,jwtRepo)) {
             throw new RuntimeException("ADMIN only operation");
         }
 

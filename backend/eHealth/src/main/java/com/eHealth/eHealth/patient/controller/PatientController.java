@@ -23,15 +23,9 @@ public class PatientController {
     }
 
     // ================= READ =================
-    @GetMapping("/about/me")
+    @GetMapping("/me")
     public Patient getMyProfile(@RequestHeader("JWT") String jwt) {
         return patientService.getMyPatientProfile(jwt);
-    }
-
-    @GetMapping("/{id}")
-    public Patient getPatientById(@PathVariable String id,
-                                  @RequestHeader("JWT") String jwt) {
-        return patientService.getPatientById(id, jwt);
     }
 
     // ================= UPDATE =================

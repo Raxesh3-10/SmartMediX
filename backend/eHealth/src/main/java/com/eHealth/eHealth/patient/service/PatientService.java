@@ -6,8 +6,6 @@ public interface PatientService {
 
     Patient createPatientProfile(Patient patient, String jwt);
 
-    Patient getPatientById(String patientId, String jwt);
-
     Patient getMyPatientProfile(String jwt);
 
     Patient updatePatient(String patientId, Patient patient, String jwt);

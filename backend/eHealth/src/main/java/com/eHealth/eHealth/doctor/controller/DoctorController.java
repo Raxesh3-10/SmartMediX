@@ -21,15 +21,10 @@ public class DoctorController {
                                @RequestHeader("JWT") String jwt) {
         return doctorService.createDoctorProfile(doctor, jwt);
     }
-    @GetMapping("/about/me")
+    
+    @GetMapping("/me")
     public Doctor getMyDoctorProfile(@RequestHeader("JWT") String jwt) {
         return doctorService.getDoctorByUser(jwt);
-    }
-    // ================= READ =================
-    @GetMapping("/{id}")
-    public Doctor getDoctor(@PathVariable String id,
-                            @RequestHeader("JWT") String jwt) {
-        return doctorService.getDoctorById(id, jwt);
     }
 
     // ================= UPDATE =================
