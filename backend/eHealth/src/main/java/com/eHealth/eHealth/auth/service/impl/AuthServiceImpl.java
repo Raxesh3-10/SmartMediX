@@ -1,6 +1,7 @@
 package com.eHealth.eHealth.auth.service.impl;
 
 import java.time.Instant;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
@@ -136,6 +137,11 @@ public LoginResponse login(LoginRequest request) {
     jwtRepo.save(session);
 
     return new LoginResponse(jwt, user.getRole().name());
+}
+
+@Override
+public Optional<User> getUser(String token) {
+   return userRepository.findById(JwtUtil.getUserId(token, userRepository, jwtRepo));
 }
 
 }

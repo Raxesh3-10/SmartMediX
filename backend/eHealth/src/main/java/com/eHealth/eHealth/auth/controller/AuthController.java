@@ -9,6 +9,10 @@ import com.eHealth.eHealth.dto.LoginRequest;
 import com.eHealth.eHealth.dto.SignupRequest;
 import com.eHealth.eHealth.dto.UpdateProfileRequest;
 import com.eHealth.eHealth.dto.VerifyOtpRequest;
+import com.eHealth.eHealth.model.User;
+
+import org.springframework.web.bind.annotation.GetMapping;
+
 
 @CrossOrigin(origins = "http://localhost:5173")
 @RestController
@@ -21,11 +25,16 @@ public class AuthController {
         this.authService = authService;
     }
 
+    @GetMapping("/profile")
+    public ResponseEntity<User> getProfile(@RequestHeader("JWT") String token) {
+        return ResponseEntity.of(authService.getUser(token));
+    }
+
     @PostMapping("/signup")
     public String signup(@RequestBody SignupRequest req) {
         return authService.signup(req);
     }
-
+    
     @PostMapping("/update-profile")
     public String updateProfile(@RequestBody UpdateProfileRequest req) {
         return authService.updateProfile(req);
