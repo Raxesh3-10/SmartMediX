@@ -1,66 +1,168 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import API_BASE_URL from "../api";
-import "../styles/Login.css";
+import { useNavigate, Link } from "react-router-dom";
+import { AuthAPI } from "../api/api";
 
 function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
+  const [form, setForm] = useState({
+    email: "",
+    password: "",
+  });
 
-    const response = await fetch(`${API_BASE_URL}/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e) => {
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value,
     });
+  };
 
-    const result = await response.text();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
-    if (response.ok) {
-      localStorage.setItem("token", result);
-      alert("Login successful");
-      navigate("/home");
-    } else {
-      alert(result);
+    try {
+      const res = await AuthAPI.login(form);
+
+      /**
+       * Expected response example:
+       * {
+       *   token: "JWT_TOKEN",
+       *   role: "ADMIN" | "DOCTOR" | "PATIENT"
+       * }
+       */
+      const { token, role } = res.data;
+
+      // Store JWT
+      localStorage.setItem("JWT", token);
+      localStorage.setItem("ROLE", role);
+
+      // Role-based redirection
+      if (role === "ADMIN") {
+        navigate("/admin");
+      } else if (role === "DOCTOR") {
+        navigate("/doctor");
+      } else if (role === "PATIENT") {
+        navigate("/patient");
+      } else {
+        setError("Invalid user role received.");
+      }
+    } catch (err) {
+      setError(
+        err.response?.data || "Invalid email or password"
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="login-container">
-      <div className="login-box">
-        <h2>Login</h2>
-        <p className="tagline">Your Health, One Click Away</p>
+    <div style={styles.container}>
+      <form style={styles.form} onSubmit={handleSubmit}>
+        <h2 style={styles.title}>Login to SmartMediX</h2>
 
-        <form onSubmit={handleLogin}>
+        {error && <p style={styles.error}>{error}</p>}
+
+        <div style={styles.field}>
+          <label>Email</label>
           <input
             type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            name="email"
             required
-          /><br /><br />
+            value={form.email}
+            onChange={handleChange}
+            style={styles.input}
+          />
+        </div>
 
+        <div style={styles.field}>
+          <label>Password</label>
           <input
             type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            name="password"
             required
-          /><br /><br />
+            value={form.password}
+            onChange={handleChange}
+            style={styles.input}
+          />
+        </div>
 
-          <button type="submit">Login</button>
-        </form>
+        <button type="submit" style={styles.button} disabled={loading}>
+          {loading ? "Logging in..." : "Login"}
+        </button>
 
-        <p onClick={() => navigate("/signup")} style={{ cursor: "pointer" }}>
-          New user? Signup
+        <p style={styles.footerText}>
+          Don’t have an account?{" "}
+          <Link to="/signup" style={styles.link}>
+            Signup
+          </Link>
         </p>
-      </div>
+      </form>
     </div>
   );
-
 }
 
 export default Login;
+
+/* =====================
+   Inline Styles
+===================== */
+
+const styles = {
+  container: {
+    minHeight: "80vh",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f8fafc",
+  },
+  form: {
+    width: "360px",
+    padding: "24px",
+    backgroundColor: "#ffffff",
+    borderRadius: "6px",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+  },
+  title: {
+    textAlign: "center",
+    marginBottom: "16px",
+  },
+  field: {
+    display: "flex",
+    flexDirection: "column",
+    marginBottom: "12px",
+  },
+  input: {
+    padding: "8px",
+    fontSize: "14px",
+    marginTop: "4px",
+  },
+  button: {
+    width: "100%",
+    padding: "10px",
+    backgroundColor: "#0f172a",
+    color: "#ffffff",
+    border: "none",
+    cursor: "pointer",
+    marginTop: "8px",
+  },
+  error: {
+    color: "red",
+    fontSize: "14px",
+    marginBottom: "8px",
+    textAlign: "center",
+  },
+  footerText: {
+    textAlign: "center",
+    marginTop: "12px",
+    fontSize: "14px",
+  },
+  link: {
+    color: "#2563eb",
+    textDecoration: "none",
+  },
+};

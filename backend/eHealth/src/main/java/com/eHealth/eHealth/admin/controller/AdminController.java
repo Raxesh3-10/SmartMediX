@@ -2,6 +2,7 @@ package com.eHealth.eHealth.admin.controller;
 
 import java.util.List;
 
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,6 +17,7 @@ import com.eHealth.eHealth.admin.service.AdminService;
 import com.eHealth.eHealth.model.JwtSession;
 import com.eHealth.eHealth.model.User;
 
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/api/admin")
 public class AdminController {

@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.*;
 import com.eHealth.eHealth.model.Patient;
 import com.eHealth.eHealth.patient.service.PatientService;
 
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/api/patients")
 public class PatientController {

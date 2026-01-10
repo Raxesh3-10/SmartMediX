@@ -1,13 +1,16 @@
 package com.eHealth.eHealth.auth.controller;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.eHealth.eHealth.auth.LoginResponse;
 import com.eHealth.eHealth.auth.service.AuthService;
 import com.eHealth.eHealth.dto.LoginRequest;
 import com.eHealth.eHealth.dto.SignupRequest;
 import com.eHealth.eHealth.dto.UpdateProfileRequest;
 import com.eHealth.eHealth.dto.VerifyOtpRequest;
 
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -38,8 +41,9 @@ public class AuthController {
         return authService.verifyOtpAndCreateUser(req);
     }
 
-    @PostMapping("/login")
-    public String login(@RequestBody LoginRequest req) {
-        return authService.login(req);
-    }
+@PostMapping("/login")
+public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest req) {
+    return ResponseEntity.ok(authService.login(req));
+}
+
 }

@@ -5,6 +5,7 @@ import com.eHealth.eHealth.model.Family;
 import com.eHealth.eHealth.model.FamilyMember;
 import org.springframework.web.bind.annotation.*;
 
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/api/family")
 public class FamilyController {

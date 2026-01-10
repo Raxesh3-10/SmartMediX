@@ -4,6 +4,7 @@ import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 
+import com.eHealth.eHealth.auth.LoginResponse;
 import com.eHealth.eHealth.auth.service.AuthService;
 import com.eHealth.eHealth.utility.JwtUtil;
 import com.eHealth.eHealth.dto.LoginRequest;
@@ -114,27 +115,27 @@ public class AuthServiceImpl implements AuthService {
         jwtRepo.deleteByJwt(jwt);
         return "Logout successful";
     }
+@Override
+public LoginResponse login(LoginRequest request) {
 
-    @Override
-    public String login(LoginRequest request) {
+    User user = userRepository.findByEmail(request.getEmail())
+            .orElseThrow(() -> new RuntimeException("Invalid credentials"));
 
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Invalid credentials"));
-
-        if (!user.getPassword().equals(request.getPassword())) {
-            throw new RuntimeException("Invalid credentials");
-        }
-
-        String jwt = JwtUtil.generateToken(user.getEmail(), user.getRole());
-
-        JwtSession session = new JwtSession();
-        session.setEmail(user.getEmail());
-        session.setJwt(jwt);
-        session.setLoginTime(Instant.now());
-        session.setExpiryTime(Instant.now().plusSeconds(3600));
-
-        jwtRepo.save(session);
-
-        return jwt;
+    if (!user.getPassword().equals(request.getPassword())) {
+        throw new RuntimeException("Invalid credentials");
     }
+
+    String jwt = JwtUtil.generateToken(user.getEmail(), user.getRole());
+
+    JwtSession session = new JwtSession();
+    session.setEmail(user.getEmail());
+    session.setJwt(jwt);
+    session.setLoginTime(Instant.now());
+    session.setExpiryTime(Instant.now().plusSeconds(3600));
+
+    jwtRepo.save(session);
+
+    return new LoginResponse(jwt, user.getRole().name());
+}
+
 }
