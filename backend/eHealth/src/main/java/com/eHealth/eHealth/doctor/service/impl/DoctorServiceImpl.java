@@ -53,9 +53,9 @@ public class DoctorServiceImpl implements DoctorService {
 @Override
 public Doctor getDoctorByUser(String jwt) {
     validateDoctorJwt(jwt);
-    String email = JwtUtil.getEmail(jwt,jwtRepo);
+    String id = JwtUtil.getUserId(jwt, userRepo, jwtRepo);
 
-    return doctorRepo.findByUserId(email)
+    return doctorRepo.findByUserId(id)
             .orElseThrow(() ->
                 new ResponseStatusException(
                     HttpStatus.NOT_FOUND,

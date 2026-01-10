@@ -48,6 +48,9 @@ export const AuthAPI = {
 
   logout: () =>
     api.post("/auth/logout"),
+
+  getUser: () =>
+    api.get("/auth/profile"),
 };
 
 /* ======================================================
@@ -75,6 +78,33 @@ export const AdminAPI = {
   // ===== SESSIONS =====
   getActiveSessions: () =>
     api.get("/admin/sessions"),
+};
+
+/* ======================================================
+   DOCTOR API
+   Maps to: /api/doctors/**
+====================================================== */
+
+export const DoctorAPI = {
+  // ===== CREATE DOCTOR PROFILE =====
+  // POST /api/doctors
+  createProfile: (doctorData) =>
+    api.post("/doctors", doctorData),
+
+  // ===== GET LOGGED-IN DOCTOR PROFILE =====
+  // GET /api/doctors/me
+  getMyProfile: () =>
+    api.get("/doctors/me"),
+
+  // ===== UPDATE DOCTOR PROFILE =====
+  // PUT /api/doctors/{doctorId}
+  updateProfile: (doctorId, doctorData) =>
+    api.put(`/doctors/${doctorId}`, doctorData),
+
+  // ===== DELETE DOCTOR PROFILE (ADMIN ONLY) =====
+  // DELETE /api/doctors/{doctorId}
+  deleteProfile: (doctorId) =>
+    api.delete(`/doctors/${doctorId}`),
 };
 
 export default api;
