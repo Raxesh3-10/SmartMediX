@@ -160,11 +160,27 @@ export const DoctorAPI = {
     api.delete(`/doctors/${doctorId}`),
 };
 
+<<<<<<< HEAD
 export const PatientAPI = {
 
   createProfile: (patientData) =>
     api.post("/patients", patientData),
 
+=======
+/* ======================================================
+   PATIENT API
+   Maps to: /api/patients/**
+====================================================== */
+
+export const PatientAPI = {
+  // ===== CREATE PATIENT PROFILE =====
+  // POST /api/patients
+  createProfile: (patientData) =>
+    api.post("/patients", patientData),
+
+  // ===== GET LOGGED-IN PATIENT PROFILE =====
+  // GET /api/patients/me
+>>>>>>> 3cb11b882a2c7277fac99a8dc254fccbdc2d188b
   getMyProfile: () =>
   api.get("/patients/me", {
     headers: {
@@ -172,11 +188,26 @@ export const PatientAPI = {
     },
   }),
 
+<<<<<<< HEAD
   updateProfile: (patientId, patientData) =>
     api.put(`/patients/${patientId}`, patientData),
 
+=======
+
+  // ===== UPDATE PATIENT PROFILE =====
+  // PUT /api/patients/{patientId}
+  updateProfile: (patientId, patientData) =>
+    api.put(`/patients/${patientId}`, patientData),
+
+  // ===== DELETE PATIENT PROFILE =====
+  // DELETE /api/patients/{patientId}
+>>>>>>> 3cb11b882a2c7277fac99a8dc254fccbdc2d188b
   deleteProfile: (patientId) =>
     api.delete(`/patients/${patientId}`),
 };
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 3cb11b882a2c7277fac99a8dc254fccbdc2d188b
 export default api;

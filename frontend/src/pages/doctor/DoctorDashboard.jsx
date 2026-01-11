@@ -77,6 +77,7 @@ function Doctor() {
     setDoctor(res.data);
   };
 
+<<<<<<< HEAD:frontend/src/pages/doctor/DoctorDashboard.jsx
   /* ================= UPDATE PROFILE (NO SLOTS) ================= */
   const handleUpdateProfile = async () => {
     const res = await DoctorAPI.updateProfile(doctor.doctorId, {
@@ -89,10 +90,13 @@ function Doctor() {
     setShowEditForm(false);
   };
 
+=======
+>>>>>>> 3cb11b882a2c7277fac99a8dc254fccbdc2d188b:frontend/src/pages/Doctor.jsx
   /* ================= ADD SLOT WITH OVERLAP CHECK ================= */
   const handleAddSlot = async () => {
     if (!newSlot.startTime || !newSlot.endTime) return;
 
+<<<<<<< HEAD:frontend/src/pages/doctor/DoctorDashboard.jsx
     const newStart = parseTime(newSlot.startTime);
     const newEnd = parseTime(newSlot.endTime);
 
@@ -100,6 +104,20 @@ function Doctor() {
       if (s.day !== newSlot.day) return false;
       return newStart < parseTime(s.endTime) &&
              newEnd > parseTime(s.startTime);
+=======
+    // Convert times to numbers for easy comparison
+    const newStart = parseTime(newSlot.startTime);
+    const newEnd = parseTime(newSlot.endTime);
+
+    // Check for overlap on the same day
+    const overlapping = (doctor.slots || []).some((s) => {
+      if (s.day !== newSlot.day) return false;
+      const existingStart = parseTime(s.startTime);
+      const existingEnd = parseTime(s.endTime);
+
+      // Overlap condition:
+      return newStart < existingEnd && newEnd > existingStart;
+>>>>>>> 3cb11b882a2c7277fac99a8dc254fccbdc2d188b:frontend/src/pages/Doctor.jsx
     });
 
     if (overlapping) {
@@ -121,11 +139,21 @@ function Doctor() {
     setNewSlot({ day: "MONDAY", startTime: "", endTime: "" });
   };
 
+<<<<<<< HEAD:frontend/src/pages/doctor/DoctorDashboard.jsx
   const parseTime = (t) => {
     const [h, m] = t.split(":").map(Number);
     return h * 60 + m;
   };
 
+=======
+  /* ===== HELPER: convert HH:MM string to number for comparison ===== */
+  const parseTime = (timeStr) => {
+    const [hours, minutes] = timeStr.split(":").map(Number);
+    return hours * 60 + minutes; // minutes since midnight
+  };
+
+
+>>>>>>> 3cb11b882a2c7277fac99a8dc254fccbdc2d188b:frontend/src/pages/Doctor.jsx
   /* ================= DELETE SLOT ================= */
   const slotKey = (s) => `${s.day}-${s.startTime}-${s.endTime}`;
 
@@ -147,6 +175,16 @@ function Doctor() {
 
   return (
     <div style={styles.page}>
+<<<<<<< HEAD:frontend/src/pages/doctor/DoctorDashboard.jsx
+=======
+      {/* ===== TOP BAR ===== */}
+      <div style={styles.topBar}>
+        <button style={styles.logoutBtn} onClick={handleLogout}>
+          Logout
+        </button>
+      </div>
+
+>>>>>>> 3cb11b882a2c7277fac99a8dc254fccbdc2d188b:frontend/src/pages/Doctor.jsx
       {!doctor ? (
         <div style={styles.box}>
           <h2>Create Doctor Profile</h2>
@@ -226,10 +264,18 @@ function Doctor() {
             <button style={styles.primaryBtn} onClick={handleAddSlot}>
               Add Slot
             </button>
+<<<<<<< HEAD:frontend/src/pages/doctor/DoctorDashboard.jsx
 
             <button style={styles.deleteBtn} onClick={handleDeleteSlots}>
               Delete Selected Slots
             </button>
+=======
+            {doctor && (
+              <button style={styles.deleteBtn} onClick={handleDeleteSlots}>
+                Delete Selected Slots
+              </button>
+            )}
+>>>>>>> 3cb11b882a2c7277fac99a8dc254fccbdc2d188b:frontend/src/pages/Doctor.jsx
           </div>
 
           {/* ===== HORIZONTAL WEEKLY GRID ===== */}
@@ -369,6 +415,7 @@ const styles = {
   },
 
   /* ===== WEEKLY AVAILABILITY (VERTICAL DAYS) ===== */
+<<<<<<< HEAD:frontend/src/pages/doctor/DoctorDashboard.jsx
 grid: {
   display: "grid",
   gridTemplateColumns: "repeat(7, 1fr)", // HORIZONTAL DAYS
@@ -384,6 +431,20 @@ dayColumn: {
   padding: 10,
   minHeight: 120,
 },
+=======
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "1fr", // 👈 ONE COLUMN
+    gap: 20,
+    marginTop: 20,
+  },
+>>>>>>> 3cb11b882a2c7277fac99a8dc254fccbdc2d188b:frontend/src/pages/Doctor.jsx
+
+  /* ===== DAY COLUMN ===== */
+  dayColumn: {
+    borderBottom: "1px solid #e5e7eb",
+    paddingBottom: 10,
+  },
 
   /* ===== SLOT ===== */
   slot: {
@@ -396,6 +457,7 @@ dayColumn: {
     borderRadius: 8,
     backgroundColor: "#ffffff",
   },
+<<<<<<< HEAD:frontend/src/pages/doctor/DoctorDashboard.jsx
   boxWide: {
   width: "100%",
   margin: "0 auto 30px",
@@ -414,3 +476,7 @@ secondaryBtn: {
   cursor: "pointer",
 },
 };
+=======
+};
+
+>>>>>>> 3cb11b882a2c7277fac99a8dc254fccbdc2d188b:frontend/src/pages/Doctor.jsx
