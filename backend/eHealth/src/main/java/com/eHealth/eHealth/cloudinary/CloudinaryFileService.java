@@ -16,77 +16,87 @@ public class CloudinaryFileService {
     private final Cloudinary cloudinary;
     private final FileRepository fileRepository;
 
-    public CloudinaryFileService(Cloudinary cloudinary,
-                                 FileRepository fileRepository) {
+    public CloudinaryFileService(
+            Cloudinary cloudinary,
+            FileRepository fileRepository) {
         this.cloudinary = cloudinary;
         this.fileRepository = fileRepository;
     }
 
-    /* ================= IMAGE UPLOAD ================= */
-    public FileEntity uploadImage(MultipartFile file,
-                                  String ownerId,
-                                  String appointmentId) throws Exception {
+    /* ================= IMAGE ================= */
+
+    public FileEntity uploadImage(
+            MultipartFile file,
+            String folder,
+            String ownerId) throws Exception {
 
         validateImage(file);
 
         Map<?, ?> result = cloudinary.uploader().upload(
                 file.getBytes(),
-                ObjectUtils.asMap("folder", "smartmedix/images")
+                ObjectUtils.asMap(
+                        "folder", folder + "/" + ownerId,
+                        "resource_type", "image",
+                        "use_filename", true,
+                        "unique_filename", false
+                )
         );
 
-        return saveFileMetadata(result, ownerId, appointmentId, "IMAGE");
+        return save(result, ownerId, "IMAGE", file.getOriginalFilename());
     }
 
-    /* ================= DOCUMENT UPLOAD ================= */
-    public FileEntity uploadDocument(MultipartFile file,
-                                     String ownerId,
-                                     String appointmentId) throws Exception {
+    /* ================= DOCUMENT (PDF) ================= */
+
+    public FileEntity uploadDocument(
+            MultipartFile file,
+            String folder,
+            String ownerId) throws Exception {
 
         validateDocument(file);
 
         Map<?, ?> result = cloudinary.uploader().upload(
                 file.getBytes(),
                 ObjectUtils.asMap(
+                        "folder", folder + "/" + ownerId,
                         "resource_type", "raw",
-                        "folder", "smartmedix/documents"
+                        "use_filename", true,
+                        "unique_filename", false
                 )
         );
 
-        return saveFileMetadata(result, ownerId, appointmentId, "DOCUMENT");
+        return save(result, ownerId, "DOCUMENT", file.getOriginalFilename());
     }
 
-    /* ================= DELETE FILE ================= */
-    public void deleteFile(String publicId) throws Exception {
-        cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
-        fileRepository.deleteById(publicId);
+    /* ================= COMMON ================= */
+
+    private FileEntity save(
+            Map<?, ?> result,
+            String ownerId,
+            String type,
+            String originalFilename) {
+
+        FileEntity file = new FileEntity();
+        file.setOwnerId(ownerId);
+        file.setCloudinaryUrl(result.get("secure_url").toString());
+        file.setPublicId(result.get("public_id").toString());
+        file.setFileType(type);
+        file.setUploadedAt(Instant.now());
+
+        return fileRepository.save(file);
     }
 
-    /* ================= INTERNAL HELPERS ================= */
-
-    private FileEntity saveFileMetadata(Map<?, ?> result,
-                                        String ownerId,
-                                        String appointmentId,
-                                        String type) {
-
-        FileEntity fileEntity = new FileEntity();
-        fileEntity.setOwnerId(ownerId);
-        fileEntity.setAppointmentId(appointmentId);
-        fileEntity.setCloudinaryUrl(result.get("secure_url").toString());
-        fileEntity.setPublicId(result.get("public_id").toString());
-        fileEntity.setFileType(type);
-        fileEntity.setUploadedAt(Instant.now());
-
-        return fileRepository.save(fileEntity);
-    }
+    /* ================= VALIDATION ================= */
 
     private void validateImage(MultipartFile file) {
-        if (!file.getContentType().startsWith("image/")) {
+        if (file.getContentType() == null ||
+            !file.getContentType().startsWith("image/")) {
             throw new IllegalArgumentException("Invalid image type");
         }
     }
 
     private void validateDocument(MultipartFile file) {
-        if (!file.getOriginalFilename().endsWith(".pdf")) {
+        if (file.getOriginalFilename() == null ||
+            !file.getOriginalFilename().toLowerCase().endsWith(".pdf")) {
             throw new IllegalArgumentException("Only PDF documents allowed");
         }
     }

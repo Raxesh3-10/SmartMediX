@@ -11,30 +11,37 @@ public class ChatMessage {
     @Id
     private String messageId;
 
-    private String appointmentId;
+    private String doctorId;
+    private String patientId;
+
+    private String senderRole; // "DOCTOR" or "PATIENT"
     private String senderId;
-    private String receiverId;
+
     private String message;
     private List<String> fileUrls;
+
     private Instant sentAt;
 
     public String getMessageId() { return messageId; }
     public void setMessageId(String messageId) { this.messageId = messageId; }
 
-    public String getAppointmentId() { return appointmentId; }
-    public void setAppointmentId(String appointmentId) { this.appointmentId = appointmentId; }
+    public String getDoctorId() { return doctorId; }
+    public void setDoctorId(String doctorId) { this.doctorId = doctorId; }
+
+    public String getPatientId() { return patientId; }
+    public void setPatientId(String patientId) { this.patientId = patientId; }
+
+    public String getSenderRole() { return senderRole; }
+    public void setSenderRole(String senderRole) { this.senderRole = senderRole; }
+    
+    public String getMessage() { return message; }
+    public void setMessage(String message) { this.message = message; }  
+    
+    public List<String> getFileUrls() { return fileUrls; }
+    public void setFileUrls(List<String> fileUrls) { this.fileUrls = fileUrls; }
 
     public String getSenderId() { return senderId; }
     public void setSenderId(String senderId) { this.senderId = senderId; }
-
-    public String getReceiverId() { return receiverId; }
-    public void setReceiverId(String receiverId) { this.receiverId = receiverId; }
-
-    public String getMessage() { return message; }
-    public void setMessage(String message) { this.message = message; }
-
-    public List<String> getFileUrls() { return fileUrls; }
-    public void setFileUrls(List<String> fileUrls) { this.fileUrls = fileUrls; }
 
     public Instant getSentAt() { return sentAt; }
     public void setSentAt(Instant sentAt) { this.sentAt = sentAt; }

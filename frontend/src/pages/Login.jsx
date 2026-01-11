@@ -28,33 +28,21 @@ function Login() {
     try {
       const res = await AuthAPI.login(form);
 
-      /**
-       * Expected response example:
-       * {
-       *   token: "JWT_TOKEN",
-       *   role: "ADMIN" | "DOCTOR" | "PATIENT"
-       * }
-       */
       const { token, role } = res.data;
 
-      // Store JWT
       localStorage.setItem("JWT", token);
       localStorage.setItem("ROLE", role);
 
-      // Role-based redirection
-      if (role === "ADMIN") {
-        navigate("/admin");
-      } else if (role === "DOCTOR") {
-        navigate("/doctor");
-      } else if (role === "PATIENT") {
-        navigate("/patient");
-      } else {
-        setError("Invalid user role received.");
-      }
+      if (role === "ADMIN") navigate("/admin");
+      else if (role === "DOCTOR") navigate("/doctor");
+      else if (role === "PATIENT") navigate("/patient");
+      else setError("Invalid user role received.");
     } catch (err) {
-      setError(
-        err.response?.data || "Invalid email or password"
-      );
+      const message =
+        err.response?.data?.message || 
+        "Invalid email or password";
+
+      setError(message);
     } finally {
       setLoading(false);
     }

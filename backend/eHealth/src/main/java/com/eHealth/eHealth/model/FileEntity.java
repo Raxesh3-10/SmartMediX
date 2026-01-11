@@ -11,7 +11,6 @@ public class FileEntity {
     private String fileId;
 
     private String ownerId;
-    private String appointmentId;
     private String cloudinaryUrl;
     private String publicId;
     private String fileType;
@@ -22,9 +21,6 @@ public class FileEntity {
 
     public String getOwnerId() { return ownerId; }
     public void setOwnerId(String ownerId) { this.ownerId = ownerId; }
-
-    public String getAppointmentId() { return appointmentId; }
-    public void setAppointmentId(String appointmentId) { this.appointmentId = appointmentId; }
 
     public String getCloudinaryUrl() { return cloudinaryUrl; }
     public void setCloudinaryUrl(String cloudinaryUrl) { this.cloudinaryUrl = cloudinaryUrl; }

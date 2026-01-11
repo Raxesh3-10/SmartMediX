@@ -1,8 +1,9 @@
 import axios from "axios";
 
 /**
- * Axios instance configuration
- * Adjust baseURL if backend runs on a different host/port
+ * ======================================================
+ * AXIOS INSTANCE
+ * ======================================================
  */
 const api = axios.create({
   baseURL: "http://localhost:8080/api",
@@ -12,9 +13,11 @@ const api = axios.create({
 });
 
 /**
- * Optional: attach JWT automatically if stored in localStorage
- * Admin APIs require header name: JWT
- * Auth logout requires header name: Authorization
+ * ======================================================
+ * JWT INTERCEPTOR
+ * - Backend expects header name: JWT
+ * - Some auth APIs also read Authorization
+ * ======================================================
  */
 api.interceptors.request.use(
   (config) => {
@@ -29,28 +32,94 @@ api.interceptors.request.use(
 );
 
 /* ======================================================
+   CHAT API
+   Maps to: /api/chat/**
+====================================================== */
+
+export const ChatAPI = {
+  /* ========== SEND MESSAGE ========== */
+  sendMessage: (data) =>
+    api.post("/chat/send", null, {
+      params: {
+        doctorId: data.doctorId,
+        patientId: data.patientId,
+        senderRole: data.senderRole, // "DOCTOR" | "PATIENT"
+        senderId: data.senderId,
+        message: data.message,
+        fileUrls: data.fileUrls, // array of cloudinary URLs
+      },
+    }),
+
+  /* ========== CHAT HISTORY ========== */
+  getChatHistory: (doctorId, patientId) =>
+    api.get(`/chat/history/${doctorId}/${patientId}`),
+
+  getPatientChatHistory: (patientId, doctorId) =>
+    api.get(`/chat/patient/history/${patientId}/${doctorId}`),
+
+  /* ========== DOCTOR ROUTES ========== */
+  getDoctorChatPatients: (doctorId) =>
+    api.get(`/chat/doctor/${doctorId}/patients`),
+
+  getDoctorNewPatients: (doctorId) =>
+    api.get(`/chat/doctor/${doctorId}/new-patients`),
+
+  /* ========== PATIENT ROUTES ========== */
+  getPatientChatDoctors: (patientId) =>
+    api.get(`/chat/patient/${patientId}/doctors`),
+
+  getPatientNewDoctors: (patientId) =>
+    api.get(`/chat/patient/${patientId}/new-doctors`),
+};
+
+/* ======================================================
+   CHAT FILE API (CLOUDINARY)
+   Maps to: /api/chat/files/**
+====================================================== */
+
+export const ChatFileAPI = {
+  uploadImage: (file, ownerId) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("ownerId", ownerId);
+
+    return api.post("/chat/files/image", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  },
+
+  uploadDocument: (file, ownerId) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("ownerId", ownerId);
+
+    return api.post("/chat/files/document", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  },
+};
+
+/* ======================================================
    AUTH API
    Maps to: /api/auth/**
 ====================================================== */
 
 export const AuthAPI = {
-  signup: (data) =>
-    api.post("/auth/signup", data),
+  signup: (data) => api.post("/auth/signup", data),
 
-  verifyOtp: (data) =>
-    api.post("/auth/verify-otp", data),
+  verifyOtp: (data) => api.post("/auth/verify-otp", data),
 
-  login: (data) =>
-    api.post("/auth/login", data),
+  login: (data) => api.post("/auth/login", data),
 
-  updateProfile: (data) =>
-    api.post("/auth/update-profile", data),
+  updateProfile: (data) => api.post("/auth/update-profile", data),
 
-  logout: () =>
-    api.post("/auth/logout"),
+  logout: () => api.post("/auth/logout"),
 
-  getUser: () =>
-    api.get("/auth/profile"),
+  getUser: () => api.get("/auth/profile"),
 };
 
 /* ======================================================
@@ -59,25 +128,17 @@ export const AuthAPI = {
 ====================================================== */
 
 export const AdminAPI = {
-  // ===== USERS =====
-  getAllUsers: () =>
-    api.get("/admin/users"),
+  getAllUsers: () => api.get("/admin/users"),
 
-  getUserById: (id) =>
-    api.get(`/admin/users/${id}`),
+  getUserById: (id) => api.get(`/admin/users/${id}`),
 
-  createUser: (user) =>
-    api.post("/admin/users", user),
+  createUser: (user) => api.post("/admin/users", user),
 
-  updateUser: (id, user) =>
-    api.put(`/admin/users/${id}`, user),
+  updateUser: (id, user) => api.put(`/admin/users/${id}`, user),
 
-  deleteUser: (id) =>
-    api.delete(`/admin/users/${id}`),
+  deleteUser: (id) => api.delete(`/admin/users/${id}`),
 
-  // ===== SESSIONS =====
-  getActiveSessions: () =>
-    api.get("/admin/sessions"),
+  getActiveSessions: () => api.get("/admin/sessions"),
 };
 
 /* ======================================================
@@ -86,25 +147,36 @@ export const AdminAPI = {
 ====================================================== */
 
 export const DoctorAPI = {
-  // ===== CREATE DOCTOR PROFILE =====
-  // POST /api/doctors
   createProfile: (doctorData) =>
     api.post("/doctors", doctorData),
 
-  // ===== GET LOGGED-IN DOCTOR PROFILE =====
-  // GET /api/doctors/me
   getMyProfile: () =>
     api.get("/doctors/me"),
 
-  // ===== UPDATE DOCTOR PROFILE =====
-  // PUT /api/doctors/{doctorId}
   updateProfile: (doctorId, doctorData) =>
     api.put(`/doctors/${doctorId}`, doctorData),
 
-  // ===== DELETE DOCTOR PROFILE (ADMIN ONLY) =====
-  // DELETE /api/doctors/{doctorId}
   deleteProfile: (doctorId) =>
     api.delete(`/doctors/${doctorId}`),
+};
+
+export const PatientAPI = {
+
+  createProfile: (patientData) =>
+    api.post("/patients", patientData),
+
+  getMyProfile: () =>
+  api.get("/patients/me", {
+    headers: {
+      JWT: localStorage.getItem("jwt"),
+    },
+  }),
+
+  updateProfile: (patientId, patientData) =>
+    api.put(`/patients/${patientId}`, patientData),
+
+  deleteProfile: (patientId) =>
+    api.delete(`/patients/${patientId}`),
 };
 
 export default api;
