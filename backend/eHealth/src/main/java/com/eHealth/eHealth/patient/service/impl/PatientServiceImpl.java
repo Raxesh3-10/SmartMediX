@@ -52,9 +52,9 @@ public class PatientServiceImpl implements PatientService {
 
 @Override
 public Patient getMyPatientProfile(String jwt) {
-    String email = validatePatientJwt(jwt);
-
-    return patientRepo.findByUserId(email)
+    validatePatientJwt(jwt);
+    String id = JwtUtil.getUserId(jwt,userRepo,jwtRepo);
+    return patientRepo.findByUserId(id)
             .orElseThrow(() ->
                 new ResponseStatusException(
                     HttpStatus.NOT_FOUND,
