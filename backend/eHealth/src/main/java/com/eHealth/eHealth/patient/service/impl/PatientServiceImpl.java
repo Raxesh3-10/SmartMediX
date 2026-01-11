@@ -50,18 +50,18 @@ public class PatientServiceImpl implements PatientService {
         return patientRepo.save(patient);
     }
 
-@Override
-public Patient getMyPatientProfile(String jwt) {
-    String email = validatePatientJwt(jwt);
+    @Override
+    public Patient getMyPatientProfile(String jwt) {
+        String email = validatePatientJwt(jwt);
 
-    return patientRepo.findByUserId(email)
-            .orElseThrow(() ->
-                new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Patient profile not created"
-                )
-            );
-}
+        return patientRepo.findByUserId(email)
+                .orElseThrow(() ->
+                    new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Patient profile not created"
+                    )
+                );
+    }
 
 
     // ================= UPDATE =================

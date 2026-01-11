@@ -107,4 +107,37 @@ export const DoctorAPI = {
     api.delete(`/doctors/${doctorId}`),
 };
 
+/* ======================================================
+   PATIENT API
+   Maps to: /api/patients/**
+====================================================== */
+
+export const PatientAPI = {
+  // ===== CREATE PATIENT PROFILE =====
+  // POST /api/patients
+  createProfile: (patientData) =>
+    api.post("/patients", patientData),
+
+  // ===== GET LOGGED-IN PATIENT PROFILE =====
+  // GET /api/patients/me
+  getMyProfile: () =>
+  api.get("/patients/me", {
+    headers: {
+      JWT: localStorage.getItem("jwt"),
+    },
+  }),
+
+
+  // ===== UPDATE PATIENT PROFILE =====
+  // PUT /api/patients/{patientId}
+  updateProfile: (patientId, patientData) =>
+    api.put(`/patients/${patientId}`, patientData),
+
+  // ===== DELETE PATIENT PROFILE =====
+  // DELETE /api/patients/{patientId}
+  deleteProfile: (patientId) =>
+    api.delete(`/patients/${patientId}`),
+};
+
+
 export default api;

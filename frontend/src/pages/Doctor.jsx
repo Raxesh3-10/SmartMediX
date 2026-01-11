@@ -75,9 +75,28 @@ function Doctor() {
     setDoctor(res.data);
   };
 
-  /* ================= ADD SLOT ================= */
+  /* ================= ADD SLOT WITH OVERLAP CHECK ================= */
   const handleAddSlot = async () => {
     if (!newSlot.startTime || !newSlot.endTime) return;
+
+    // Convert times to numbers for easy comparison
+    const newStart = parseTime(newSlot.startTime);
+    const newEnd = parseTime(newSlot.endTime);
+
+    // Check for overlap on the same day
+    const overlapping = (doctor.slots || []).some((s) => {
+      if (s.day !== newSlot.day) return false;
+      const existingStart = parseTime(s.startTime);
+      const existingEnd = parseTime(s.endTime);
+
+      // Overlap condition:
+      return newStart < existingEnd && newEnd > existingStart;
+    });
+
+    if (overlapping) {
+      alert("This slot overlaps with an existing slot ❌");
+      return;
+    }
 
     const updatedSlots = [
       ...(doctor.slots || []),
@@ -92,6 +111,13 @@ function Doctor() {
     setDoctor(res.data);
     setNewSlot({ day: "MONDAY", startTime: "", endTime: "" });
   };
+
+  /* ===== HELPER: convert HH:MM string to number for comparison ===== */
+  const parseTime = (timeStr) => {
+    const [hours, minutes] = timeStr.split(":").map(Number);
+    return hours * 60 + minutes; // minutes since midnight
+  };
+
 
   /* ================= DELETE SLOT ================= */
   const handleDeleteSlots = async () => {
@@ -116,11 +142,6 @@ function Doctor() {
     <div style={styles.page}>
       {/* ===== TOP BAR ===== */}
       <div style={styles.topBar}>
-        {doctor && (
-          <button style={styles.deleteBtn} onClick={handleDeleteSlots}>
-            Delete Selected Slots
-          </button>
-        )}
         <button style={styles.logoutBtn} onClick={handleLogout}>
           Logout
         </button>
@@ -211,6 +232,11 @@ function Doctor() {
             <button style={styles.primaryBtn} onClick={handleAddSlot}>
               Add Slot
             </button>
+            {doctor && (
+              <button style={styles.deleteBtn} onClick={handleDeleteSlots}>
+                Delete Selected Slots
+              </button>
+            )}
           </div>
 
           {/* ===== SLOT GRID ===== */}
@@ -267,7 +293,6 @@ function Doctor() {
 
 export default Doctor;
 
-/* ================= STYLES ================= */
 const styles = {
   /* ===== PAGE ===== */
   page: {
@@ -281,8 +306,8 @@ const styles = {
 
   /* ===== CENTER CARD ===== */
   box: {
-    width: "420px",          // card width
-    margin: "0 auto 30px",   // CENTERED
+    width: "420px",
+    margin: "0 auto 30px",
     border: "2px solid #e5e7eb",
     borderRadius: 12,
     padding: 24,
@@ -311,17 +336,21 @@ const styles = {
   },
 
   deleteBtn: {
-    width: 220,
-    padding: "10px",
+    width: "60%",              // same as primary button
+    display: "block",
+    margin: "12px auto 0",     // centered + spacing
+    padding: "12px",
     background: "#dc2626",
     color: "#ffffff",
     border: "1px solid #dc2626",
-    borderRadius: 6,
+    borderRadius: 8,
     cursor: "pointer",
     fontSize: 14,
+    fontWeight: 500,
   },
+  
 
-  /* ===== INPUTS (80%) ===== */
+  /* ===== INPUTS ===== */
   input: {
     width: "80%",
     display: "block",
@@ -359,12 +388,18 @@ const styles = {
     fontWeight: 500,
   },
 
-  /* ===== GRID ===== */
+  /* ===== WEEKLY AVAILABILITY (VERTICAL DAYS) ===== */
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(7, minmax(130px, 1fr))",
-    gap: 16,
+    gridTemplateColumns: "1fr", // 👈 ONE COLUMN
+    gap: 20,
     marginTop: 20,
+  },
+
+  /* ===== DAY COLUMN ===== */
+  dayColumn: {
+    borderBottom: "1px solid #e5e7eb",
+    paddingBottom: 10,
   },
 
   /* ===== SLOT ===== */
@@ -379,3 +414,4 @@ const styles = {
     backgroundColor: "#ffffff",
   },
 };
+
