@@ -114,7 +114,7 @@ function Doctor() {
 
   return (
     <div style={styles.page}>
-      {/* ========== TOP BAR ========== */}
+      {/* ===== TOP BAR ===== */}
       <div style={styles.topBar}>
         {doctor && (
           <button style={styles.deleteBtn} onClick={handleDeleteSlots}>
@@ -127,10 +127,11 @@ function Doctor() {
       </div>
 
       {!doctor ? (
-        <>
+        <div style={styles.box}>
           <h2>Create Doctor Profile</h2>
 
           <input
+            style={styles.input}
             placeholder="Specialization"
             onChange={(e) =>
               setForm({ ...form, specialization: e.target.value })
@@ -138,6 +139,7 @@ function Doctor() {
           />
 
           <input
+            style={styles.input}
             type="number"
             placeholder="Experience Years"
             onChange={(e) =>
@@ -146,6 +148,7 @@ function Doctor() {
           />
 
           <input
+            style={styles.input}
             type="number"
             placeholder="Consultation Fee"
             onChange={(e) =>
@@ -154,6 +157,7 @@ function Doctor() {
           />
 
           <input
+            style={styles.input}
             placeholder="UPI ID"
             onChange={(e) => setForm({ ...form, upi: e.target.value })}
           />
@@ -161,95 +165,99 @@ function Doctor() {
           <button style={styles.primaryBtn} onClick={handleCreateProfile}>
             Create Profile
           </button>
-        </>
+        </div>
       ) : (
         <>
-          <h2>Doctor Dashboard</h2>
+          <div style={styles.box}>
+            <h2>Doctor Dashboard</h2>
+            <p><strong>Name:</strong> {user?.name}</p>
+            <p><strong>Email:</strong> {user?.email}</p>
+          </div>
 
-          <p>
-            <strong>Name:</strong> {user?.name}
-          </p>
-          <p>
-            <strong>Email:</strong> {user?.email}
-          </p>
+          {/* ===== ADD SLOT ===== */}
+          <div style={styles.box}>
+            <h3>Add Availability Slot</h3>
 
-          {/* ========== ADD SLOT FORM ========== */}
-          <h3>Add Availability Slot</h3>
+            <select
+              style={styles.select}
+              value={newSlot.day}
+              onChange={(e) =>
+                setNewSlot({ ...newSlot, day: e.target.value })
+              }
+            >
+              {DAYS.map((d) => (
+                <option key={d}>{d}</option>
+              ))}
+            </select>
 
-          <select
-            value={newSlot.day}
-            onChange={(e) =>
-              setNewSlot({ ...newSlot, day: e.target.value })
-            }
-          >
-            {DAYS.map((d) => (
-              <option key={d}>{d}</option>
-            ))}
-          </select>
+            <input
+              style={styles.input}
+              type="time"
+              value={newSlot.startTime}
+              onChange={(e) =>
+                setNewSlot({ ...newSlot, startTime: e.target.value })
+              }
+            />
 
-          <input
-            type="time"
-            value={newSlot.startTime}
-            onChange={(e) =>
-              setNewSlot({ ...newSlot, startTime: e.target.value })
-            }
-          />
+            <input
+              style={styles.input}
+              type="time"
+              value={newSlot.endTime}
+              onChange={(e) =>
+                setNewSlot({ ...newSlot, endTime: e.target.value })
+              }
+            />
 
-          <input
-            type="time"
-            value={newSlot.endTime}
-            onChange={(e) =>
-              setNewSlot({ ...newSlot, endTime: e.target.value })
-            }
-          />
+            <button style={styles.primaryBtn} onClick={handleAddSlot}>
+              Add Slot
+            </button>
+          </div>
 
-          <button style={styles.primaryBtn} onClick={handleAddSlot}>
-            Add Slot
-          </button>
+          {/* ===== SLOT GRID ===== */}
+          <div style={styles.box}>
+            <h3>Weekly Availability</h3>
 
-          {/* ========== SLOT GRID ========== */}
-          <h3>Weekly Availability</h3>
+            <div style={styles.grid}>
+              {DAYS.map((day) => (
+                <div key={day}>
+                  <strong>{day}</strong>
 
-          <div style={styles.grid}>
-            {DAYS.map((day) => (
-              <div key={day}>
-                <strong>{day}</strong>
+                  {(doctor.slots || [])
+                    .filter((s) => s.day === day)
+                    .sort((a, b) =>
+                      a.startTime.localeCompare(b.startTime)
+                    )
+                    .map((s) => {
+                      const key = slotKey(s);
+                      const selected = selectedSlots.includes(key);
 
-                {(doctor.slots || [])
-                  .filter((s) => s.day === day)
-                  .sort((a, b) =>
-                    a.startTime.localeCompare(b.startTime)
-                  )
-                  .map((s) => {
-                    const key = slotKey(s);
-                    const selected = selectedSlots.includes(key);
-
-                    return (
-                      <div
-                        key={key}
-                        onClick={() =>
-                          !s.booked &&
-                          setSelectedSlots((prev) =>
-                            selected
-                              ? prev.filter((k) => k !== key)
-                              : [...prev, key]
-                          )
-                        }
-                        style={{
-                          ...styles.slot,
-                          backgroundColor: s.booked
-                            ? "#16a34a"
-                            : selected
-                            ? "#dc2626"
-                            : "#ffffff",
-                        }}
-                      >
-                        {s.startTime} – {s.endTime}
-                      </div>
-                    );
-                  })}
-              </div>
-            ))}
+                      return (
+                        <div
+                          key={key}
+                          onClick={() =>
+                            !s.booked &&
+                            setSelectedSlots((prev) =>
+                              selected
+                                ? prev.filter((k) => k !== key)
+                                : [...prev, key]
+                            )
+                          }
+                          style={{
+                            ...styles.slot,
+                            backgroundColor: s.booked
+                              ? "#16a34a"
+                              : selected
+                              ? "#dc2626"
+                              : "#ffffff",
+                          }}
+                        >
+                          {s.startTime} – {s.endTime}
+                        </div>
+                      );
+                    })}
+                </div>
+              ))}
+            </div>
           </div>
         </>
       )}
@@ -260,52 +268,114 @@ function Doctor() {
 export default Doctor;
 
 /* ================= STYLES ================= */
-
 const styles = {
+  /* ===== PAGE ===== */
   page: {
     padding: 40,
-    maxWidth: 900,
+    maxWidth: 1200,
     margin: "auto",
+    fontFamily: "Arial, sans-serif",
+    color: "#0f172a",
+    backgroundColor: "#f8fafc",
   },
+
+  /* ===== CENTER CARD ===== */
+  box: {
+    width: "420px",          // card width
+    margin: "0 auto 30px",   // CENTERED
+    border: "2px solid #e5e7eb",
+    borderRadius: 12,
+    padding: 24,
+    backgroundColor: "#ffffff",
+  },
+
+  /* ===== TOP BAR ===== */
   topBar: {
     display: "flex",
     justifyContent: "space-between",
-    marginBottom: 20,
+    alignItems: "center",
+    marginBottom: 30,
+    paddingBottom: 15,
+    borderBottom: "2px solid #e5e7eb",
   },
+
   logoutBtn: {
+    width: 150,
+    padding: "10px",
     background: "#0f172a",
-    color: "#fff",
-    padding: "8px 16px",
-    border: "none",
+    color: "#ffffff",
+    border: "1px solid #0f172a",
+    borderRadius: 6,
     cursor: "pointer",
+    fontSize: 14,
   },
+
   deleteBtn: {
+    width: 220,
+    padding: "10px",
     background: "#dc2626",
-    color: "#fff",
-    padding: "8px 16px",
-    border: "none",
+    color: "#ffffff",
+    border: "1px solid #dc2626",
+    borderRadius: 6,
     cursor: "pointer",
+    fontSize: 14,
   },
+
+  /* ===== INPUTS (80%) ===== */
+  input: {
+    width: "80%",
+    display: "block",
+    margin: "0 auto 14px",
+    padding: "12px",
+    borderRadius: 8,
+    border: "1px solid #cbd5e1",
+    fontSize: 15,
+    outline: "none",
+  },
+
+  select: {
+    width: "80%",
+    display: "block",
+    margin: "0 auto 14px",
+    padding: "12px",
+    borderRadius: 8,
+    border: "1px solid #cbd5e1",
+    fontSize: 15,
+    outline: "none",
+  },
+
+  /* ===== PRIMARY BUTTON ===== */
   primaryBtn: {
-    marginTop: 10,
-    padding: "8px 16px",
+    width: "60%",
+    display: "block",
+    margin: "16px auto 0",
+    padding: "12px",
     background: "#2563eb",
-    color: "#fff",
-    border: "none",
+    color: "#ffffff",
+    border: "1px solid #2563eb",
+    borderRadius: 8,
     cursor: "pointer",
+    fontSize: 15,
+    fontWeight: 500,
   },
+
+  /* ===== GRID ===== */
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(7, 1fr)",
-    gap: 10,
-    marginTop: 15,
+    gridTemplateColumns: "repeat(7, minmax(130px, 1fr))",
+    gap: 16,
+    marginTop: 20,
   },
+
+  /* ===== SLOT ===== */
   slot: {
-    border: "1px solid #ccc",
-    padding: 6,
-    marginTop: 5,
+    border: "2px solid #cbd5e1",
+    padding: "8px",
+    marginTop: 6,
     cursor: "pointer",
     textAlign: "center",
-    fontSize: 14,
+    fontSize: 13,
+    borderRadius: 8,
+    backgroundColor: "#ffffff",
   },
 };
