@@ -46,15 +46,36 @@ export default Patient;
 
 const styles = {
   container: {
+    minHeight: "70vh",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center",
     padding: "40px",
-    textAlign: "center",
+    backgroundColor: "#f8fafc",
+    fontFamily: "Arial, sans-serif",
   },
+
+  card: {
+    width: "420px",
+    backgroundColor: "#ffffff",
+    border: "2px solid #e5e7eb",
+    borderRadius: "14px",
+    padding: "32px",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+  },
+
   button: {
-    marginTop: "20px",
-    padding: "10px 24px",
-    backgroundColor: "#2563eb",
+    marginTop: "28px",
+    padding: "12px 36px",
+    background: "linear-gradient(135deg, #2563eb, #1e40af)",
     color: "#ffffff",
     border: "none",
+    borderRadius: "30px",
     cursor: "pointer",
+    fontSize: "15px",
+    fontWeight: "600",
+    letterSpacing: "0.3px",
+    transition: "all 0.3s ease",
   },
 };
