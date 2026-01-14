@@ -44,7 +44,6 @@ function Home() {
           <li>Secure Chat with File Exchange & Text-to-Speech</li>
           <li>Patient Medical History & Doctor Notes Storage</li>
           <li>Online Payments, Billing & Invoice Generation</li>
-          <li>Medicine Reminder & Refill Alerts</li>
           <li>Rule-Based Doctor Recommendation System</li>
           <li>Family Health Account Management</li>
           <li>Auto-Logout & Secure Session Management</li>
@@ -75,7 +74,7 @@ function Home() {
           <div style={styles.card}>
             <h3>Administrators</h3>
             <p>
-              Monitor users, manage sessions, handle billing issues, refunds,
+              Monitor users, manage sessions,
               and ensure system security and availability.
             </p>
           </div>

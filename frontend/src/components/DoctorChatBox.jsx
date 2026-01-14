@@ -1,176 +1,201 @@
 import { useEffect, useRef, useState } from "react";
 import { ChatAPI, ChatFileAPI } from "../api/api";
+import { encryptMessage, decryptMessage } from "../utils/chatCrypto";
 
-export default function DoctorChatBox({ user, doctor, patient }) {
+export default function DoctorChatBox({ user, patientUser,doctor, patient }) {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedFiles, setSelectedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
 
+  const chatEndRef = useRef(null);
   const fileInputRef = useRef(null);
 
+  /* ================= LOAD CHAT ================= */
+
   useEffect(() => {
-    if (doctor && patient) {
-      loadChat();
-    }
-  }, [doctor, patient]);
+    if (doctor && patient) loadChat();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doctor?.doctorId, patient?.patientId]);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const loadChat = async () => {
     const res = await ChatAPI.getChatHistory(
       doctor.doctorId,
       patient.patientId
     );
-    setMessages(res.data);
+
+    const decrypted = res.data.map((m) => ({
+      ...m,
+      message: m.message
+        ? decryptMessage(
+            m.message,
+            doctor.doctorId,
+            patient.patientId
+          )
+        : "",
+    }));
+
+    setMessages(decrypted);
   };
 
   /* ================= SEND MESSAGE ================= */
 
   const sendMessage = async () => {
-    if (!text.trim() && !selectedFile) return;
+    if (!text.trim() && selectedFiles.length === 0) return;
 
     setUploading(true);
     try {
-      let fileUrls = [];
+      const fileUrls = [];
 
-      if (selectedFile) {
+      for (const file of selectedFiles) {
         let res;
 
-        if (selectedFile.type.startsWith("image/")) {
+        if (file.type.startsWith("image/")) {
           res = await ChatFileAPI.uploadImage(
-            selectedFile,
+            file,
+            doctor.doctorId
+          );
+        } else if (file.type === "application/pdf") {
+          res = await ChatFileAPI.uploadDocument(
+            file,
             doctor.doctorId
           );
         } else {
-          res = await ChatFileAPI.uploadDocument(
-            selectedFile,
-            doctor.doctorId
-          );
+          alert("Only images and PDF files are allowed");
+          continue;
         }
 
         fileUrls.push(res.data);
       }
+
+      const encrypted = encryptMessage(
+        text,
+        doctor.doctorId,
+        patient.patientId
+      );
 
       await ChatAPI.sendMessage({
         doctorId: doctor.doctorId,
         patientId: patient.patientId,
         senderRole: "DOCTOR",
         senderId: doctor.doctorId,
-        message: text,
+        message: encrypted,
         fileUrls,
       });
 
-      /* RESET */
       setText("");
-      setSelectedFile(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      setSelectedFiles([]);
 
-      loadChat();
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
+      await loadChat();
     } finally {
       setUploading(false);
     }
   };
 
-  /* ================= FILE TYPE CHECK ================= */
-
-  const isChatImage = (url) =>
-    url.includes("smartmedix/chat/images");
-
-  const isChatDocument = (url) =>
-    url.includes("smartmedix/chat/documents");
-
-  /* ================= FRONTEND PDF OPEN FIX ================= */
-
-  const openPdfInline = async (url) => {
-    try {
-      const response = await fetch(
-        url.includes("?")
-          ? `${url}&fl_attachment=false`
-          : `${url}?fl_attachment=false`
-      );
-
-      const blob = await response.blob();
-
-      const pdfBlob = new Blob([blob], {
-        type: "application/pdf",
-      });
-
-      const blobUrl = window.URL.createObjectURL(pdfBlob);
-      window.open(blobUrl, "_blank");
-    } catch (err) {
-      console.error("Failed to open PDF", err);
-    }
-  };
+  /* ================= UI ================= */
 
   return (
     <div style={styles.container}>
       {/* HEADER */}
       <div style={styles.header}>
-        <strong>Chat with Patient</strong>
-        <div style={styles.userInfo}>
-          {user.name}
-          <br />
-          <small>{user.email}</small>
+        <div>
+          <strong>{patientUser?.name || "Patient"}</strong>
+          <div style={styles.sub}>
+            {patientUser?.email || ""}
+          </div>
+        </div>
+        <div style={styles.me}>
+          {user?.name}
+          <div style={styles.sub}>{user?.email}</div>
         </div>
       </div>
 
-      {/* CHAT BOX */}
-      <div style={styles.chatBox}>
-        {messages.map((m, i) => (
+      {/* CHAT */}
+      <div style={styles.chat}>
+        {messages.map((m) => (
           <div
-            key={i}
+            key={m.messageId}
             style={{
-              ...styles.message,
+              ...styles.msg,
               alignSelf:
-                m.senderRole === "DOCTOR" ? "flex-end" : "flex-start",
-              backgroundColor:
-                m.senderRole === "DOCTOR" ? "#d1fae5" : "#f1f1f1",
+                m.senderRole === "DOCTOR"
+                  ? "flex-end"
+                  : "flex-start",
+              background:
+                m.senderRole === "DOCTOR"
+                  ? "#dcf8c6"
+                  : "#ffffff",
             }}
           >
             {m.message && <div>{m.message}</div>}
 
-            {m.fileUrls?.map((url, idx) => (
-              <div key={idx} style={{ marginTop: 6 }}>
-                {/* IMAGE */}
-                {isChatImage(url) && (
+            {m.fileUrls?.map((url, i) => (
+              <div key={i} style={{ marginTop: 6 }}>
+                {url.includes("/images/") ? (
                   <img
                     src={url}
                     alt="attachment"
                     style={styles.image}
+                    onClick={() =>
+                      window.open(
+                        url,
+                        "_blank",
+                        "noopener,noreferrer"
+                      )
+                    }
                   />
-                )}
-
-                {/* PDF / DOCUMENT */}
-                {isChatDocument(url) && (
-                  <button
-                    onClick={() => openPdfInline(url)}
-                    style={styles.docButton}
+                ) : (
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
                   >
-                    📄 Open document
-                  </button>
+                    📄 Open PDF
+                  </a>
                 )}
               </div>
             ))}
+
+            <div style={styles.time}>
+              {new Date(m.sentAt).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </div>
           </div>
         ))}
+        <div ref={chatEndRef} />
       </div>
 
-      {/* INPUT BAR */}
-      <div style={styles.inputBox}>
+      {/* INPUT */}
+      <div style={styles.inputBar}>
         <input
-          type="text"
-          placeholder="Type message..."
           value={text}
           onChange={(e) => setText(e.target.value)}
+          placeholder="Type a message"
           style={styles.input}
         />
-
         <input
           type="file"
+          multiple
           ref={fileInputRef}
-          onChange={(e) => setSelectedFile(e.target.files[0])}
+          onChange={(e) =>
+            setSelectedFiles([...e.target.files])
+          }
         />
-
-        <button onClick={sendMessage} disabled={uploading}>
+        <button
+          onClick={sendMessage}
+          disabled={uploading}
+          style={styles.sendBtn}
+        >
           {uploading ? "Sending..." : "Send"}
         </button>
       </div>
@@ -178,59 +203,61 @@ export default function DoctorChatBox({ user, doctor, patient }) {
   );
 }
 
-/* ================= STYLES ================= */
+/* ================= GREEN WHATSAPP STYLES ================= */
 
 const styles = {
   container: {
     height: "100%",
     display: "flex",
     flexDirection: "column",
+    background: "#e5ddd5",
   },
   header: {
-    padding: "10px",
-    borderBottom: "1px solid #ccc",
+    background: "#075e54",
+    color: "#fff",
+    padding: 10,
     display: "flex",
     justifyContent: "space-between",
   },
-  userInfo: {
-    textAlign: "right",
-  },
-  chatBox: {
+  sub: { fontSize: 12, opacity: 0.8 },
+  me: { textAlign: "right" },
+  chat: {
     flex: 1,
-    padding: "10px",
+    padding: 10,
     overflowY: "auto",
     display: "flex",
     flexDirection: "column",
-    gap: "8px",
+    gap: 8,
   },
-  message: {
+  msg: {
     maxWidth: "70%",
-    padding: "8px",
-    borderRadius: "6px",
-    fontSize: "14px",
+    padding: 8,
+    borderRadius: 6,
+    fontSize: 14,
   },
   image: {
-    maxWidth: "220px",
-    borderRadius: "6px",
-    marginTop: "4px",
-  },
-  docButton: {
-    background: "none",
-    border: "none",
-    padding: 0,
-    marginTop: "6px",
-    color: "#2563eb",
-    fontWeight: 500,
+    maxWidth: 200,
+    borderRadius: 6,
     cursor: "pointer",
-    textDecoration: "underline",
   },
-  inputBox: {
+  time: {
+    fontSize: 11,
+    textAlign: "right",
+    marginTop: 4,
+    color: "#555",
+  },
+  inputBar: {
     display: "flex",
-    gap: "6px",
-    padding: "10px",
-    borderTop: "1px solid #ccc",
+    gap: 6,
+    padding: 10,
+    background: "#f0f0f0",
   },
-  input: {
-    flex: 1,
+  input: { flex: 1, padding: 6 },
+  sendBtn: {
+    background: "#25d366",
+    border: "none",
+    color: "#fff",
+    padding: "0 14px",
+    cursor: "pointer",
   },
 };

@@ -42,6 +42,16 @@ public class ChatController {
                 fileUrls
         );
     }
+    /* ================= DELETE MESSAGE ================= */
+
+@DeleteMapping("/message/{messageId}")
+public void deleteMessage(
+        @RequestHeader("JWT") String token,
+        @PathVariable String messageId) {
+
+    service.deleteMessage(token, messageId);
+}
+
 
     /* ================= CHAT HISTORY ================= */
 
@@ -60,7 +70,7 @@ public class ChatController {
             @PathVariable String patientId,
             @PathVariable String doctorId) {
 
-        return service.getChatHistory(token, patientId, doctorId);
+        return service.getChatHistory(token, doctorId,patientId);
     }
 
     /* ================= DOCTOR ROUTES ================= */

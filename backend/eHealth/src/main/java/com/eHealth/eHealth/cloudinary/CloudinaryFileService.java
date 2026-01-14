@@ -2,30 +2,23 @@ package com.eHealth.eHealth.cloudinary;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
-import com.eHealth.eHealth.model.FileEntity;
-import com.eHealth.eHealth.repository.FileRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.Instant;
 import java.util.Map;
 
 @Service
 public class CloudinaryFileService {
 
     private final Cloudinary cloudinary;
-    private final FileRepository fileRepository;
 
-    public CloudinaryFileService(
-            Cloudinary cloudinary,
-            FileRepository fileRepository) {
+    public CloudinaryFileService(Cloudinary cloudinary) {
         this.cloudinary = cloudinary;
-        this.fileRepository = fileRepository;
     }
 
     /* ================= IMAGE ================= */
 
-    public FileEntity uploadImage(
+    public String uploadImage(
             MultipartFile file,
             String folder,
             String ownerId) throws Exception {
@@ -42,12 +35,16 @@ public class CloudinaryFileService {
                 )
         );
 
-        return save(result, ownerId, "IMAGE", file.getOriginalFilename());
+        return result.get("secure_url").toString();
+    }
+
+    public void deleteImage(String publicId) {
+        delete(publicId, "image");
     }
 
     /* ================= DOCUMENT (PDF) ================= */
 
-    public FileEntity uploadDocument(
+    public String uploadDocument(
             MultipartFile file,
             String folder,
             String ownerId) throws Exception {
@@ -64,25 +61,26 @@ public class CloudinaryFileService {
                 )
         );
 
-        return save(result, ownerId, "DOCUMENT", file.getOriginalFilename());
+        return result.get("secure_url").toString();
     }
 
-    /* ================= COMMON ================= */
+    public void deleteDocument(String publicId) {
+        delete(publicId, "raw");
+    }
 
-    private FileEntity save(
-            Map<?, ?> result,
-            String ownerId,
-            String type,
-            String originalFilename) {
+    /* ================= COMMON DELETE ================= */
 
-        FileEntity file = new FileEntity();
-        file.setOwnerId(ownerId);
-        file.setCloudinaryUrl(result.get("secure_url").toString());
-        file.setPublicId(result.get("public_id").toString());
-        file.setFileType(type);
-        file.setUploadedAt(Instant.now());
-
-        return fileRepository.save(file);
+    private void delete(String publicId, String resourceType) {
+        try {
+            cloudinary.uploader().destroy(
+                    publicId,
+                    ObjectUtils.asMap(
+                            "resource_type", resourceType
+                    )
+            );
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to delete file from Cloudinary");
+        }
     }
 
     /* ================= VALIDATION ================= */

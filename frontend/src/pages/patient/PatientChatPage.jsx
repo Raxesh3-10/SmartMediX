@@ -6,8 +6,9 @@ import { useOutletContext } from "react-router-dom";
 export default function PatientChatPage() {
   const { user, patient } = useOutletContext();
 
-  const [doctors, setDoctors] = useState([]);
   const [mode, setMode] = useState("CHATS"); // CHATS | NEW
+  const [doctors, setDoctors] = useState([]);
+  const [search, setSearch] = useState("");
   const [selectedDoctor, setSelectedDoctor] = useState(null);
 
   useEffect(() => {
@@ -23,55 +24,77 @@ export default function PatientChatPage() {
     setDoctors(res.data);
   };
 
+  const filtered = doctors.filter(
+    (d) =>
+      d.user?.name?.toLowerCase().includes(search.toLowerCase()) ||
+      d.user?.email?.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
     <div style={styles.page}>
-      {/* LEFT PANEL */}
+      {/* LEFT SIDEBAR */}
       <div style={styles.sidebar}>
-        <div style={styles.sidebarHeader}>
-          <strong>Doctors</strong>
-          <div>
-            <button
-              style={mode === "CHATS" ? styles.activeBtn : styles.btn}
-              onClick={() => setMode("CHATS")}
-            >
-              Chats
-            </button>
-            <button
-              style={mode === "NEW" ? styles.activeBtn : styles.btn}
-              onClick={() => setMode("NEW")}
-            >
-              New
-            </button>
-          </div>
+        {/* TOP BUTTONS */}
+        <div style={styles.topBar}>
+          <button
+            onClick={() => setMode("CHATS")}
+            style={{
+              ...styles.tabBtn,
+              ...(mode === "CHATS" ? styles.activeTab : {}),
+            }}
+          >
+            Chats
+          </button>
+          <button
+            onClick={() => setMode("NEW")}
+            style={{
+              ...styles.tabBtn,
+              ...(mode === "NEW" ? styles.activeTab : {}),
+            }}
+          >
+            New
+          </button>
         </div>
 
-        {doctors.map((d) => {
-          const isSelected =
-            selectedDoctor?.doctorId === d.doctor.doctorId;
+        {/* SEARCH */}
+        <input
+          placeholder="Search doctor..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={styles.search}
+        />
 
-          return (
-            <div
-              key={d.doctor.doctorId}
-              style={{
-                ...styles.chatItem,
-                backgroundColor: isSelected ? "#d1e7ff" : "#ffffff",
-              }}
-              onClick={() => setSelectedDoctor(d.doctor)}
-            >
-              <strong>{d.user?.name}</strong>
-              <div style={styles.email}>{d.user?.email}</div>
-            </div>
-          );
-        })}
+        {/* DOCTOR LIST */}
+        <div style={styles.list}>
+          {filtered.map((d) => {
+            const isActive =
+              selectedDoctor?.doctorId === d.doctor.doctorId;
+
+            return (
+              <div
+                key={d.doctor.doctorId}
+                style={{
+                  ...styles.chatItem,
+                  ...(isActive ? styles.activeChat : {}),
+                }}
+                onClick={() => setSelectedDoctor(d)}
+              >
+                <strong>{d.user?.name}</strong>
+                <div style={styles.email}>{d.user?.email}</div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
-      {/* RIGHT PANEL */}
+      {/* RIGHT CHAT */}
       <div style={styles.chatArea}>
         {selectedDoctor ? (
           <PatientChatBox
             user={user}
             patient={patient}
-            doctor={selectedDoctor}
+            doctor={selectedDoctor.doctor}
+            doctorUser={selectedDoctor.user}
           />
         ) : (
           <div style={styles.empty}>
@@ -83,56 +106,67 @@ export default function PatientChatPage() {
   );
 }
 
-/* ================= STYLES ================= */
+/* ================= PAGE STYLES ================= */
 
 const styles = {
   page: {
     display: "flex",
     height: "100vh",
-    border: "1px solid #ccc",
+    background: "#f0f2f5",
   },
   sidebar: {
     width: "30%",
+    display: "flex",
+    flexDirection: "column",
     borderRight: "1px solid #ddd",
+    background: "#fff",
+  },
+  topBar: {
+    display: "flex",
+    padding: 10,
+    gap: 8,
+    borderBottom: "1px solid #ddd",
+  },
+  tabBtn: {
+    flex: 1,
+    padding: "6px 0",
+    border: "1px solid #ccc",
+    background: "#f8f9fa",
+    cursor: "pointer",
+  },
+  activeTab: {
+    background: "#25d366",
+    color: "#fff",
+    border: "1px solid #25d366",
+  },
+  search: {
+    margin: 10,
+    padding: 8,
+    border: "1px solid #ccc",
+  },
+  list: {
+    flex: 1,
     overflowY: "auto",
   },
-  sidebarHeader: {
-    padding: "10px",
-    borderBottom: "1px solid #ddd",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  btn: {
-    marginLeft: 6,
-    padding: "4px 8px",
-    cursor: "pointer",
-  },
-  activeBtn: {
-    marginLeft: 6,
-    padding: "4px 8px",
-    backgroundColor: "#2563eb",
-    color: "#fff",
-    border: "none",
-    cursor: "pointer",
-  },
   chatItem: {
-    padding: "10px",
+    padding: 12,
     borderBottom: "1px solid #eee",
     cursor: "pointer",
   },
+  activeChat: {
+    background: "#dcf8c6",
+  },
   email: {
-    fontSize: "12px",
-    color: "#555",
+    fontSize: 12,
+    color: "#666",
   },
   chatArea: {
     flex: 1,
     display: "flex",
-    flexDirection: "column",
   },
   empty: {
     margin: "auto",
     color: "#999",
-    fontSize: "16px",
+    fontSize: 16,
   },
 };

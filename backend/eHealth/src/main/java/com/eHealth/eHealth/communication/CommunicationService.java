@@ -127,7 +127,54 @@ public ChatMessage sendMessage(
     return chatRepo.save(chat);
 }
 
+/* ================= DELETE MESSAGE ================= */
 
+public void deleteMessage(String token, String messageId) {
+
+    validateToken(token);
+
+    Role role = getRole(token);
+    String jwtUserId = getUserId(token);
+
+    ChatMessage chat = chatRepo.findById(messageId)
+            .orElseThrow(() -> new RuntimeException("Message not found"));
+
+    /* ================= ROLE + OWNERSHIP VALIDATION ================= */
+
+    if (role == Role.DOCTOR) {
+
+        if (!"DOCTOR".equals(chat.getSenderRole())) {
+            throw new RuntimeException("Doctor cannot delete patient message");
+        }
+
+        Doctor doctor = doctorRepo.findById(chat.getSenderId())
+                .orElseThrow(() -> new RuntimeException("Doctor not found"));
+
+        if (!doctor.getUserId().equals(jwtUserId)) {
+            throw new RuntimeException("Unauthorized doctor");
+        }
+
+    } else if (role == Role.PATIENT) {
+
+        if (!"PATIENT".equals(chat.getSenderRole())) {
+            throw new RuntimeException("Patient cannot delete doctor message");
+        }
+
+        Patient patient = patientRepo.findById(chat.getSenderId())
+                .orElseThrow(() -> new RuntimeException("Patient not found"));
+
+        if (!patient.getUserId().equals(jwtUserId)) {
+            throw new RuntimeException("Unauthorized patient");
+        }
+
+    } else {
+        throw new RuntimeException("Invalid role");
+    }
+
+    /* ================= DELETE ================= */
+
+    chatRepo.deleteById(messageId);
+}
     /* ================= CHAT HISTORY ================= */
 
     public List<ChatMessage> getChatHistory(

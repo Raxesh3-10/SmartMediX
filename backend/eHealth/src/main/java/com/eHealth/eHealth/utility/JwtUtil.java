@@ -18,7 +18,7 @@ public class JwtUtil {
 
     // ================= CONFIG =================
 
-    private static final long EXPIRATION_TIME = 60 * 60 * 1000; // 1 hour
+    private static final long EXPIRATION_TIME = 60 * 60 * 1000 * 6; // 6 hour
 
     private static final String SECRET =
             "MyVeryStrongJwtSecretKeyThatIsAtLeast32Chars";

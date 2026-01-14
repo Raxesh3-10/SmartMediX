@@ -20,4 +20,7 @@ public interface ChatRepository extends MongoRepository<ChatMessage, String> {
 
     @Query(value = "{ 'patientId': ?0 }", fields = "{ 'doctorId': 1 }")
     List<ChatMessage> findDistinctDoctorsByPatientId(String patientId);
+
+    boolean existsByMessageIdAndSenderId(String messageId, String senderId);
+
 }

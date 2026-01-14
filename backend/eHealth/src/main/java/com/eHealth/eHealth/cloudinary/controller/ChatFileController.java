@@ -17,7 +17,6 @@ public class ChatFileController {
     public ChatFileController(
             CloudinaryFileService cloudinaryService,
             JwtSessionRepository jwtSessionRepository) {
-
         this.cloudinaryService = cloudinaryService;
         this.jwtSessionRepository = jwtSessionRepository;
     }
@@ -32,13 +31,11 @@ public class ChatFileController {
 
         validateToken(token);
 
-        return cloudinaryService
-                .uploadImage(
-                        file,
-                        "smartmedix/chat/images",
-                        ownerId
-                )
-                .getCloudinaryUrl();
+        return cloudinaryService.uploadImage(
+                file,
+                "smartmedix/chat/images",
+                ownerId
+        );
     }
 
     /* ================= DOCUMENT UPLOAD ================= */
@@ -51,13 +48,33 @@ public class ChatFileController {
 
         validateToken(token);
 
-        return cloudinaryService
-                .uploadDocument(
-                        file,
-                        "smartmedix/chat/documents",
-                        ownerId
-                )
-                .getCloudinaryUrl();
+        return cloudinaryService.uploadDocument(
+                file,
+                "smartmedix/chat/documents",
+                ownerId
+        );
+    }
+
+    /* ================= IMAGE DELETE ================= */
+
+    @DeleteMapping("/image")
+    public void deleteImage(
+            @RequestHeader("JWT") String token,
+            @RequestParam String publicId) {
+
+        validateToken(token);
+        cloudinaryService.deleteImage(publicId);
+    }
+
+    /* ================= DOCUMENT DELETE ================= */
+
+    @DeleteMapping("/document")
+    public void deleteDocument(
+            @RequestHeader("JWT") String token,
+            @RequestParam String publicId) {
+
+        validateToken(token);
+        cloudinaryService.deleteDocument(publicId);
     }
 
     private void validateToken(String token) {

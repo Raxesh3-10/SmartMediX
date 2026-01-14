@@ -38,6 +38,8 @@ export default function PatientLayout() {
         <div>
           <Link to="/patient">Dashboard</Link>
           <Link to="/patient/chat">Chats</Link>
+          <Link to="/patient/appointments">Appointments</Link>
+          <Link to="/patient/bills">Bills</Link>
           <button onClick={handleLogout}>Logout</button>
         </div>
       </div>

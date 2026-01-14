@@ -16,7 +16,6 @@ public class Bill {
     private String doctorId;
 
     private double consultationFee;
-    private double tax=0.0;
     private double totalAmount;
 
     private Instant generatedAt;
@@ -38,9 +37,6 @@ public class Bill {
 
     public double getConsultationFee() { return consultationFee; }
     public void setConsultationFee(double consultationFee) { this.consultationFee = consultationFee; }
-
-    public double getTax() { return tax; }
-    public void setTax(double tax) { this.tax = tax; }
 
     public double getTotalAmount() { return totalAmount; }
     public void setTotalAmount(double totalAmount) { this.totalAmount = totalAmount; }

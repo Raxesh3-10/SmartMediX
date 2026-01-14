@@ -9,7 +9,7 @@ public class MedicalRecord {
     private String appointmentId;
     private String diagnosis;
     private String prescription;
-    private List<String> fileIds;
+    private List<String> fileUrls;
     private Instant createdAt;
 
     public String getDoctorId() { return doctorId; }
@@ -24,8 +24,8 @@ public class MedicalRecord {
     public String getPrescription() { return prescription; }
     public void setPrescription(String prescription) { this.prescription = prescription; }
 
-    public List<String> getFileIds() { return fileIds; }
-    public void setFileIds(List<String> fileIds) { this.fileIds = fileIds; }
+    public List<String> getFileUrls() { return fileUrls; }
+    public void setFileUrls(List<String> fileUrls) { this.fileUrls = fileUrls; }
 
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }

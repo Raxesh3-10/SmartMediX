@@ -43,6 +43,7 @@ export default function DoctorLayout() {
         <div>
           <Link to="/doctor" style={styles.link}>Dashboard</Link>
           <Link to="/doctor/chat" style={styles.link}>Chats</Link>
+          <Link to="/doctor/appointments" style={styles.link}>Appointments</Link>
           <button style={styles.logoutBtn} onClick={handleLogout}>
             Logout
           </button>

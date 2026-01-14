@@ -4,7 +4,7 @@ function Footer() {
   const location = useLocation();
 
   // Hide footer on role-based dashboards
-  const hideOnRoutes = ["/doctor", "/patient", "/admin","/doctor/chat","/patient/chat"];
+  const hideOnRoutes = ["/doctor", "/patient", "/admin","/doctor/chat","/patient/chat" ,"/doctor/appointments","/patient/appointments","/patient/bills"];
   if (hideOnRoutes.includes(location.pathname)) {
     return null;
   }

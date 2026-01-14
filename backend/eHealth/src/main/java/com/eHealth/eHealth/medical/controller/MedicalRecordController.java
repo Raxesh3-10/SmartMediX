@@ -1,8 +1,9 @@
-package com.eHealth.eHealth.medical.contoller;
+package com.eHealth.eHealth.medical.controller;
 
 import com.eHealth.eHealth.medical.MedicalRecordService;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @CrossOrigin(origins = "http://localhost:5173")
 @RestController
@@ -15,25 +16,22 @@ public class MedicalRecordController {
         this.service = service;
     }
 
-    @PostMapping(consumes = "multipart/form-data")
+    @PostMapping
     public String addRecord(
             @RequestParam String patientId,
             @RequestParam String doctorId,
             @RequestParam String appointmentId,
             @RequestParam String diagnosis,
             @RequestParam String prescription,
-            @RequestPart(required = false) MultipartFile[] images,
-            @RequestPart(required = false) MultipartFile[] documents
-    ) throws Exception {
-
+            @RequestBody(required = false) List<String> fileUrls
+    ) {
         service.createMedicalRecord(
                 patientId,
                 doctorId,
                 appointmentId,
                 diagnosis,
                 prescription,
-                images,
-                documents
+                fileUrls
         );
 
         return "Medical record created successfully";

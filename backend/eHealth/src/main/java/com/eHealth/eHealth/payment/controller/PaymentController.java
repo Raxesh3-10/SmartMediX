@@ -1,26 +1,25 @@
 package com.eHealth.eHealth.payment.controller;
 
 import com.eHealth.eHealth.model.Payment;
-import com.eHealth.eHealth.payment.UpiPaymentService;
-
+import com.eHealth.eHealth.payment.service.PaymentService;
 import org.springframework.web.bind.annotation.*;
 
-@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/api/payments")
+@CrossOrigin(origins = "http://localhost:5173")
 public class PaymentController {
 
-    private final UpiPaymentService service;
+    private final PaymentService service;
 
-    public PaymentController(UpiPaymentService service) {
+    public PaymentController(PaymentService service) {
         this.service = service;
     }
 
-    @PostMapping("/upi")
-    public Payment pay(@RequestParam String appointmentId,
-                       @RequestParam String patientId,
-                       @RequestParam double amount) {
-
-        return service.processUpiPayment(appointmentId, patientId, amount);
+    /**
+     * One-click payment (test mode)
+     */
+    @PostMapping("/pay")
+    public Payment pay(@RequestParam String appointmentId) {
+        return service.processPayment(appointmentId);
     }
 }

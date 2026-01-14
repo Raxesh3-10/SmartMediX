@@ -77,7 +77,6 @@ function Doctor() {
     setDoctor(res.data);
   };
 
-<<<<<<< HEAD:frontend/src/pages/doctor/DoctorDashboard.jsx
   /* ================= UPDATE PROFILE (NO SLOTS) ================= */
   const handleUpdateProfile = async () => {
     const res = await DoctorAPI.updateProfile(doctor.doctorId, {
@@ -90,34 +89,25 @@ function Doctor() {
     setShowEditForm(false);
   };
 
-=======
->>>>>>> 3cb11b882a2c7277fac99a8dc254fccbdc2d188b:frontend/src/pages/Doctor.jsx
+  /* ===== HELPER: HH:MM → minutes ===== */
+  const parseTime = (timeStr) => {
+    const [h, m] = timeStr.split(":").map(Number);
+    return h * 60 + m;
+  };
+
   /* ================= ADD SLOT WITH OVERLAP CHECK ================= */
   const handleAddSlot = async () => {
     if (!newSlot.startTime || !newSlot.endTime) return;
 
-<<<<<<< HEAD:frontend/src/pages/doctor/DoctorDashboard.jsx
     const newStart = parseTime(newSlot.startTime);
     const newEnd = parseTime(newSlot.endTime);
 
     const overlapping = (doctor.slots || []).some((s) => {
       if (s.day !== newSlot.day) return false;
-      return newStart < parseTime(s.endTime) &&
-             newEnd > parseTime(s.startTime);
-=======
-    // Convert times to numbers for easy comparison
-    const newStart = parseTime(newSlot.startTime);
-    const newEnd = parseTime(newSlot.endTime);
-
-    // Check for overlap on the same day
-    const overlapping = (doctor.slots || []).some((s) => {
-      if (s.day !== newSlot.day) return false;
-      const existingStart = parseTime(s.startTime);
-      const existingEnd = parseTime(s.endTime);
-
-      // Overlap condition:
-      return newStart < existingEnd && newEnd > existingStart;
->>>>>>> 3cb11b882a2c7277fac99a8dc254fccbdc2d188b:frontend/src/pages/Doctor.jsx
+      return (
+        newStart < parseTime(s.endTime) &&
+        newEnd > parseTime(s.startTime)
+      );
     });
 
     if (overlapping) {
@@ -139,21 +129,6 @@ function Doctor() {
     setNewSlot({ day: "MONDAY", startTime: "", endTime: "" });
   };
 
-<<<<<<< HEAD:frontend/src/pages/doctor/DoctorDashboard.jsx
-  const parseTime = (t) => {
-    const [h, m] = t.split(":").map(Number);
-    return h * 60 + m;
-  };
-
-=======
-  /* ===== HELPER: convert HH:MM string to number for comparison ===== */
-  const parseTime = (timeStr) => {
-    const [hours, minutes] = timeStr.split(":").map(Number);
-    return hours * 60 + minutes; // minutes since midnight
-  };
-
-
->>>>>>> 3cb11b882a2c7277fac99a8dc254fccbdc2d188b:frontend/src/pages/Doctor.jsx
   /* ================= DELETE SLOT ================= */
   const slotKey = (s) => `${s.day}-${s.startTime}-${s.endTime}`;
 
@@ -175,16 +150,6 @@ function Doctor() {
 
   return (
     <div style={styles.page}>
-<<<<<<< HEAD:frontend/src/pages/doctor/DoctorDashboard.jsx
-=======
-      {/* ===== TOP BAR ===== */}
-      <div style={styles.topBar}>
-        <button style={styles.logoutBtn} onClick={handleLogout}>
-          Logout
-        </button>
-      </div>
-
->>>>>>> 3cb11b882a2c7277fac99a8dc254fccbdc2d188b:frontend/src/pages/Doctor.jsx
       {!doctor ? (
         <div style={styles.box}>
           <h2>Create Doctor Profile</h2>
@@ -220,7 +185,6 @@ function Doctor() {
             </button>
           </div>
 
-          {/* ===== UPDATE FORM ===== */}
           {showEditForm && (
             <div style={styles.box}>
               <h3>Edit Doctor Details</h3>
@@ -243,7 +207,6 @@ function Doctor() {
             </div>
           )}
 
-          {/* ===== ADD SLOT ===== */}
           <div style={styles.box}>
             <h3>Add Availability Slot</h3>
 
@@ -264,21 +227,12 @@ function Doctor() {
             <button style={styles.primaryBtn} onClick={handleAddSlot}>
               Add Slot
             </button>
-<<<<<<< HEAD:frontend/src/pages/doctor/DoctorDashboard.jsx
 
             <button style={styles.deleteBtn} onClick={handleDeleteSlots}>
               Delete Selected Slots
             </button>
-=======
-            {doctor && (
-              <button style={styles.deleteBtn} onClick={handleDeleteSlots}>
-                Delete Selected Slots
-              </button>
-            )}
->>>>>>> 3cb11b882a2c7277fac99a8dc254fccbdc2d188b:frontend/src/pages/Doctor.jsx
           </div>
 
-          {/* ===== HORIZONTAL WEEKLY GRID ===== */}
           <div style={styles.boxWide}>
             <h3>Weekly Availability</h3>
 
@@ -331,7 +285,7 @@ function Doctor() {
 export default Doctor;
 
 const styles = {
-  /* ===== PAGE ===== */
+  /* ================= PAGE ================= */
   page: {
     padding: 40,
     maxWidth: 1200,
@@ -341,9 +295,9 @@ const styles = {
     backgroundColor: "#f8fafc",
   },
 
-  /* ===== CENTER CARD ===== */
+  /* ================= CARD ================= */
   box: {
-    width: "420px",
+    width: 420,
     margin: "0 auto 30px",
     border: "2px solid #e5e7eb",
     borderRadius: 12,
@@ -351,37 +305,21 @@ const styles = {
     backgroundColor: "#ffffff",
   },
 
-  /* ===== TOP BAR ===== */
-  topBar: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 30,
-    paddingBottom: 15,
-    borderBottom: "2px solid #e5e7eb",
+  boxWide: {
+    width: "100%",
+    margin: "0 auto 30px",
+    border: "2px solid #e5e7eb",
+    borderRadius: 12,
+    padding: 24,
+    backgroundColor: "#ffffff",
   },
 
-  deleteBtn: {
-    width: "60%",              // same as primary button
-    display: "block",
-    margin: "12px auto 0",     // centered + spacing
-    padding: "12px",
-    background: "#dc2626",
-    color: "#ffffff",
-    border: "1px solid #dc2626",
-    borderRadius: 8,
-    cursor: "pointer",
-    fontSize: 14,
-    fontWeight: 500,
-  },
-  
-
-  /* ===== INPUTS ===== */
+  /* ================= INPUTS ================= */
   input: {
     width: "80%",
     display: "block",
     margin: "0 auto 14px",
-    padding: "12px",
+    padding: 12,
     borderRadius: 8,
     border: "1px solid #cbd5e1",
     fontSize: 15,
@@ -392,19 +330,20 @@ const styles = {
     width: "80%",
     display: "block",
     margin: "0 auto 14px",
-    padding: "12px",
+    padding: 12,
     borderRadius: 8,
     border: "1px solid #cbd5e1",
     fontSize: 15,
     outline: "none",
+    backgroundColor: "#ffffff",
   },
 
-  /* ===== PRIMARY BUTTON ===== */
+  /* ================= BUTTONS ================= */
   primaryBtn: {
     width: "60%",
     display: "block",
     margin: "16px auto 0",
-    padding: "12px",
+    padding: 12,
     background: "#2563eb",
     color: "#ffffff",
     border: "1px solid #2563eb",
@@ -414,39 +353,49 @@ const styles = {
     fontWeight: 500,
   },
 
-  /* ===== WEEKLY AVAILABILITY (VERTICAL DAYS) ===== */
-<<<<<<< HEAD:frontend/src/pages/doctor/DoctorDashboard.jsx
-grid: {
-  display: "grid",
-  gridTemplateColumns: "repeat(7, 1fr)", // HORIZONTAL DAYS
-  gap: 16,
-  marginTop: 20,
-},
+  secondaryBtn: {
+    display: "block",
+    margin: "12px auto 0",
+    padding: "10px 16px",
+    background: "#f1f5f9",
+    color: "#0f172a",
+    border: "1px solid #cbd5e1",
+    borderRadius: 8,
+    cursor: "pointer",
+    fontSize: 14,
+  },
 
-  /* ===== DAY COLUMN ===== */
+  deleteBtn: {
+    width: "60%",
+    display: "block",
+    margin: "12px auto 0",
+    padding: 12,
+    background: "#dc2626",
+    color: "#ffffff",
+    border: "1px solid #dc2626",
+    borderRadius: 8,
+    cursor: "pointer",
+    fontSize: 14,
+    fontWeight: 500,
+  },
 
-dayColumn: {
-  border: "1px solid #e5e7eb",
-  borderRadius: 8,
-  padding: 10,
-  minHeight: 120,
-},
-=======
+  /* ================= WEEKLY GRID ================= */
   grid: {
     display: "grid",
-    gridTemplateColumns: "1fr", // 👈 ONE COLUMN
-    gap: 20,
+    gridTemplateColumns: "repeat(7, 1fr)", // Monday → Sunday
+    gap: 16,
     marginTop: 20,
   },
->>>>>>> 3cb11b882a2c7277fac99a8dc254fccbdc2d188b:frontend/src/pages/Doctor.jsx
 
-  /* ===== DAY COLUMN ===== */
   dayColumn: {
-    borderBottom: "1px solid #e5e7eb",
-    paddingBottom: 10,
+    border: "1px solid #e5e7eb",
+    borderRadius: 8,
+    padding: 10,
+    minHeight: 120,
+    backgroundColor: "#f8fafc",
   },
 
-  /* ===== SLOT ===== */
+  /* ================= SLOT ================= */
   slot: {
     border: "2px solid #cbd5e1",
     padding: "8px",
@@ -455,28 +404,7 @@ dayColumn: {
     textAlign: "center",
     fontSize: 13,
     borderRadius: 8,
-    backgroundColor: "#ffffff",
+    userSelect: "none",
+    transition: "all 0.15s ease",
   },
-<<<<<<< HEAD:frontend/src/pages/doctor/DoctorDashboard.jsx
-  boxWide: {
-  width: "100%",
-  margin: "0 auto 30px",
-  border: "2px solid #e5e7eb",
-  borderRadius: 12,
-  padding: 24,
-  backgroundColor: "#ffffff",
-},
-
-secondaryBtn: {
-  marginTop: 10,
-  padding: "10px",
-  background: "#f1f5f9",
-  border: "1px solid #cbd5e1",
-  borderRadius: 8,
-  cursor: "pointer",
-},
 };
-=======
-};
-
->>>>>>> 3cb11b882a2c7277fac99a8dc254fccbdc2d188b:frontend/src/pages/Doctor.jsx

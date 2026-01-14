@@ -10,10 +10,13 @@ import Admin from "./pages/Admin";
 import DoctorLayout from "./pages/doctor/DoctorLayout";
 import DoctorDashboard from "./pages/doctor/DoctorDashboard";
 import DoctorChatPage from "./pages/doctor/DoctorChatPage";
+import DoctorAppointmentsPage from "./pages/doctor/DoctorAppointmentsPage";
 
 import PatientLayout from "./pages/patient/PatientLayout";
 import PatientDashboard from "./pages/patient/PatientDashboard";
 import PatientChatPage from "./pages/patient/PatientChatPage";
+import PatientAppointmentsPage from "./pages/patient/PatientAppointmentsPage";
+import PatientBillsPage from "./pages/patient/PatientBillsPage";
 
 export default function App() {
   return (
@@ -28,11 +31,14 @@ export default function App() {
         <Route path="/doctor" element={<DoctorLayout />}>
           <Route index element={<DoctorDashboard />} />
           <Route path="chat" element={<DoctorChatPage />} />
+          <Route path="appointments" element={<DoctorAppointmentsPage />} />
         </Route>
 
         <Route path="/patient" element={<PatientLayout />}>
           <Route index element={<PatientDashboard />} />
           <Route path="chat" element={<PatientChatPage />} />
+          <Route path="appointments" element={<PatientAppointmentsPage />} />
+          <Route path="bills" element={<PatientBillsPage />} />
         </Route>
 
         <Route path="/admin" element={<Admin />} />

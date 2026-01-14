@@ -15,8 +15,6 @@ const api = axios.create({
 /**
  * ======================================================
  * JWT INTERCEPTOR
- * - Backend expects header name: JWT
- * - Some auth APIs also read Authorization
  * ======================================================
  */
 api.interceptors.request.use(
@@ -46,9 +44,13 @@ export const ChatAPI = {
         senderRole: data.senderRole, // "DOCTOR" | "PATIENT"
         senderId: data.senderId,
         message: data.message,
-        fileUrls: data.fileUrls, // array of cloudinary URLs
+        fileUrls: data.fileUrls,
       },
     }),
+
+  /* ========== DELETE MESSAGE ========== */
+  deleteMessage: (messageId) =>
+    api.delete(`/chat/message/${messageId}`),
 
   /* ========== CHAT HISTORY ========== */
   getChatHistory: (doctorId, patientId) =>
@@ -78,136 +80,148 @@ export const ChatAPI = {
 ====================================================== */
 
 export const ChatFileAPI = {
+  /* ========== UPLOAD IMAGE ========== */
   uploadImage: (file, ownerId) => {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("ownerId", ownerId);
 
     return api.post("/chat/files/image", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
+      headers: { "Content-Type": "multipart/form-data" },
     });
   },
 
+  /* ========== UPLOAD DOCUMENT ========== */
   uploadDocument: (file, ownerId) => {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("ownerId", ownerId);
 
     return api.post("/chat/files/document", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
+      headers: { "Content-Type": "multipart/form-data" },
     });
   },
+
+  /* ========== DELETE IMAGE ========== */
+  deleteImage: (publicId) =>
+    api.delete("/chat/files/image", {
+      params: { publicId },
+    }),
+
+  /* ========== DELETE DOCUMENT ========== */
+  deleteDocument: (publicId) =>
+    api.delete("/chat/files/document", {
+      params: { publicId },
+    }),
 };
 
 /* ======================================================
    AUTH API
-   Maps to: /api/auth/**
 ====================================================== */
 
 export const AuthAPI = {
   signup: (data) => api.post("/auth/signup", data),
-
   verifyOtp: (data) => api.post("/auth/verify-otp", data),
-
   login: (data) => api.post("/auth/login", data),
-
   updateProfile: (data) => api.post("/auth/update-profile", data),
-
   logout: () => api.post("/auth/logout"),
-
   getUser: () => api.get("/auth/profile"),
 };
 
 /* ======================================================
    ADMIN API
-   Maps to: /api/admin/**
 ====================================================== */
 
 export const AdminAPI = {
   getAllUsers: () => api.get("/admin/users"),
-
   getUserById: (id) => api.get(`/admin/users/${id}`),
-
   createUser: (user) => api.post("/admin/users", user),
-
   updateUser: (id, user) => api.put(`/admin/users/${id}`, user),
-
   deleteUser: (id) => api.delete(`/admin/users/${id}`),
-
   getActiveSessions: () => api.get("/admin/sessions"),
 };
 
 /* ======================================================
    DOCTOR API
-   Maps to: /api/doctors/**
 ====================================================== */
 
 export const DoctorAPI = {
-  createProfile: (doctorData) =>
-    api.post("/doctors", doctorData),
-
-  getMyProfile: () =>
-    api.get("/doctors/me"),
-
+  createProfile: (doctorData) => api.post("/doctors", doctorData),
+  getMyProfile: () => api.get("/doctors/me"),
   updateProfile: (doctorId, doctorData) =>
     api.put(`/doctors/${doctorId}`, doctorData),
-
   deleteProfile: (doctorId) =>
     api.delete(`/doctors/${doctorId}`),
 };
 
-<<<<<<< HEAD
-export const PatientAPI = {
-
-  createProfile: (patientData) =>
-    api.post("/patients", patientData),
-
-=======
 /* ======================================================
    PATIENT API
-   Maps to: /api/patients/**
 ====================================================== */
 
 export const PatientAPI = {
-  // ===== CREATE PATIENT PROFILE =====
-  // POST /api/patients
   createProfile: (patientData) =>
     api.post("/patients", patientData),
 
-  // ===== GET LOGGED-IN PATIENT PROFILE =====
-  // GET /api/patients/me
->>>>>>> 3cb11b882a2c7277fac99a8dc254fccbdc2d188b
   getMyProfile: () =>
-  api.get("/patients/me", {
-    headers: {
-      JWT: localStorage.getItem("jwt"),
-    },
-  }),
+    api.get("/patients/me"),
 
-<<<<<<< HEAD
   updateProfile: (patientId, patientData) =>
     api.put(`/patients/${patientId}`, patientData),
 
-=======
-
-  // ===== UPDATE PATIENT PROFILE =====
-  // PUT /api/patients/{patientId}
-  updateProfile: (patientId, patientData) =>
-    api.put(`/patients/${patientId}`, patientData),
-
-  // ===== DELETE PATIENT PROFILE =====
-  // DELETE /api/patients/{patientId}
->>>>>>> 3cb11b882a2c7277fac99a8dc254fccbdc2d188b
   deleteProfile: (patientId) =>
     api.delete(`/patients/${patientId}`),
 };
 
-<<<<<<< HEAD
-=======
+/* ======================================================
+   PATIENT BILLING API
+====================================================== */
 
->>>>>>> 3cb11b882a2c7277fac99a8dc254fccbdc2d188b
+export const PatientBillingAPI = {
+  /* ========== PAYMENT & BILL HISTORY ========== */
+  getMyBillingHistory: () =>
+    api.get("/patients/billing/history"),
+};
+
+/* ======================================================
+   APPOINTMENT API
+====================================================== */
+
+export const AppointmentAPI = {
+  /* ========== CREATE APPOINTMENT ========== */
+  createAppointment: (appointmentData, specialization = null) =>
+    api.post("/appointments", appointmentData, {
+      params: specialization ? { specialization } : {},
+    }),
+  /* ========== PATIENT → APPOINTMENTS (ADDED) ========== */
+  getPatientAppointments: (patientId) =>
+    api.get(`/appointments/patient/${patientId}`),
+  /* ========== UPDATE / RESCHEDULE (NO PAYMENT) ========== */
+  updateAppointment: (appointmentId, updatedData) =>
+    api.put(`/appointments/${appointmentId}`, updatedData),
+
+  /* ========== DOCTOR DASHBOARD ========== */
+  getDoctorAppointments: (doctorId) =>
+    api.get(`/appointments/doctor/${doctorId}`),
+
+  /* ========== PATIENT → ASSOCIATED DOCTORS ========== */
+  getPatientDoctors: (patientId) =>
+    api.get(`/appointments/patient/${patientId}/doctors`),
+
+  /* ========== COMPLETE APPOINTMENT ========== */
+  completeAppointment: (appointmentId) =>
+    api.post(`/appointments/${appointmentId}/complete`),
+};
+
+/* ======================================================
+   PAYMENT API
+====================================================== */
+
+export const PaymentAPI = {
+  /* ========== ONE CLICK PAYMENT (TEST MODE) ========== */
+  payForAppointment: (appointmentId) =>
+    api.post("/payments/pay", null, {
+      params: { appointmentId },
+    }),
+};
+
 export default api;

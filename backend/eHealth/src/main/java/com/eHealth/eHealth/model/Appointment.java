@@ -1,6 +1,8 @@
 package com.eHealth.eHealth.model;
 
 import java.time.Instant;
+import java.time.LocalTime;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -9,13 +11,25 @@ public class Appointment {
 
     @Id
     private String appointmentId;
-    private String patientId;
+
     private String doctorId;
-    private Instant appointmentTime;
-    private String status;
+    private String patientId;
+
+    private String day;
+    private LocalTime startTime;
+    private LocalTime endTime;
+
+    private Instant appointmentDate; // specific date (this week only)
+
     private int tokenNumber;
     private int estimatedWaitMinutes;
-    private String videoRoomId;
+
+    private String status; 
+    // CREATED, PAID, CONFIRMED, COMPLETED, CANCELLED
+
+    private String conferenceType; // VIDEO / VOICE
+    private String roomId;
+
     private Instant createdAt;
 
     public String getAppointmentId() { return appointmentId; }
@@ -27,8 +41,6 @@ public class Appointment {
     public String getDoctorId() { return doctorId; }
     public void setDoctorId(String doctorId) { this.doctorId = doctorId; }
 
-    public Instant getAppointmentTime() { return appointmentTime; }
-    public void setAppointmentTime(Instant appointmentTime) { this.appointmentTime = appointmentTime; }
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
@@ -39,9 +51,24 @@ public class Appointment {
     public int getEstimatedWaitMinutes() { return estimatedWaitMinutes; }
     public void setEstimatedWaitMinutes(int estimatedWaitMinutes) { this.estimatedWaitMinutes = estimatedWaitMinutes; }
 
-    public String getVideoRoomId() { return videoRoomId; }
-    public void setVideoRoomId(String videoRoomId) { this.videoRoomId = videoRoomId; }
+    public String getRoomId() { return roomId; }
+    public void setRoomId(String roomId) { this.roomId = roomId; }
 
+    public String getConferenceType() { return conferenceType; }
+    public void setConferenceType(String conferenceType) { this.conferenceType = conferenceType; }
+
+    public LocalTime getStartTime() { return startTime; }
+    public void setStartTime(LocalTime startTime) { this.startTime = startTime; }
+
+    public LocalTime getEndTime() { return endTime; }
+    public void setEndTime(LocalTime endTime) { this.endTime = endTime; }
+    
+    public String getDay() { return day; }
+    public void setDay(String day) { this.day = day; }  
+    
+    public Instant getAppointmentDate() { return appointmentDate; }
+    public void setAppointmentDate(Instant appointmentDate) { this.appointmentDate = appointmentDate; }
+    
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }
