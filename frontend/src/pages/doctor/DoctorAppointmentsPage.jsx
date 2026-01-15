@@ -1,7 +1,9 @@
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useOutletContext } from "react-router-dom";
 import { AppointmentAPI } from "../../api/api";
-import { createRoomConnection } from "../../utils/useWebRTC";
+
+const CALL_BUFFER_MINUTES = 10;
+const MS = 60 * 1000;
 
 export default function DoctorAppointmentsPage() {
   const { doctor } = useOutletContext();
@@ -10,105 +12,64 @@ export default function DoctorAppointmentsPage() {
   const [selectedAppt, setSelectedAppt] = useState(null);
   const [search, setSearch] = useState("");
   const [timeLeft, setTimeLeft] = useState(null);
-  
-  // Call State
   const [callStarted, setCallStarted] = useState(false);
-  const [conn, setConn] = useState(null);
-  const [remoteStreams, setRemoteStreams] = useState({});
-  const [callStatus, setCallStatus] = useState(null);
-  
-  const localVideoRef = useRef(null);
 
-  /* ================= LOAD ================= */
   useEffect(() => {
-    loadAppointments();
+    AppointmentAPI.getDoctorAppointments(doctor.doctorId)
+      .then(r => setAppointments(r.data));
   }, [doctor]);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      conn?.leave();
-    };
-  }, [conn]);
-
-  const loadAppointments = async () => {
-    try {
-      const res = await AppointmentAPI.getDoctorAppointments(doctor.doctorId);
-      setAppointments(res.data);
-    } catch (err) {
-      console.error("Error loading appointments", err);
-    }
-  };
-
-  /* ================= SEARCH ================= */
   const filtered = useMemo(() => {
-    return appointments.filter((a) =>
+    return appointments.filter(a =>
       `${a.user?.name} ${a.user?.email}`
         .toLowerCase()
         .includes(search.toLowerCase())
     );
   }, [appointments, search]);
 
-  const formatDiff = (totalSeconds) => {
-    if (totalSeconds <= 0) return "Ready";
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes}m ${seconds}s`;
-  };
-
-  /* ================= COUNTDOWN ================= */
   useEffect(() => {
     if (!selectedAppt) return;
-    const interval = setInterval(() => {
+
+    const i = setInterval(() => {
       const start = new Date(selectedAppt.appointment.startTime).getTime();
-      const diffSeconds = Math.floor((start - Date.now()) / 1000);
-      setTimeLeft(diffSeconds);
+      setTimeLeft(Math.floor((start - Date.now()) / 1000));
     }, 1000);
-    return () => clearInterval(interval);
+
+    return () => clearInterval(i);
   }, [selectedAppt]);
 
-  /* ================= START CALL ================= */
-  const startCall = async () => {
-    // 1. Update UI state first
-    setCallStarted(true); 
-
-    // 2. Use the actual DB room ID, or fallback to generated one if logic dictates
-    const roomId = selectedAppt.appointment.roomId || `appointment-${selectedAppt.appointment.appointmentId}`;
-
-    try {
-      const connection = await createRoomConnection({
-        roomId,
-        localVideoRef, // Ref is now guaranteed to exist because we un-hid the video
-        role: "DOCTOR",
-        onRemoteStream: (id, stream) => {
-          setRemoteStreams((prev) => ({ ...prev, [id]: stream }));
-        },
-        onStatus: setCallStatus,
-      });
-      setConn(connection);
-    } catch (error) {
-      console.error("Failed to start call:", error);
-      setCallStarted(false);
-      alert("Could not access camera/microphone.");
-    }
+  const formatDiff = (s) => {
+    if (s <= 0) return "Ready";
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}m ${sec}s`;
   };
 
-  /* ================= END CALL ================= */
-  const endCallAndComplete = async () => {
-    conn?.leave();
-    setRemoteStreams({});
-    setCallStarted(false);
-    setConn(null);
+  const canStartCall = () => {
+    const start = new Date(selectedAppt.appointment.startTime).getTime();
+    const diff = Math.abs(Date.now() - start);
+    return diff <= CALL_BUFFER_MINUTES * MS;
+  };
 
-    try {
-      await AppointmentAPI.completeAppointment(
-        selectedAppt.appointment.appointmentId
-      );
-      setSelectedAppt(null);
-      loadAppointments();
-    } catch (err) {
-      console.error("Error completing appointment", err);
-    }
+  const startCall = async () => {
+    if (!canStartCall()) return alert("Call available 10 minutes before/after start");
+
+    await AppointmentAPI.assignRoomId(
+      selectedAppt.appointment.appointmentId
+    );
+
+    setCallStarted(true);
+  };
+
+  const endCall = async () => {
+    await AppointmentAPI.completeAppointment(
+      selectedAppt.appointment.appointmentId
+    );
+    setCallStarted(false);
+    setSelectedAppt(null);
+
+    const r = await AppointmentAPI.getDoctorAppointments(doctor.doctorId);
+    setAppointments(r.data);
   };
 
   return (
@@ -122,84 +83,54 @@ export default function DoctorAppointmentsPage() {
         style={styles.search}
       />
 
-      {/* LIST */}
-      {filtered.map((a) => {
-        const isSelected = selectedAppt?.appointment.appointmentId === a.appointment.appointmentId;
-        return (
-          <div
-            key={a.appointment.appointmentId}
-            style={{
-              ...styles.card,
-              background: isSelected ? "#dcfce7" : "transparent",
-            }}
-            onClick={() => {
-              if (callStarted) return; // Prevent changing while in call
-              setSelectedAppt(a);
-            }}
-          >
-            <div>
-              <strong>{a.user?.name}</strong>
-              <div style={styles.sub}>{a.user?.email}</div>
-              <div style={styles.meta}>
-                 {new Date(a.appointment.startTime).toLocaleTimeString()}
-              </div>
+      {filtered.map(a => (
+        <div
+          key={a.appointment.appointmentId}
+          style={{
+            ...styles.card,
+            background:
+              selectedAppt?.appointment.appointmentId ===
+              a.appointment.appointmentId
+                ? "#dcfce7"
+                : "transparent",
+          }}
+          onClick={() => !callStarted && setSelectedAppt(a)}
+        >
+          <div>
+            <strong>{a.user?.name}</strong>
+            <div style={styles.sub}>{a.user?.email}</div>
+            <div style={styles.meta}>
+              {new Date(a.appointment.startTime).toLocaleTimeString()}
             </div>
-            <div>{a.appointment.status}</div>
           </div>
-        );
-      })}
+          <div>{a.appointment.status}</div>
+        </div>
+      ))}
+<JitsiMeeting
+  roomId={roomId}
+  displayName={`Dr. ${doctor.name}`}
+  email={doctor.email}
+  role="DOCTOR"
+  onClose={endCall}
+/>
 
-      {/* DETAILS PANEL */}
       {selectedAppt && (
         <div style={styles.details}>
-          <h4>Active Session: {selectedAppt.user.name}</h4>
           <p>Time to start: <strong>{formatDiff(timeLeft)}</strong></p>
-          <p>Status: {callStatus || "Idle"}</p>
 
-          <div style={styles.controls}>
-            {!callStarted ? (
-              <button style={styles.primaryBtn} onClick={startCall}>
-                Start Video Call
-              </button>
-            ) : (
-              <button style={styles.dangerBtn} onClick={endCallAndComplete}>
-                End Call & Mark Complete
-              </button>
-            )}
-          </div>
-
-          {/* VIDEO CONTAINER */}
-          {/* CRITICAL FIX: We use 'display' to toggle visibility, but the element is ALWAYS mounted.
-              This ensures localVideoRef.current is never null. */}
-          <div style={{ ...styles.videoBox, display: callStarted ? 'flex' : 'none' }}>
-            
-            {/* Local Video */}
-            <div style={styles.videoWrapper}>
-                <span style={styles.label}>You</span>
-                <video
-                  ref={localVideoRef}
-                  autoPlay
-                  muted
-                  playsInline
-                  style={styles.video}
-                />
-            </div>
-
-            {/* Remote Videos */}
-            {Object.entries(remoteStreams).map(([id, stream]) => (
-               <div key={id} style={styles.videoWrapper}>
-                  <span style={styles.label}>Patient</span>
-                  <video
-                    autoPlay
-                    playsInline
-                    style={styles.video}
-                    ref={(el) => {
-                      if (el) el.srcObject = stream;
-                    }}
-                  />
-              </div>
-            ))}
-          </div>
+          {!callStarted ? (
+            <button
+              style={styles.primaryBtn}
+              onClick={startCall}
+              disabled={!canStartCall()}
+            >
+              Start Call
+            </button>
+          ) : (
+            <button style={styles.dangerBtn} onClick={endCall}>
+              End Call & Complete
+            </button>
+          )}
         </div>
       )}
     </div>

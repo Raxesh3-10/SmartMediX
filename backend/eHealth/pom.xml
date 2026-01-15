@@ -43,12 +43,6 @@
         <artifactId>spring-boot-starter-data-mongodb</artifactId>
     </dependency>
 
-    <!-- WebSocket (Chat + WebRTC signaling) -->
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-websocket</artifactId>
-    </dependency>
-
     <!-- Mail (OTP, notifications) -->
     <dependency>
         <groupId>org.springframework.boot</groupId>
@@ -80,13 +74,6 @@
         <artifactId>cloudinary-http5</artifactId>
         <version>2.0.0</version>
     </dependency>
-
-    <!-- Socket.IO for signaling -->
-<dependency>
-  <groupId>com.corundumstudio.socketio</groupId>
-  <artifactId>netty-socketio</artifactId>
-  <version>1.7.23</version>
-</dependency>
 
 
     <!-- Test -->

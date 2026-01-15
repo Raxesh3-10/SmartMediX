@@ -1,22 +1,18 @@
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useOutletContext } from "react-router-dom";
 import { AppointmentAPI, PaymentAPI } from "../../api/api";
-import { createRoomConnection } from "../../utils/useWebRTC";
 
 const DAYS = [
-  "MONDAY",
-  "TUESDAY",
-  "WEDNESDAY",
-  "THURSDAY",
-  "FRIDAY",
-  "SATURDAY",
-  "SUNDAY",
+  "SUNDAY","MONDAY","TUESDAY","WEDNESDAY",
+  "THURSDAY","FRIDAY","SATURDAY"
 ];
+
+const CALL_BUFFER_MINUTES = 10;
+const MS = 60 * 1000;
 
 export default function PatientAppointmentsPage() {
   const { patient } = useOutletContext();
 
-  /* ================= STATE ================= */
   const [appointments, setAppointments] = useState([]);
   const [doctors, setDoctors] = useState([]);
 
@@ -25,102 +21,99 @@ export default function PatientAppointmentsPage() {
   const [selectedSlotKey, setSelectedSlotKey] = useState(null);
 
   const [search, setSearch] = useState("");
-  const [timeLeft, setTimeLeft] = useState("--:--:--");
+  const [timeLeft, setTimeLeft] = useState(null);
 
   const [callStarted, setCallStarted] = useState(false);
-  const [callStatus, setCallStatus] = useState(null); // 👈 loading state
-  const [conn, setConn] = useState(null);
-  const [remoteStreams, setRemoteStreams] = useState({});
 
-  const localVideoRef = useRef(null);
-
-  /* ================= LOAD DATA ================= */
+  /* ================= LOAD ================= */
   useEffect(() => {
-    loadAppointments();
-    loadDoctors();
+    AppointmentAPI.getPatientAppointments(patient.patientId)
+      .then(r => setAppointments(r.data));
+
+    AppointmentAPI.getPatientDoctors(patient.patientId)
+      .then(r => setDoctors(r.data));
   }, [patient]);
-
-  useEffect(() => {
-    return () => {
-      conn?.leave();
-    };
-  }, [conn]);
-
-  const loadAppointments = async () => {
-    const res = await AppointmentAPI.getPatientAppointments(
-      patient.patientId
-    );
-    setAppointments(res.data);
-  };
-
-  const loadDoctors = async () => {
-    const res = await AppointmentAPI.getPatientDoctors(
-      patient.patientId
-    );
-    setDoctors(res.data);
-  };
 
   /* ================= SEARCH ================= */
   const filteredAppointments = useMemo(() => {
-    return appointments.filter((a) =>
+    return appointments.filter(a =>
       `${a.user?.name ?? ""} ${a.user?.email ?? ""}`
         .toLowerCase()
         .includes(search.toLowerCase())
     );
   }, [appointments, search]);
 
-  /* ================= TIME LEFT (UTC SAFE) ================= */
+  /* ================= COUNTDOWN (SAME AS DOCTOR) ================= */
   useEffect(() => {
-    if (!selectedAppt) {
-      setTimeLeft("--:--:--");
-      return;
-    }
+    if (!selectedAppt) return;
 
-    const interval = setInterval(() => {
-      const startMillis = new Date(
-        selectedAppt.appointment.startTime
-      ).getTime();
-
-      const diffSeconds = Math.max(
-        0,
-        Math.floor((startMillis - Date.now()) / 1000)
-      );
-
-      const days = Math.floor(diffSeconds / 86400);
-      const hours = Math.floor((diffSeconds % 86400) / 3600);
-      const minutes = Math.floor((diffSeconds % 3600) / 60);
-
-      setTimeLeft(
-        `${String(days).padStart(2, "0")}:${String(hours).padStart(
-          2,
-          "0"
-        )}:${String(minutes).padStart(2, "0")}`
-      );
+    const i = setInterval(() => {
+      const start = new Date(selectedAppt.appointment.startTime).getTime();
+      setTimeLeft(Math.floor((start - Date.now()) / 1000));
     }, 1000);
 
-    return () => clearInterval(interval);
+    return () => clearInterval(i);
   }, [selectedAppt]);
 
-  /* ================= CALL ================= */
-const joinCall = async () => {
-    setCallStarted(true); // Mount the UI first
-    const roomId = selectedAppt.appointment.roomId;
+  const formatDiff = (s) => {
+    if (s <= 0) return "Ready";
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}m ${sec}s`;
+  };
 
-    try {
-        const connection = await createRoomConnection({
-            roomId,
-            localVideoRef, // Ensure <video> below is not conditional
-            role: "PATIENT",
-            onRemoteStream: (id, stream) => {
-                setRemoteStreams((s) => ({ ...s, [id]: stream }));
-            },
-            onStatus: setCallStatus,
-        });
-        setConn(connection);
-    } catch (e) {
-        setCallStarted(false);
+  /* ================= SLOT LOGIC ================= */
+  const next7DaysSlots = useMemo(() => {
+    if (!selectedDoctor) return [];
+
+    const now = new Date();
+    const result = [];
+
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(now);
+      d.setDate(d.getDate() + i);
+
+      const day = DAYS[d.getDay()];
+      const slots =
+        selectedDoctor.slots?.filter(s => s.day === day) || [];
+
+      if (slots.length) {
+        result.push({ date: d, day, slots });
+      }
     }
-};
+    return result;
+  }, [selectedDoctor]);
+
+  const updateSlot = async () => {
+    if (!selectedSlotKey) return;
+
+    await AppointmentAPI.updateAppointmentSlot(
+      selectedAppt.appointment.appointmentId,
+      selectedSlotKey
+    );
+
+    const r = await AppointmentAPI.getPatientAppointments(patient.patientId);
+    setAppointments(r.data);
+    setSelectedSlotKey(null);
+    alert("Slot updated");
+  };
+
+  /* ================= CALL ================= */
+  const canStartCall = () => {
+    const start = new Date(selectedAppt.appointment.startTime).getTime();
+    const diff = Math.abs(Date.now() - start);
+    return diff <= CALL_BUFFER_MINUTES * MS;
+  };
+
+  const joinCall = async () => {
+    if (!canStartCall()) return alert("Call available 10 minutes before/after start");
+
+    await AppointmentAPI.assignRoomId(
+      selectedAppt.appointment.appointmentId
+    );
+
+    setCallStarted(true);
+  };
 
   /* ================= UI ================= */
   return (
@@ -134,17 +127,7 @@ const joinCall = async () => {
         style={styles.search}
       />
 
-      {/* 🔴 ALWAYS MOUNT LOCAL VIDEO */}
-      <video
-        ref={localVideoRef}
-        autoPlay
-        muted
-        playsInline
-        style={{ display: "none" }}
-      />
-
-      {/* ================= APPOINTMENT LIST ================= */}
-      {filteredAppointments.map((a) => (
+      {filteredAppointments.map(a => (
         <div
           key={a.appointment.appointmentId}
           style={{
@@ -158,82 +141,77 @@ const joinCall = async () => {
           onClick={() => {
             setSelectedAppt(a);
             setSelectedDoctor(
-              doctors.find(
-                (d) => d.doctor.doctorId === a.appointment.doctorId
-              )
+              doctors.find(d => d.doctor.doctorId === a.appointment.doctorId)
             );
-            setSelectedSlotKey(null);
             setCallStarted(false);
-            setCallStatus(null);
           }}
         >
           <div>
             <strong>{a.user?.name}</strong>
             <div style={styles.sub}>{a.user?.email}</div>
             <div style={styles.meta}>
-              {new Date(a.appointment.startTime).toLocaleTimeString(
-                "en-IN",
-                { timeZone: "Asia/Kolkata" }
-              )}{" "}
-              –{" "}
-              {new Date(a.appointment.endTime).toLocaleTimeString(
-                "en-IN",
-                { timeZone: "Asia/Kolkata" }
-              )}
+              {new Date(a.appointment.startTime).toLocaleTimeString()}
             </div>
           </div>
           <div>{a.appointment.status}</div>
         </div>
       ))}
+<JitsiMeeting
+  roomId={roomId}
+  displayName={patient.name}
+  email={patient.email}
+  role="PATIENT"
+  onClose={() => setCallStarted(false)}
+/>
 
-      {/* ================= DETAILS ================= */}
       {selectedAppt && (
         <div style={styles.details}>
-          <p>
-            Time Left: <strong>{timeLeft}</strong>
-          </p>
+          <p>Time to start: <strong>{formatDiff(timeLeft)}</strong></p>
 
-          {callStatus && (
-            <p>
-              <strong>Call status:</strong> {callStatus}
-            </p>
-          )}
-
-          {!callStarted ? (
+          {!callStarted && (
             <button
               style={styles.primaryBtn}
               onClick={joinCall}
-              disabled={callStatus !== null}
+              disabled={!canStartCall()}
             >
-              {callStatus ? "Joining..." : "Join Call"}
-            </button>
-          ) : (
-            <button
-              style={styles.dangerBtn}
-              onClick={leaveCall}
-            >
-              Leave Call
+              Join Call
             </button>
           )}
-<div style={{ marginTop: 20, display: callStarted ? 'flex' : 'none', gap: 10 }}>
-    <video
-        ref={localVideoRef}
-        autoPlay
-        muted
-        playsInline
-        style={{ width: "45%", border: "1px solid #ccc", background: "black" }}
-    />
-    
-    {Object.entries(remoteStreams).map(([id, stream]) => (
-        <video
-            key={id}
-            autoPlay
-            playsInline
-            style={{ width: "45%", border: "1px solid #ccc", background: "black" }}
-            ref={(el) => el && (el.srcObject = stream)}
-        />
-    ))}
-</div>
+
+          {/* SLOT UPDATE */}
+          <h4 style={{ marginTop: 20 }}>Change Slot (Next 7 Days)</h4>
+
+          {next7DaysSlots.map(d => (
+            <div key={d.day}>
+              <strong>{d.day}</strong>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                {d.slots.map(s => (
+                  <button
+                    key={s.key}
+                    onClick={() => setSelectedSlotKey(s.key)}
+                    style={{
+                      padding: "6px 10px",
+                      border:
+                        selectedSlotKey === s.key
+                          ? "2px solid #2563eb"
+                          : "1px solid #ccc",
+                    }}
+                  >
+                    {s.start} - {s.end}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          {selectedSlotKey && (
+            <button
+              style={{ ...styles.primaryBtn, marginTop: 10 }}
+              onClick={updateSlot}
+            >
+              Update Slot
+            </button>
+          )}
         </div>
       )}
     </div>
