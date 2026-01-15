@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useOutletContext } from "react-router-dom";
 import { AppointmentAPI, PaymentAPI } from "../../api/api";
-import { createPeerConnection } from "../../utils/useWebRTC";
+import { createRoomConnection } from "../../utils/useWebRTC";
 
 const DAYS = [
   "MONDAY",
@@ -27,17 +27,21 @@ export default function PatientAppointmentsPage() {
   const [search, setSearch] = useState("");
   const [timeLeft, setTimeLeft] = useState("--:--:--");
 
-  const [callStarted, setCallStarted] = useState(false);
-  const [pc, setPc] = useState(null);
-
+const [callStarted, setCallStarted] = useState(false);
+const [conn, setConn] = useState(null);
+const [remoteStreams, setRemoteStreams] = useState({});
   const localVideoRef = useRef(null);
-  const remoteVideoRef = useRef(null);
 
   /* ================= LOAD DATA ================= */
   useEffect(() => {
     loadAppointments();
     loadDoctors();
   }, [patient]);
+useEffect(() => {
+  return () => {
+    conn?.leave();
+  };
+}, []);
 
   const loadAppointments = async () => {
     const res = await AppointmentAPI.getPatientAppointments(patient.patientId);
@@ -140,24 +144,27 @@ export default function PatientAppointmentsPage() {
 
   /* ================= CALL ================= */
   const joinCall = async () => {
-    const roomId = `appointment-${selectedAppt.appointment.appointmentId}`;
+  const roomId = `appointment-${selectedAppt.appointment.appointmentId}`;
 
-    const peer = await createPeerConnection({
-      roomId,
-      localVideoRef,
-      remoteVideoRef,
-      isCaller: false,
-    });
+  const connection = await createRoomConnection({
+    roomId,
+    localVideoRef,
+    role: "PATIENT",
+    onRemoteStream: (id, stream) => {
+      setRemoteStreams((s) => ({ ...s, [id]: stream }));
+    },
+  });
 
-    setPc(peer);
-    setCallStarted(true);
-  };
+  setConn(connection);
+  setCallStarted(true);
+};
 
-  const leaveCall = () => {
-    pc?.getSenders().forEach((s) => s.track?.stop());
-    pc?.close();
-    setCallStarted(false);
-  };
+const leaveCall = () => {
+  conn?.leave();
+  setRemoteStreams({});
+  setCallStarted(false);
+};
+
 
   /* ================= UI ================= */
   return (
@@ -223,12 +230,20 @@ export default function PatientAppointmentsPage() {
             </button>
           )}
 
-          {callStarted && (
-            <div style={styles.videoBox}>
-              <video ref={localVideoRef} autoPlay muted style={styles.video} />
-              <video ref={remoteVideoRef} autoPlay style={styles.video} />
-            </div>
-          )}
+{callStarted && (
+  <div style={styles.videoBox}>
+    <video ref={localVideoRef} autoPlay muted style={styles.video} />
+    {Object.entries(remoteStreams).map(([id, stream]) => (
+      <video
+        key={id}
+        autoPlay
+        style={styles.video}
+        ref={el => el && (el.srcObject = stream)}
+      />
+    ))}
+  </div>
+)}
+
         </div>
       )}
 

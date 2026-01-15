@@ -18,44 +18,78 @@ public class CallSocketHandler {
     public void init() {
 
         server.addConnectListener(client ->
-            System.out.println("Socket connected: " + client.getSessionId())
+                System.out.println("Connected: " + client.getSessionId())
         );
 
-        server.addDisconnectListener(client ->
-            System.out.println("Socket disconnected: " + client.getSessionId())
+        server.addDisconnectListener(client -> {
+            client.getAllRooms().forEach(room -> {
+                server.getRoomOperations(room)
+                        .getClients()
+                        .forEach(c -> {
+                            if (!c.getSessionId().equals(client.getSessionId())) {
+                                c.sendEvent(
+                                        "user-left",
+                                        client.getSessionId().toString()
+                                );
+                            }
+                        });
+                client.leaveRoom(room);
+            });
+        });
+
+        server.addEventListener(
+                "join-room",
+                String.class,
+                (client, roomId, ack) -> {
+
+                    client.joinRoom(roomId);
+
+                    server.getRoomOperations(roomId)
+                            .getClients()
+                            .forEach(c -> {
+                                if (!c.getSessionId().equals(client.getSessionId())) {
+                                    c.sendEvent(
+                                            "user-joined",
+                                            client.getSessionId().toString()
+                                    );
+                                }
+                            });
+                }
         );
 
-        server.addEventListener("join-room", String.class,
-            (client, roomId, ack) -> {
-                client.joinRoom(roomId);
-                System.out.println("Joined room: " + roomId);
-            }
+        server.addEventListener(
+                "leave-room",
+                String.class,
+                (client, roomId, ack) -> client.leaveRoom(roomId)
         );
 
-        server.addEventListener("offer", JsonNode.class,
-            (client, data, ack) -> {
-                String roomId = data.get("roomId").asText();
-                server.getRoomOperations(roomId)
-                      .sendEvent("offer", data);
-            }
-        );
+        relay("offer");
+        relay("answer");
+        relay("ice-candidate");
+    }
 
-        server.addEventListener("answer", JsonNode.class,
-            (client, data, ack) -> {
-                String roomId = data.get("roomId").asText();
-                server.getRoomOperations(roomId)
-                      .sendEvent("answer", data);
-            }
-        );
+    private void relay(String event) {
+        server.addEventListener(
+                event,
+                JsonNode.class,
+                (client, data, ack) -> {
 
-        server.addEventListener("ice-candidate", JsonNode.class,
-            (client, data, ack) -> {
-                String roomId = data.get("roomId").asText();
-                server.getRoomOperations(roomId)
-                      .sendEvent("ice-candidate", data);
-            }
-        );
+                    if (!data.has("roomId") || !data.has("target")) return;
 
-        server.start();
+                    String roomId = data.get("roomId").asText();
+                    String target = data.get("target").asText();
+
+                    server.getRoomOperations(roomId)
+                            .getClients()
+                            .forEach(c -> {
+                                if (
+                                    !c.getSessionId().equals(client.getSessionId()) &&
+                                    c.getSessionId().toString().equals(target)
+                                ) {
+                                    c.sendEvent(event, data);
+                                }
+                            });
+                }
+        );
     }
 }

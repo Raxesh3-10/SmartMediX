@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useOutletContext } from "react-router-dom";
 import { AppointmentAPI } from "../../api/api";
-import { createPeerConnection } from "../../utils/useWebRTC";
+import { createRoomConnection } from "../../utils/useWebRTC";
 
 export default function DoctorAppointmentsPage() {
   const { doctor } = useOutletContext();
@@ -10,16 +10,20 @@ export default function DoctorAppointmentsPage() {
   const [selectedAppt, setSelectedAppt] = useState(null);
   const [search, setSearch] = useState("");
   const [timeLeft, setTimeLeft] = useState(null);
-  const [callStarted, setCallStarted] = useState(false);
-  const [pc, setPc] = useState(null);
-
+const [callStarted, setCallStarted] = useState(false);
+const [conn, setConn] = useState(null);
+const [remoteStreams, setRemoteStreams] = useState({});
   const localVideoRef = useRef(null);
-  const remoteVideoRef = useRef(null);
 
   /* ================= LOAD ================= */
   useEffect(() => {
     loadAppointments();
   }, [doctor]);
+useEffect(() => {
+  return () => {
+    conn?.leave();
+  };
+}, []);
 
   const loadAppointments = async () => {
     const res = await AppointmentAPI.getDoctorAppointments(
@@ -62,58 +66,58 @@ export default function DoctorAppointmentsPage() {
   };
 
   /* ================= COUNTDOWN ================= */
-  useEffect(() => {
-    if (!selectedAppt) return;
+useEffect(() => {
+  if (!selectedAppt) return;
 
-    const interval = setInterval(() => {
-      const start = new Date(
-        toISTMillis(
-          selectedAppt.appointment.startTime
-        )
-      ).getTime();
+  const interval = setInterval(() => {
+    const date =
+      selectedAppt.appointment.appointmentDate.split("T")[0];
 
-      const now = new Date(
-        toISTMillis(new Date())
-      ).getTime();
+    const start = new Date(
+      `${date}T${selectedAppt.appointment.startTime}`
+    ).getTime();
 
-      const diffSeconds = Math.floor(
-        (start - now) / 1000
-      );
-      setTimeLeft(diffSeconds);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [selectedAppt]);
-
-  /* ================= START CALL ================= */
-  const startCall = async () => {
-    const roomId = `appointment-${selectedAppt.appointment.appointmentId}`;
-
-    const peer = await createPeerConnection({
-      roomId,
-      localVideoRef,
-      remoteVideoRef,
-      isCaller: true,
-    });
-
-    setPc(peer);
-    setCallStarted(true);
-  };
-
-  /* ================= END CALL ================= */
-  const endCallAndComplete = async () => {
-    pc?.getSenders().forEach((s) => s.track?.stop());
-    pc?.close();
-
-    setCallStarted(false);
-
-    await AppointmentAPI.completeAppointment(
-      selectedAppt.appointment.appointmentId
+    const diffSeconds = Math.floor(
+      (start - Date.now()) / 1000
     );
 
-    setSelectedAppt(null);
-    loadAppointments();
-  };
+    setTimeLeft(diffSeconds);
+  }, 1000);
+
+  return () => clearInterval(interval);
+}, [selectedAppt]);
+
+  /* ================= START CALL ================= */
+const startCall = async () => {
+  const roomId = `appointment-${selectedAppt.appointment.appointmentId}`;
+
+  const connection = await createRoomConnection({
+    roomId,
+    localVideoRef,
+    role: "DOCTOR",
+    onRemoteStream: (id, stream) => {
+      setRemoteStreams((s) => ({ ...s, [id]: stream }));
+    },
+  });
+
+  setConn(connection);
+  setCallStarted(true);
+};
+
+  /* ================= END CALL ================= */
+const endCallAndComplete = async () => {
+  conn?.leave();
+  setRemoteStreams({});
+  setCallStarted(false);
+
+  await AppointmentAPI.completeAppointment(
+    selectedAppt.appointment.appointmentId
+  );
+
+  setSelectedAppt(null);
+  loadAppointments();
+};
+
 
   return (
     <div style={styles.page}>
@@ -206,21 +210,25 @@ export default function DoctorAppointmentsPage() {
             </button>
           )}
 
-          {callStarted && (
-            <div style={styles.videoBox}>
-              <video
-                ref={localVideoRef}
-                autoPlay
-                muted
-                style={styles.video}
-              />
-              <video
-                ref={remoteVideoRef}
-                autoPlay
-                style={styles.video}
-              />
-            </div>
-          )}
+{callStarted && (
+  <div style={styles.videoBox}>
+    <video
+      ref={localVideoRef}
+      autoPlay
+      muted
+      style={styles.video}
+    />
+    {Object.entries(remoteStreams).map(([id, stream]) => (
+      <video
+        key={id}
+        autoPlay
+        style={styles.video}
+        ref={el => el && (el.srcObject = stream)}
+      />
+    ))}
+  </div>
+)}
+
         </div>
       )}
     </div>
