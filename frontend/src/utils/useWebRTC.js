@@ -4,19 +4,18 @@ export async function createRoomConnection({
   roomId,
   localVideoRef,
   onRemoteStream,
-  role, // "DOCTOR" | "PATIENT"
+  role,
 }) {
   const peers = {};
-  const pendingSignals = {};
+  const pendingICE = {};
   let localStream;
 
   const isDoctor = role === "DOCTOR";
 
-  /* ===== SOCKET READY ===== */
-  await new Promise((resolve) => {
-    if (socket.connected && socket.id) return resolve();
-    socket.once("connect", resolve);
-  });
+  /* ===== ENSURE SOCKET READY ===== */
+  if (!socket.connected) {
+    await new Promise((resolve) => socket.once("connect", resolve));
+  }
 
   /* ===== MEDIA ===== */
   localStream = await navigator.mediaDevices.getUserMedia({
@@ -24,22 +23,22 @@ export async function createRoomConnection({
     audio: true,
   });
 
-  localVideoRef.current.srcObject = localStream;
-  localVideoRef.current.muted = true;
-  localVideoRef.current.playsInline = true;
+  const videoEl = localVideoRef.current;
+  if (!videoEl) throw new Error("Local video element missing");
+
+  videoEl.srcObject = localStream;
+  videoEl.muted = true;
+  videoEl.playsInline = true;
 
   /* ===== JOIN ROOM ===== */
   socket.emit("join-room", roomId);
 
-  /* ======================================================
-     SIGNALING LOGIC
-     ====================================================== */
+  /* ================= SIGNALING ================= */
 
-  // 🔹 Doctor creates offer for each patient
+  socket.off(); // 🚨 critical: remove duplicates
+
   socket.on("user-joined", async (remoteId) => {
-    if (!isDoctor) return;
-    if (Object.keys(peers).length >= 4) return;
-    if (peers[remoteId]) return;
+    if (!isDoctor || peers[remoteId]) return;
 
     const pc = createPeer(remoteId);
     peers[remoteId] = pc;
@@ -55,59 +54,40 @@ export async function createRoomConnection({
     });
   });
 
-  // 🔹 Patient receives offer only from doctor
-  socket.on("offer", async (data) => {
-    if (!data?.offer || !data?.from) return;
-    if (isDoctor) return; // doctor never answers
-    if (peers[data.from]) return;
+  socket.on("offer", async ({ offer, from }) => {
+    if (isDoctor || peers[from]) return;
 
-    const pc = createPeer(data.from);
-    peers[data.from] = pc;
+    const pc = createPeer(from);
+    peers[from] = pc;
 
-    await pc.setRemoteDescription(data.offer);
+    await pc.setRemoteDescription(offer);
 
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
 
     socket.emit("answer", {
       roomId,
-      target: data.from,
+      target: from,
       from: socket.id,
       answer,
     });
 
-    flushPending(data.from);
+    flushICE(from);
   });
 
-  // 🔹 Doctor receives answers
-  socket.on("answer", async (data) => {
-    if (!data?.answer || !data?.from) return;
-    if (!isDoctor) return;
-
-    if (!peers[data.from]) {
-      pendingSignals[data.from] ||= [];
-      pendingSignals[data.from].push({
-        type: "answer",
-        answer: data.answer,
-      });
-      return;
-    }
-
-    await peers[data.from].setRemoteDescription(data.answer);
+  socket.on("answer", async ({ answer, from }) => {
+    const pc = peers[from];
+    if (!pc) return;
+    await pc.setRemoteDescription(answer);
   });
 
-  // 🔹 ICE (both sides)
-  socket.on("ice-candidate", (data) => {
-    if (!data?.candidate || !data?.from) return;
-
-    if (peers[data.from]) {
-      peers[data.from].addIceCandidate(data.candidate);
+  socket.on("ice-candidate", ({ candidate, from }) => {
+    const pc = peers[from];
+    if (pc?.remoteDescription) {
+      pc.addIceCandidate(candidate);
     } else {
-      pendingSignals[data.from] ||= [];
-      pendingSignals[data.from].push({
-        type: "ice",
-        candidate: data.candidate,
-      });
+      pendingICE[from] ||= [];
+      pendingICE[from].push(candidate);
     }
   });
 
@@ -116,13 +96,14 @@ export async function createRoomConnection({
     delete peers[id];
   });
 
-  /* ======================================================
-     PEER FACTORY
-     ====================================================== */
+  /* ================= PEER ================= */
 
   function createPeer(remoteId) {
     const pc = new RTCPeerConnection({
-      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:global.stun.twilio.com:3478" },
+      ],
     });
 
     localStream.getTracks().forEach((t) =>
@@ -147,15 +128,11 @@ export async function createRoomConnection({
     return pc;
   }
 
-  function flushPending(id) {
-    (pendingSignals[id] || []).forEach((s) => {
-      if (s.type === "answer") {
-        peers[id].setRemoteDescription(s.answer);
-      } else {
-        peers[id].addIceCandidate(s.candidate);
-      }
-    });
-    delete pendingSignals[id];
+  function flushICE(id) {
+    (pendingICE[id] || []).forEach((c) =>
+      peers[id].addIceCandidate(c)
+    );
+    delete pendingICE[id];
   }
 
   /* ===== CLEANUP ===== */
@@ -165,12 +142,7 @@ export async function createRoomConnection({
       localStream.getTracks().forEach((t) => t.stop());
 
       socket.emit("leave-room", roomId);
-
-      socket.off("user-joined");
-      socket.off("offer");
-      socket.off("answer");
-      socket.off("ice-candidate");
-      socket.off("user-left");
+      socket.off();
     },
   };
 }

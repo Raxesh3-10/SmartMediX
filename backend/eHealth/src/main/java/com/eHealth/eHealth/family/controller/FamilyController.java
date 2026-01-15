@@ -1,26 +1,55 @@
 package com.eHealth.eHealth.family.controller;
 
+import com.eHealth.eHealth.dto.AddFamilyMemberRequest;
+import com.eHealth.eHealth.dto.FamilyMemberResponse;
 import com.eHealth.eHealth.family.FamilyService;
 import com.eHealth.eHealth.model.Family;
-import com.eHealth.eHealth.model.FamilyMember;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/api/family")
 public class FamilyController {
 
-    private final FamilyService service;
+    private final FamilyService familyService;
 
-    public FamilyController(FamilyService service) {
-        this.service = service;
+    public FamilyController(FamilyService familyService) {
+        this.familyService = familyService;
     }
 
-    @PostMapping("/add-member")
-    public Family addMember(@RequestBody Family family,
-                            @RequestBody FamilyMember member) {
+    /* CREATE FAMILY */
+    @PostMapping("/create")
+    public Family createFamily(
+            @RequestHeader("Authorization") String token
+    ) {
+        return familyService.createFamily(token);
+    }
 
-        service.addMember(family, member);
-        return family;
+    /* ADD MEMBER */
+    @PostMapping("/add-member")
+    public Family addMember(
+            @RequestHeader("Authorization") String token,
+            @RequestBody AddFamilyMemberRequest request
+    ) {
+        return familyService.addMember(token, request);
+    }
+
+    /* REMOVE MEMBER */
+    @DeleteMapping("/remove/{patientId}")
+    public void removeMember(
+            @RequestHeader("Authorization") String token,
+            @PathVariable String patientId
+    ) {
+        familyService.removeMember(token, patientId);
+    }
+
+    /* GET FAMILY */
+    @GetMapping("/members")
+    public List<FamilyMemberResponse> members(
+            @RequestHeader("Authorization") String token
+    ) {
+        return familyService.getFamilyMembers(token);
     }
 }
