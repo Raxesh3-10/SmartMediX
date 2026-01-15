@@ -1,9 +1,29 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { AppointmentAPI } from "../../api/api";
+import JitsiMeeting from "../../components/JitsiMeeting";
 
-const CALL_BUFFER_MINUTES = 10;
-const MS = 60 * 1000;
+/* ================= CONSTANTS ================= */
+const CALL_BUFFER_SECONDS = 10 * 60;
+
+/* ================= HELPERS ================= */
+const normalizeId = (id) =>
+  typeof id === "string" ? id : id?.$oid ?? "";
+
+const formatCountdown = (seconds) => {
+  if (!Number.isFinite(seconds) || seconds <= 0)
+    return "00 : 00 : 00";
+
+  const mins = Math.floor(seconds / 60);
+  const days = Math.floor(mins / (24 * 60));
+  const hours = Math.floor((mins % (24 * 60)) / 60);
+  const minutes = mins % 60;
+
+  return `${String(days).padStart(2, "0")} : ${String(hours).padStart(
+    2,
+    "0"
+  )} : ${String(minutes).padStart(2, "0")}`;
+};
 
 export default function DoctorAppointmentsPage() {
   const { doctor } = useOutletContext();
@@ -11,67 +31,77 @@ export default function DoctorAppointmentsPage() {
   const [appointments, setAppointments] = useState([]);
   const [selectedAppt, setSelectedAppt] = useState(null);
   const [search, setSearch] = useState("");
-  const [timeLeft, setTimeLeft] = useState(null);
+  const [timeLeft, setTimeLeft] = useState(0);
   const [callStarted, setCallStarted] = useState(false);
 
+  /* ================= LOAD ================= */
   useEffect(() => {
-    AppointmentAPI.getDoctorAppointments(doctor.doctorId)
-      .then(r => setAppointments(r.data));
+    if (!doctor) return;
+    loadAppointments();
   }, [doctor]);
 
+  const loadAppointments = async () => {
+    const res = await AppointmentAPI.getDoctorAppointments(
+      doctor.doctorId
+    );
+    setAppointments(res.data);
+  };
+
+  /* ================= SEARCH ================= */
   const filtered = useMemo(() => {
-    return appointments.filter(a =>
-      `${a.user?.name} ${a.user?.email}`
+    return appointments.filter((a) =>
+      `${a.user.name} ${a.user.email}`
         .toLowerCase()
         .includes(search.toLowerCase())
     );
   }, [appointments, search]);
 
+  /* ================= COUNTDOWN (MATCHES PATIENT) ================= */
   useEffect(() => {
-    if (!selectedAppt) return;
+    if (!selectedAppt) {
+      setTimeLeft(0);
+      return;
+    }
 
-    const i = setInterval(() => {
-      const start = new Date(selectedAppt.appointment.startTime).getTime();
-      setTimeLeft(Math.floor((start - Date.now()) / 1000));
+    const interval = setInterval(() => {
+      const { appointment } = selectedAppt;
+      if (!appointment?.startTime) {
+        setTimeLeft(0);
+        return;
+      }
+
+      // appointmentDate OR today
+      const baseDate = appointment.appointmentDate
+        ? new Date(appointment.appointmentDate)
+        : new Date();
+
+      const [h, m] = appointment.startTime.split(":").map(Number);
+
+      // Construct IST datetime
+      const startIST = new Date(
+        baseDate.toLocaleString("en-US", {
+          timeZone: "Asia/Kolkata",
+        })
+      );
+      startIST.setHours(h, m, 0, 0);
+
+      const nowIST = new Date(
+        new Date().toLocaleString("en-US", {
+          timeZone: "Asia/Kolkata",
+        })
+      );
+
+      const diffSeconds = Math.floor(
+        (startIST.getTime() - nowIST.getTime()) / 1000
+      );
+
+      setTimeLeft(Math.max(0, diffSeconds));
     }, 1000);
 
-    return () => clearInterval(i);
+    return () => clearInterval(interval);
   }, [selectedAppt]);
 
-  const formatDiff = (s) => {
-    if (s <= 0) return "Ready";
-    const m = Math.floor(s / 60);
-    const sec = s % 60;
-    return `${m}m ${sec}s`;
-  };
-
-  const canStartCall = () => {
-    const start = new Date(selectedAppt.appointment.startTime).getTime();
-    const diff = Math.abs(Date.now() - start);
-    return diff <= CALL_BUFFER_MINUTES * MS;
-  };
-
-  const startCall = async () => {
-    if (!canStartCall()) return alert("Call available 10 minutes before/after start");
-
-    await AppointmentAPI.assignRoomId(
-      selectedAppt.appointment.appointmentId
-    );
-
-    setCallStarted(true);
-  };
-
-  const endCall = async () => {
-    await AppointmentAPI.completeAppointment(
-      selectedAppt.appointment.appointmentId
-    );
-    setCallStarted(false);
-    setSelectedAppt(null);
-
-    const r = await AppointmentAPI.getDoctorAppointments(doctor.doctorId);
-    setAppointments(r.data);
-  };
-
+  /* ================= UI ================= */
   return (
     <div style={styles.page}>
       <h3>Doctor Appointments</h3>
@@ -83,53 +113,78 @@ export default function DoctorAppointmentsPage() {
         style={styles.search}
       />
 
-      {filtered.map(a => (
+      {filtered.map((a) => (
         <div
-          key={a.appointment.appointmentId}
+          key={normalizeId(a.appointment._id)}
           style={{
             ...styles.card,
             background:
-              selectedAppt?.appointment.appointmentId ===
-              a.appointment.appointmentId
+              normalizeId(selectedAppt?.appointment?._id) ===
+              normalizeId(a.appointment._id)
                 ? "#dcfce7"
                 : "transparent",
           }}
-          onClick={() => !callStarted && setSelectedAppt(a)}
+          onClick={() => {
+            setSelectedAppt(a);
+            setCallStarted(false);
+          }}
         >
           <div>
-            <strong>{a.user?.name}</strong>
-            <div style={styles.sub}>{a.user?.email}</div>
+            <strong>{a.user.name}</strong>
+            <div style={styles.sub}>{a.user.email}</div>
             <div style={styles.meta}>
-              {new Date(a.appointment.startTime).toLocaleTimeString()}
+              {a.appointment.day} | {a.appointment.startTime} –{" "}
+              {a.appointment.endTime}
             </div>
           </div>
           <div>{a.appointment.status}</div>
         </div>
       ))}
-<JitsiMeeting
-  roomId={roomId}
-  displayName={`Dr. ${doctor.name}`}
-  email={doctor.email}
-  role="DOCTOR"
-  onClose={endCall}
-/>
 
       {selectedAppt && (
         <div style={styles.details}>
-          <p>Time to start: <strong>{formatDiff(timeLeft)}</strong></p>
+          <p>
+            Time Left:{" "}
+            <strong>{formatCountdown(timeLeft)}</strong>
+          </p>
 
-          {!callStarted ? (
+          {!callStarted &&
+            timeLeft > 0 &&
+            timeLeft <= CALL_BUFFER_SECONDS && (
+              <button
+                style={styles.primaryBtn}
+                onClick={() => setCallStarted(true)}
+              >
+                Start Call
+              </button>
+            )}
+
+          {callStarted && (
             <button
-              style={styles.primaryBtn}
-              onClick={startCall}
-              disabled={!canStartCall()}
+              style={styles.dangerBtn}
+              onClick={async () => {
+                await AppointmentAPI.completeAppointment(
+                  normalizeId(
+                    selectedAppt.appointment._id
+                  )
+                );
+                setCallStarted(false);
+                setSelectedAppt(null);
+                loadAppointments();
+              }}
             >
-              Start Call
-            </button>
-          ) : (
-            <button style={styles.dangerBtn} onClick={endCall}>
               End Call & Complete
             </button>
+          )}
+
+          {callStarted && (
+            <JitsiMeeting
+              roomId={selectedAppt.appointment.roomId}
+              displayName={`Dr. ${doctor.name}`}
+              email={doctor.email}
+              role="DOCTOR"
+              onClose={() => setCallStarted(false)}
+            />
           )}
         </div>
       )}
@@ -137,13 +192,14 @@ export default function DoctorAppointmentsPage() {
   );
 }
 
+/* ================= STYLES ================= */
 const styles = {
   page: { padding: 20 },
-  search: { marginBottom: 15, padding: 8, width: "100%", boxSizing: "border-box" },
+  search: { marginBottom: 15, padding: 6, width: "100%" },
   card: {
     display: "flex",
     justifyContent: "space-between",
-    padding: "12px",
+    padding: 10,
     borderBottom: "1px solid #e5e7eb",
     cursor: "pointer",
   },
@@ -151,54 +207,20 @@ const styles = {
   meta: { fontSize: 13 },
   details: {
     marginTop: 20,
-    padding: 20,
+    padding: 15,
     border: "1px solid #e5e7eb",
-    borderRadius: 8,
-    background: "#f8fafc"
   },
-  controls: { marginBottom: 20 },
   primaryBtn: {
     marginRight: 10,
     background: "#2563eb",
     color: "#fff",
     border: "none",
-    padding: "10px 20px",
-    borderRadius: 5,
-    cursor: "pointer"
+    padding: "8px 14px",
   },
   dangerBtn: {
     background: "#dc2626",
     color: "#fff",
     border: "none",
-    padding: "10px 20px",
-    borderRadius: 5,
-    cursor: "pointer"
+    padding: "8px 14px",
   },
-  videoBox: { 
-    marginTop: 20, 
-    display: "flex", 
-    gap: 15,
-    flexWrap: "wrap"
-  },
-  videoWrapper: {
-    position: 'relative',
-    width: "45%",
-    minWidth: "300px"
-  },
-  video: { 
-    width: "100%", 
-    background: "#000", 
-    borderRadius: 8,
-    border: "1px solid #ccc"
-  },
-  label: {
-    position: 'absolute',
-    top: 5,
-    left: 5,
-    background: "rgba(0,0,0,0.5)",
-    color: "white",
-    padding: "2px 8px",
-    borderRadius: 4,
-    fontSize: "12px"
-  }
-}
+};

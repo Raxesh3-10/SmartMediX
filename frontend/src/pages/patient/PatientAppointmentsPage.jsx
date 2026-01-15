@@ -1,15 +1,41 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { AppointmentAPI, PaymentAPI } from "../../api/api";
+import JitsiMeeting from "../../components/JitsiMeeting";
 
+/* ================= CONSTANTS ================= */
 const DAYS = [
-  "SUNDAY","MONDAY","TUESDAY","WEDNESDAY",
-  "THURSDAY","FRIDAY","SATURDAY"
+  "MONDAY",
+  "TUESDAY",
+  "WEDNESDAY",
+  "THURSDAY",
+  "FRIDAY",
+  "SATURDAY",
+  "SUNDAY",
 ];
 
-const CALL_BUFFER_MINUTES = 10;
-const MS = 60 * 1000;
+const normalizeId = (id) =>
+  typeof id === "string" ? id : id?.$oid ?? "";
 
+const formatCountdown = (seconds) => {
+  if (!Number.isFinite(seconds) || seconds <= 0)
+    return "00 : 00 : 00";
+
+  const mins = Math.floor(seconds / 60);
+  const days = Math.floor(mins / (24 * 60));
+  const hours = Math.floor((mins % (24 * 60)) / 60);
+  const minutes = mins % 60;
+
+  return `${String(days).padStart(2, "0")} : ${String(hours).padStart(
+    2,
+    "0"
+  )} : ${String(minutes).padStart(2, "0")}`;
+};
+
+
+const slotKey = (s) => `${s.day}-${s.startTime}-${s.endTime}`;
+
+/* ================= COMPONENT ================= */
 export default function PatientAppointmentsPage() {
   const { patient } = useOutletContext();
 
@@ -21,98 +47,118 @@ export default function PatientAppointmentsPage() {
   const [selectedSlotKey, setSelectedSlotKey] = useState(null);
 
   const [search, setSearch] = useState("");
-  const [timeLeft, setTimeLeft] = useState(null);
-
+  const [timeLeft, setTimeLeft] = useState(0);
   const [callStarted, setCallStarted] = useState(false);
 
   /* ================= LOAD ================= */
   useEffect(() => {
-    AppointmentAPI.getPatientAppointments(patient.patientId)
-      .then(r => setAppointments(r.data));
-
-    AppointmentAPI.getPatientDoctors(patient.patientId)
-      .then(r => setDoctors(r.data));
+    if (!patient) return;
+    loadAppointments();
+    loadDoctors();
   }, [patient]);
+
+  const loadAppointments = async () => {
+    const res = await AppointmentAPI.getPatientAppointments(
+      patient.patientId
+    );
+    setAppointments(res.data);
+  };
+
+  const loadDoctors = async () => {
+    const res = await AppointmentAPI.getPatientDoctors(
+      patient.patientId
+    );
+    setDoctors(res.data);
+  };
 
   /* ================= SEARCH ================= */
   const filteredAppointments = useMemo(() => {
-    return appointments.filter(a =>
+    return appointments.filter((a) =>
       `${a.user?.name ?? ""} ${a.user?.email ?? ""}`
         .toLowerCase()
         .includes(search.toLowerCase())
     );
   }, [appointments, search]);
 
-  /* ================= COUNTDOWN (SAME AS DOCTOR) ================= */
-  useEffect(() => {
-    if (!selectedAppt) return;
+  /* ================= COUNTDOWN ================= */
+useEffect(() => {
+  if (!selectedAppt) {
+    setTimeLeft(0);
+    return;
+  }
 
-    const i = setInterval(() => {
-      const start = new Date(selectedAppt.appointment.startTime).getTime();
-      setTimeLeft(Math.floor((start - Date.now()) / 1000));
-    }, 1000);
+  const interval = setInterval(() => {
+    const { appointment } = selectedAppt;
 
-    return () => clearInterval(i);
-  }, [selectedAppt]);
-
-  const formatDiff = (s) => {
-    if (s <= 0) return "Ready";
-    const m = Math.floor(s / 60);
-    const sec = s % 60;
-    return `${m}m ${sec}s`;
-  };
-
-  /* ================= SLOT LOGIC ================= */
-  const next7DaysSlots = useMemo(() => {
-    if (!selectedDoctor) return [];
-
-    const now = new Date();
-    const result = [];
-
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(now);
-      d.setDate(d.getDate() + i);
-
-      const day = DAYS[d.getDay()];
-      const slots =
-        selectedDoctor.slots?.filter(s => s.day === day) || [];
-
-      if (slots.length) {
-        result.push({ date: d, day, slots });
-      }
+    if (!appointment?.startTime) {
+      setTimeLeft(0);
+      return;
     }
-    return result;
-  }, [selectedDoctor]);
 
-  const updateSlot = async () => {
-    if (!selectedSlotKey) return;
+    // Use appointmentDate or today
+    const baseDate = appointment.appointmentDate
+      ? new Date(appointment.appointmentDate)
+      : new Date();
 
-    await AppointmentAPI.updateAppointmentSlot(
-      selectedAppt.appointment.appointmentId,
-      selectedSlotKey
+    const [h, m] = appointment.startTime.split(":").map(Number);
+
+    // Construct IST start datetime
+    const startIST = new Date(
+      baseDate.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
     );
 
-    const r = await AppointmentAPI.getPatientAppointments(patient.patientId);
-    setAppointments(r.data);
+    startIST.setHours(h, m, 0, 0);
+
+    const nowIST = new Date(
+      new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+    );
+
+    const diffSeconds = Math.floor(
+      (startIST.getTime() - nowIST.getTime()) / 1000
+    );
+
+    setTimeLeft(Math.max(0, diffSeconds));
+  }, 1000);
+
+  return () => clearInterval(interval);
+}, [selectedAppt]);
+
+  /* ================= SAVE ================= */
+  const saveAppointment = async (isUpdate) => {
+    if (!selectedDoctor || !selectedSlotKey) {
+      alert("Select a slot first");
+      return;
+    }
+
+    const slot = selectedDoctor.slots.find(
+      (s) => slotKey(s) === selectedSlotKey
+    );
+    if (!slot) return;
+
+    if (!isUpdate) {
+      const res = await AppointmentAPI.createAppointment({
+        patientId: patient.patientId,
+        doctorId: selectedDoctor.doctor.doctorId,
+        day: slot.day,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        appointmentDate: new Date().toISOString(),
+        conferenceType: "VIDEO",
+      });
+
+      await PaymentAPI.payForAppointment(res.data._id);
+      alert("Appointment booked");
+    } else {
+      await AppointmentAPI.updateAppointment(
+        selectedAppt.appointment._id,
+        slot
+      );
+      alert("Appointment updated");
+    }
+
     setSelectedSlotKey(null);
-    alert("Slot updated");
-  };
-
-  /* ================= CALL ================= */
-  const canStartCall = () => {
-    const start = new Date(selectedAppt.appointment.startTime).getTime();
-    const diff = Math.abs(Date.now() - start);
-    return diff <= CALL_BUFFER_MINUTES * MS;
-  };
-
-  const joinCall = async () => {
-    if (!canStartCall()) return alert("Call available 10 minutes before/after start");
-
-    await AppointmentAPI.assignRoomId(
-      selectedAppt.appointment.appointmentId
-    );
-
-    setCallStarted(true);
+    loadAppointments();
+    loadDoctors();
   };
 
   /* ================= UI ================= */
@@ -127,21 +173,24 @@ export default function PatientAppointmentsPage() {
         style={styles.search}
       />
 
-      {filteredAppointments.map(a => (
+      {filteredAppointments.map((a) => (
         <div
-          key={a.appointment.appointmentId}
+          key={normalizeId(a.appointment._id)}
           style={{
             ...styles.card,
             background:
-              selectedAppt?.appointment.appointmentId ===
-              a.appointment.appointmentId
+              normalizeId(selectedAppt?.appointment?._id) ===
+              normalizeId(a.appointment._id)
                 ? "#dcfce7"
                 : "transparent",
           }}
           onClick={() => {
             setSelectedAppt(a);
             setSelectedDoctor(
-              doctors.find(d => d.doctor.doctorId === a.appointment.doctorId)
+              doctors.find(
+                (d) =>
+                  d.doctor.doctorId === a.appointment.doctorId
+              )
             );
             setCallStarted(false);
           }}
@@ -150,70 +199,134 @@ export default function PatientAppointmentsPage() {
             <strong>{a.user?.name}</strong>
             <div style={styles.sub}>{a.user?.email}</div>
             <div style={styles.meta}>
-              {new Date(a.appointment.startTime).toLocaleTimeString()}
+              {a.appointment.day} | {a.appointment.startTime} –{" "}
+              {a.appointment.endTime}
             </div>
           </div>
           <div>{a.appointment.status}</div>
         </div>
       ))}
-<JitsiMeeting
-  roomId={roomId}
-  displayName={patient.name}
-  email={patient.email}
-  role="PATIENT"
-  onClose={() => setCallStarted(false)}
-/>
 
       {selectedAppt && (
         <div style={styles.details}>
-          <p>Time to start: <strong>{formatDiff(timeLeft)}</strong></p>
+          <p>
+            Time Left:{" "}
+            <strong>{formatCountdown(timeLeft)}</strong>
+          </p>
 
-          {!callStarted && (
+          {!callStarted ? (
             <button
               style={styles.primaryBtn}
-              onClick={joinCall}
-              disabled={!canStartCall()}
+              onClick={() => setCallStarted(true)}
             >
               Join Call
             </button>
+          ) : (
+            <button
+              style={styles.dangerBtn}
+              onClick={() => setCallStarted(false)}
+            >
+              Leave Call
+            </button>
           )}
 
-          {/* SLOT UPDATE */}
-          <h4 style={{ marginTop: 20 }}>Change Slot (Next 7 Days)</h4>
-
-          {next7DaysSlots.map(d => (
-            <div key={d.day}>
-              <strong>{d.day}</strong>
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                {d.slots.map(s => (
-                  <button
-                    key={s.key}
-                    onClick={() => setSelectedSlotKey(s.key)}
-                    style={{
-                      padding: "6px 10px",
-                      border:
-                        selectedSlotKey === s.key
-                          ? "2px solid #2563eb"
-                          : "1px solid #ccc",
-                    }}
-                  >
-                    {s.start} - {s.end}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-
-          {selectedSlotKey && (
-            <button
-              style={{ ...styles.primaryBtn, marginTop: 10 }}
-              onClick={updateSlot}
-            >
-              Update Slot
-            </button>
+          {callStarted && (
+            <JitsiMeeting
+              roomId={selectedAppt.appointment.roomId}
+              displayName={patient.name}
+              email={patient.email}
+              role="PATIENT"
+              onClose={() => setCallStarted(false)}
+            />
           )}
         </div>
       )}
+
+      {selectedAppt && selectedDoctor && (
+        <div style={styles.details}>
+          <h4>Update Appointment Slot</h4>
+          {renderSlotGrid(
+            selectedDoctor,
+            selectedSlotKey,
+            setSelectedSlotKey
+          )}
+          <button
+            style={styles.primaryBtn}
+            onClick={() => saveAppointment(true)}
+          >
+            Update Slot
+          </button>
+        </div>
+      )}
+
+      <div style={styles.details}>
+        <h4>Book New Appointment</h4>
+
+        {doctors.map((d) => (
+          <div
+            key={d.doctor.doctorId}
+            style={styles.card}
+            onClick={() => setSelectedDoctor(d)}
+          >
+            <strong>{d.user?.name}</strong>
+            <div style={styles.sub}>{d.user?.email}</div>
+          </div>
+        ))}
+
+        {selectedDoctor &&
+          renderSlotGrid(
+            selectedDoctor,
+            selectedSlotKey,
+            setSelectedSlotKey
+          )}
+
+        <button
+          style={styles.primaryBtn}
+          onClick={() => saveAppointment(false)}
+        >
+          Book Slot
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ================= SLOT GRID ================= */
+function renderSlotGrid(doctor, selectedSlotKey, setSelectedSlotKey) {
+  return (
+    <div style={styles.grid}>
+      {DAYS.map((day) => (
+        <div key={day} style={styles.dayColumn}>
+          <strong>{day}</strong>
+          {(doctor.slots || [])
+            .filter((s) => s.day === day)
+            .map((s) => {
+              const key = slotKey(s);
+              return (
+                <div
+                  key={key}
+                  onClick={() =>
+                    !s.booked && setSelectedSlotKey(key)
+                  }
+                  style={{
+                    ...styles.slot,
+                    background: s.booked
+                      ? "#dc2626"
+                      : selectedSlotKey === key
+                      ? "#16a34a"
+                      : "#ffffff",
+                    color:
+                      s.booked || selectedSlotKey === key
+                        ? "#ffffff"
+                        : "#0f172a",
+                  }}
+                >
+                  {s.startTime} – {s.endTime}
+                </div>
+              );
+            })}
+        </div>
+      ))}
     </div>
   );
 }
@@ -249,6 +362,22 @@ const styles = {
     border: "none",
     padding: "8px 14px",
   },
-  videoBox: { marginTop: 20, display: "flex", gap: 10 },
-  video: { width: "45%", border: "1px solid #e5e7eb" },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(7, 1fr)",
+    gap: 16,
+    marginTop: 10,
+  },
+  dayColumn: {
+    border: "1px solid #e5e7eb",
+    borderRadius: 8,
+    padding: 10,
+  },
+  slot: {
+    border: "2px solid #cbd5e1",
+    padding: 8,
+    marginTop: 6,
+    textAlign: "center",
+    borderRadius: 8,
+  },
 };
