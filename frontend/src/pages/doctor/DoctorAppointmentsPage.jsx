@@ -14,6 +14,7 @@ const [callStarted, setCallStarted] = useState(false);
 const [conn, setConn] = useState(null);
 const [remoteStreams, setRemoteStreams] = useState({});
   const localVideoRef = useRef(null);
+const [callStatus, setCallStatus] = useState(null);
 
   /* ================= LOAD ================= */
   useEffect(() => {
@@ -98,6 +99,7 @@ const startCall = async () => {
     onRemoteStream: (id, stream) => {
       setRemoteStreams((s) => ({ ...s, [id]: stream }));
     },
+    onStatus: setCallStatus,
   });
 
   setConn(connection);
@@ -200,7 +202,7 @@ const endCallAndComplete = async () => {
                 Start Call
               </button>
             )}
-
+          {callStatus && <p>Status: {callStatus}</p>}
           {callStarted && (
             <button
               style={styles.dangerBtn}

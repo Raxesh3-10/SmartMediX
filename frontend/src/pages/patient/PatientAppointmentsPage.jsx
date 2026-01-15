@@ -27,9 +27,11 @@ export default function PatientAppointmentsPage() {
   const [search, setSearch] = useState("");
   const [timeLeft, setTimeLeft] = useState("--:--:--");
 
-const [callStarted, setCallStarted] = useState(false);
-const [conn, setConn] = useState(null);
-const [remoteStreams, setRemoteStreams] = useState({});
+  const [callStarted, setCallStarted] = useState(false);
+  const [callStatus, setCallStatus] = useState(null); // 👈 loading state
+  const [conn, setConn] = useState(null);
+  const [remoteStreams, setRemoteStreams] = useState({});
+
   const localVideoRef = useRef(null);
 
   /* ================= LOAD DATA ================= */
@@ -37,19 +39,24 @@ const [remoteStreams, setRemoteStreams] = useState({});
     loadAppointments();
     loadDoctors();
   }, [patient]);
-useEffect(() => {
-  return () => {
-    conn?.leave();
-  };
-}, []);
+
+  useEffect(() => {
+    return () => {
+      conn?.leave();
+    };
+  }, [conn]);
 
   const loadAppointments = async () => {
-    const res = await AppointmentAPI.getPatientAppointments(patient.patientId);
+    const res = await AppointmentAPI.getPatientAppointments(
+      patient.patientId
+    );
     setAppointments(res.data);
   };
 
   const loadDoctors = async () => {
-    const res = await AppointmentAPI.getPatientDoctors(patient.patientId);
+    const res = await AppointmentAPI.getPatientDoctors(
+      patient.patientId
+    );
     setDoctors(res.data);
   };
 
@@ -62,10 +69,7 @@ useEffect(() => {
     );
   }, [appointments, search]);
 
-  /* ================= SLOT HELPERS ================= */
-  const slotKey = (s) => `${s.day}-${s.startTime}-${s.endTime}`;
-
-  /* ================= TIME LEFT ================= */
+  /* ================= TIME LEFT (UTC SAFE) ================= */
   useEffect(() => {
     if (!selectedAppt) {
       setTimeLeft("--:--:--");
@@ -73,10 +77,10 @@ useEffect(() => {
     }
 
     const interval = setInterval(() => {
-      const date = selectedAppt.appointment.appointmentDate.split("T")[0];
-      const startISO = `${date}T${selectedAppt.appointment.startTime}`;
+      const startMillis = new Date(
+        selectedAppt.appointment.startTime
+      ).getTime();
 
-      const startMillis = new Date(startISO).getTime();
       const diffSeconds = Math.max(
         0,
         Math.floor((startMillis - Date.now()) / 1000)
@@ -97,74 +101,30 @@ useEffect(() => {
     return () => clearInterval(interval);
   }, [selectedAppt]);
 
-  /* ================= BOOK / UPDATE ================= */
-  const saveAppointment = async (isUpdate) => {
-    if (!selectedDoctor || !selectedSlotKey) {
-      alert("Select a slot first");
-      return;
-    }
-
-    const slot = selectedDoctor.slots.find(
-      (s) => slotKey(s) === selectedSlotKey
-    );
-
-    if (!slot) return;
-
-    if (!isUpdate) {
-      // BOOK
-      const res = await AppointmentAPI.createAppointment({
-        patientId: patient.patientId,
-        doctorId: selectedDoctor.doctor.doctorId,
-        day: slot.day,
-        startTime: slot.startTime,
-        endTime: slot.endTime,
-        appointmentDate: new Date().toISOString(),
-        conferenceType: "VIDEO",
-      });
-
-      await PaymentAPI.payForAppointment(res.data.appointmentId);
-      alert("Appointment booked");
-    } else {
-      // UPDATE
-      await AppointmentAPI.updateAppointment(
-        selectedAppt.appointment.appointmentId,
-        {
-          day: slot.day,
-          startTime: slot.startTime,
-          endTime: slot.endTime,
-        }
-      );
-      alert("Appointment updated");
-    }
-
-    setSelectedSlotKey(null);
-    loadAppointments();
-    loadDoctors();
-  };
-
   /* ================= CALL ================= */
   const joinCall = async () => {
-  const roomId = `appointment-${selectedAppt.appointment.appointmentId}`;
+    const roomId = selectedAppt.appointment.roomId; // ✅ FROM DB
 
-  const connection = await createRoomConnection({
-    roomId,
-    localVideoRef,
-    role: "PATIENT",
-    onRemoteStream: (id, stream) => {
-      setRemoteStreams((s) => ({ ...s, [id]: stream }));
-    },
-  });
+    const connection = await createRoomConnection({
+      roomId,
+      localVideoRef,
+      role: "PATIENT",
+      onRemoteStream: (id, stream) => {
+        setRemoteStreams((s) => ({ ...s, [id]: stream }));
+      },
+      onStatus: setCallStatus, // 👈 loading feedback
+    });
 
-  setConn(connection);
-  setCallStarted(true);
-};
+    setConn(connection);
+    setCallStarted(true);
+  };
 
-const leaveCall = () => {
-  conn?.leave();
-  setRemoteStreams({});
-  setCallStarted(false);
-};
-
+  const leaveCall = () => {
+    conn?.leave();
+    setRemoteStreams({});
+    setCallStarted(false);
+    setCallStatus(null);
+  };
 
   /* ================= UI ================= */
   return (
@@ -176,6 +136,15 @@ const leaveCall = () => {
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         style={styles.search}
+      />
+
+      {/* 🔴 ALWAYS MOUNT LOCAL VIDEO */}
+      <video
+        ref={localVideoRef}
+        autoPlay
+        muted
+        playsInline
+        style={{ display: "none" }}
       />
 
       {/* ================= APPOINTMENT LIST ================= */}
@@ -199,14 +168,22 @@ const leaveCall = () => {
             );
             setSelectedSlotKey(null);
             setCallStarted(false);
+            setCallStatus(null);
           }}
         >
           <div>
             <strong>{a.user?.name}</strong>
             <div style={styles.sub}>{a.user?.email}</div>
             <div style={styles.meta}>
-              {a.appointment.day} | {a.appointment.startTime} –{" "}
-              {a.appointment.endTime}
+              {new Date(a.appointment.startTime).toLocaleTimeString(
+                "en-IN",
+                { timeZone: "Asia/Kolkata" }
+              )}{" "}
+              –{" "}
+              {new Date(a.appointment.endTime).toLocaleTimeString(
+                "en-IN",
+                { timeZone: "Asia/Kolkata" }
+              )}
             </div>
           </div>
           <div>{a.appointment.status}</div>
@@ -220,126 +197,48 @@ const leaveCall = () => {
             Time Left: <strong>{timeLeft}</strong>
           </p>
 
+          {callStatus && (
+            <p>
+              <strong>Call status:</strong> {callStatus}
+            </p>
+          )}
+
           {!callStarted ? (
-            <button style={styles.primaryBtn} onClick={joinCall}>
-              Join Call
+            <button
+              style={styles.primaryBtn}
+              onClick={joinCall}
+              disabled={callStatus !== null}
+            >
+              {callStatus ? "Joining..." : "Join Call"}
             </button>
           ) : (
-            <button style={styles.dangerBtn} onClick={leaveCall}>
+            <button
+              style={styles.dangerBtn}
+              onClick={leaveCall}
+            >
               Leave Call
             </button>
           )}
 
-{callStarted && (
-  <div style={styles.videoBox}>
-    <video ref={localVideoRef} autoPlay muted style={styles.video} />
-    {Object.entries(remoteStreams).map(([id, stream]) => (
-      <video
-        key={id}
-        autoPlay
-        style={styles.video}
-        ref={el => el && (el.srcObject = stream)}
-      />
-    ))}
-  </div>
-)}
-
-        </div>
-      )}
-
-      {/* ================= UPDATE SECTION ================= */}
-      {selectedAppt && selectedDoctor && (
-        <div style={styles.details}>
-          <h4>Update Appointment Slot</h4>
-          {renderSlotGrid(selectedDoctor, selectedSlotKey, setSelectedSlotKey)}
-          <button
-            style={styles.primaryBtn}
-            onClick={() => saveAppointment(true)}
-          >
-            Update Slot
-          </button>
-        </div>
-      )}
-
-      {/* ================= BOOK SECTION ================= */}
-      <div style={styles.details}>
-        <h4>Book New Appointment</h4>
-
-        {doctors.map((d) => (
-          <div
-            key={d.doctor.doctorId}
-            style={{
-              ...styles.card,
-              background:
-                selectedDoctor?.doctor.doctorId === d.doctor.doctorId
-                  ? "#dcfce7"
-                  : "transparent",
-            }}
-            onClick={() => {
-              setSelectedDoctor(d);
-              setSelectedSlotKey(null);
-            }}
-          >
-            <strong>{d.user?.name}</strong>
-            <div style={styles.sub}>{d.user?.email}</div>
-          </div>
-        ))}
-
-        {selectedDoctor &&
-          renderSlotGrid(
-            selectedDoctor,
-            selectedSlotKey,
-            setSelectedSlotKey
+          {callStarted && (
+            <div style={styles.videoBox}>
+              {Object.entries(remoteStreams).map(
+                ([id, stream]) => (
+                  <video
+                    key={id}
+                    autoPlay
+                    playsInline
+                    style={styles.video}
+                    ref={(el) =>
+                      el && (el.srcObject = stream)
+                    }
+                  />
+                )
+              )}
+            </div>
           )}
-
-        <button
-          style={styles.primaryBtn}
-          onClick={() => saveAppointment(false)}
-        >
-          Book Slot
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/* ================= SLOT GRID RENDER ================= */
-function renderSlotGrid(doctor, selectedSlotKey, setSelectedSlotKey) {
-  const slotKey = (s) => `${s.day}-${s.startTime}-${s.endTime}`;
-
-  return (
-    <div style={styles.grid}>
-      {DAYS.map((day) => (
-        <div key={day} style={styles.dayColumn}>
-          <strong>{day}</strong>
-
-          {(doctor.slots || [])
-            .filter((s) => s.day === day)
-            .map((s) => {
-              const key = slotKey(s);
-              const selected = selectedSlotKey === key;
-
-              return (
-                <div
-                  key={key}
-                  onClick={() => !s.booked && setSelectedSlotKey(key)}
-                  style={{
-                    ...styles.slot,
-                    background: s.booked
-                      ? "#dc2626"
-                      : selected
-                      ? "#16a34a"
-                      : "#ffffff",
-                    color:
-                      s.booked || selected ? "#ffffff" : "#0f172a",
-                  }}
-                >
-                  {s.startTime} – {s.endTime}
-                </div>
-              );
-            })}
         </div>
-      ))}
+      )}
     </div>
   );
 }
@@ -377,22 +276,4 @@ const styles = {
   },
   videoBox: { marginTop: 20, display: "flex", gap: 10 },
   video: { width: "45%", border: "1px solid #e5e7eb" },
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(7, 1fr)",
-    gap: 16,
-    marginTop: 10,
-  },
-  dayColumn: {
-    border: "1px solid #e5e7eb",
-    borderRadius: 8,
-    padding: 10,
-  },
-  slot: {
-    border: "2px solid #cbd5e1",
-    padding: 8,
-    marginTop: 6,
-    textAlign: "center",
-    borderRadius: 8,
-  },
 };
