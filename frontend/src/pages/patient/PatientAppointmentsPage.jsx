@@ -102,29 +102,25 @@ export default function PatientAppointmentsPage() {
   }, [selectedAppt]);
 
   /* ================= CALL ================= */
-  const joinCall = async () => {
-    const roomId = selectedAppt.appointment.roomId; // ✅ FROM DB
+const joinCall = async () => {
+    setCallStarted(true); // Mount the UI first
+    const roomId = selectedAppt.appointment.roomId;
 
-    const connection = await createRoomConnection({
-      roomId,
-      localVideoRef,
-      role: "PATIENT",
-      onRemoteStream: (id, stream) => {
-        setRemoteStreams((s) => ({ ...s, [id]: stream }));
-      },
-      onStatus: setCallStatus, // 👈 loading feedback
-    });
-
-    setConn(connection);
-    setCallStarted(true);
-  };
-
-  const leaveCall = () => {
-    conn?.leave();
-    setRemoteStreams({});
-    setCallStarted(false);
-    setCallStatus(null);
-  };
+    try {
+        const connection = await createRoomConnection({
+            roomId,
+            localVideoRef, // Ensure <video> below is not conditional
+            role: "PATIENT",
+            onRemoteStream: (id, stream) => {
+                setRemoteStreams((s) => ({ ...s, [id]: stream }));
+            },
+            onStatus: setCallStatus,
+        });
+        setConn(connection);
+    } catch (e) {
+        setCallStarted(false);
+    }
+};
 
   /* ================= UI ================= */
   return (
@@ -219,24 +215,25 @@ export default function PatientAppointmentsPage() {
               Leave Call
             </button>
           )}
-
-          {callStarted && (
-            <div style={styles.videoBox}>
-              {Object.entries(remoteStreams).map(
-                ([id, stream]) => (
-                  <video
-                    key={id}
-                    autoPlay
-                    playsInline
-                    style={styles.video}
-                    ref={(el) =>
-                      el && (el.srcObject = stream)
-                    }
-                  />
-                )
-              )}
-            </div>
-          )}
+<div style={{ marginTop: 20, display: callStarted ? 'flex' : 'none', gap: 10 }}>
+    <video
+        ref={localVideoRef}
+        autoPlay
+        muted
+        playsInline
+        style={{ width: "45%", border: "1px solid #ccc", background: "black" }}
+    />
+    
+    {Object.entries(remoteStreams).map(([id, stream]) => (
+        <video
+            key={id}
+            autoPlay
+            playsInline
+            style={{ width: "45%", border: "1px solid #ccc", background: "black" }}
+            ref={(el) => el && (el.srcObject = stream)}
+        />
+    ))}
+</div>
         </div>
       )}
     </div>

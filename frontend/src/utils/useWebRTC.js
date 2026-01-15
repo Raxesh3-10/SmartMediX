@@ -4,15 +4,12 @@ export async function createRoomConnection({
   roomId,
   localVideoRef,
   onRemoteStream,
-  role,
-  onStatus, // 👈 loading callback
+  onStatus, 
 }) {
   const socket = getSocket();
-  const peers = {};
+  const peers = {}; // Keep track of peer connections
   const pendingICE = {};
   let localStream;
-
-  const isDoctor = role === "DOCTOR";
 
   onStatus?.("CONNECTING");
 
@@ -24,19 +21,30 @@ export async function createRoomConnection({
   /* ===== MEDIA ===== */
   onStatus?.("REQUESTING_MEDIA");
 
-  localStream = await navigator.mediaDevices.getUserMedia({
-    video: true,
-    audio: true,
-  });
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: true,
+    });
+  } catch (err) {
+    console.error("Failed to get media", err);
+    onStatus?.("MEDIA_ERROR");
+    throw err;
+  }
 
+  // Ensure the video element exists before attaching stream
   const video = localVideoRef.current;
-  if (!video) throw new Error("Local video ref missing");
-
-  video.srcObject = localStream;
-  video.muted = true;
-  video.playsInline = true;
+  if (!video) {
+    // If this triggers, it means the <video> tag wasn't rendered in the DOM yet
+    console.error("Local video ref missing. Ensure <video> is not conditionally rendered.");
+  } else {
+    video.srcObject = localStream;
+    video.muted = true; // Always mute local video to prevent feedback
+    video.playsInline = true;
+  }
 
   /* ===== CLEAN OLD LISTENERS ===== */
+  // Important: Remove old listeners to prevent duplicates if component re-renders
   socket.off("user-joined");
   socket.off("offer");
   socket.off("answer");
@@ -49,8 +57,10 @@ export async function createRoomConnection({
 
   /* ===== SIGNALING ===== */
 
+  // 1. Existing user sees new user join -> Initiates Offer
   socket.on("user-joined", async (remoteId) => {
-    if (!isDoctor || peers[remoteId]) return;
+    console.log("User joined:", remoteId);
+    if (peers[remoteId]) return; // Already connected
 
     const pc = createPeer(remoteId);
     peers[remoteId] = pc;
@@ -64,10 +74,13 @@ export async function createRoomConnection({
       from: socket.id,
       offer,
     });
+    onStatus?.("OFFERING");
   });
 
+  // 2. New user receives Offer -> Sends Answer
   socket.on("offer", async ({ offer, from }) => {
-    if (isDoctor || peers[from]) return;
+    console.log("Received offer from:", from);
+    if (peers[from]) return;
 
     const pc = createPeer(from);
     peers[from] = pc;
@@ -83,17 +96,25 @@ export async function createRoomConnection({
       from: socket.id,
       answer,
     });
-
+    
+    // Process any ICE candidates that arrived before the offer
     flushICE(from);
+    onStatus?.("ANSWERING");
   });
 
+  // 3. Original user receives Answer
   socket.on("answer", async ({ answer, from }) => {
-    await peers[from]?.setRemoteDescription(answer);
+    console.log("Received answer from:", from);
+    if (peers[from]) {
+      await peers[from].setRemoteDescription(answer);
+      onStatus?.("CONNECTED");
+    }
   });
 
+  // 4. Exchange ICE Candidates
   socket.on("ice-candidate", ({ candidate, from }) => {
     if (peers[from]?.remoteDescription) {
-      peers[from].addIceCandidate(candidate);
+      peers[from].addIceCandidate(candidate).catch(console.error);
     } else {
       pendingICE[from] ||= [];
       pendingICE[from].push(candidate);
@@ -101,27 +122,34 @@ export async function createRoomConnection({
   });
 
   socket.on("user-left", (id) => {
-    peers[id]?.close();
-    delete peers[id];
+    console.log("User left:", id);
+    if (peers[id]) {
+      peers[id].close();
+      delete peers[id];
+    }
+    onStatus?.("USER_LEFT");
   });
 
+  /* ===== HELPER: Create Peer Connection ===== */
   function createPeer(remoteId) {
     const pc = new RTCPeerConnection({
       iceServers: [
         { urls: "stun:stun.l.google.com:19302" },
-        { urls: "stun:global.stun.twilio.com:3478" },
+        // Add TURN servers here for production
       ],
     });
 
-    localStream.getTracks().forEach((t) =>
-      pc.addTrack(t, localStream)
-    );
+    // Add local tracks to the connection
+    localStream.getTracks().forEach((t) => pc.addTrack(t, localStream));
 
+    // Handle remote stream
     pc.ontrack = (e) => {
+      console.log("Received remote stream");
       onRemoteStream(remoteId, e.streams[0]);
-      onStatus?.("CONNECTED");
+      onStatus?.("ON_CALL");
     };
 
+    // Handle ICE candidates
     pc.onicecandidate = (e) => {
       if (e.candidate) {
         socket.emit("ice-candidate", {
@@ -137,17 +165,22 @@ export async function createRoomConnection({
   }
 
   function flushICE(id) {
-    (pendingICE[id] || []).forEach((c) =>
-      peers[id].addIceCandidate(c)
-    );
-    delete pendingICE[id];
+    if (pendingICE[id]) {
+      pendingICE[id].forEach((c) => peers[id].addIceCandidate(c).catch(console.error));
+      delete pendingICE[id];
+    }
   }
 
   return {
     leave() {
+      // Close all peer connections
       Object.values(peers).forEach((p) => p.close());
-      localStream.getTracks().forEach((t) => t.stop());
+      // Stop local camera/mic
+      if (localStream) {
+        localStream.getTracks().forEach((t) => t.stop());
+      }
       socket.emit("leave-room", roomId);
+      console.log("Left room");
     },
   };
 }

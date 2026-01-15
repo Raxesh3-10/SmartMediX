@@ -10,116 +10,106 @@ export default function DoctorAppointmentsPage() {
   const [selectedAppt, setSelectedAppt] = useState(null);
   const [search, setSearch] = useState("");
   const [timeLeft, setTimeLeft] = useState(null);
-const [callStarted, setCallStarted] = useState(false);
-const [conn, setConn] = useState(null);
-const [remoteStreams, setRemoteStreams] = useState({});
+  
+  // Call State
+  const [callStarted, setCallStarted] = useState(false);
+  const [conn, setConn] = useState(null);
+  const [remoteStreams, setRemoteStreams] = useState({});
+  const [callStatus, setCallStatus] = useState(null);
+  
   const localVideoRef = useRef(null);
-const [callStatus, setCallStatus] = useState(null);
 
   /* ================= LOAD ================= */
   useEffect(() => {
     loadAppointments();
   }, [doctor]);
-useEffect(() => {
-  return () => {
-    conn?.leave();
-  };
-}, []);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      conn?.leave();
+    };
+  }, [conn]);
 
   const loadAppointments = async () => {
-    const res = await AppointmentAPI.getDoctorAppointments(
-      doctor.doctorId
-    );
-    setAppointments(res.data);
+    try {
+      const res = await AppointmentAPI.getDoctorAppointments(doctor.doctorId);
+      setAppointments(res.data);
+    } catch (err) {
+      console.error("Error loading appointments", err);
+    }
   };
 
   /* ================= SEARCH ================= */
   const filtered = useMemo(() => {
     return appointments.filter((a) =>
-      `${a.user.name} ${a.user.email}`
+      `${a.user?.name} ${a.user?.email}`
         .toLowerCase()
         .includes(search.toLowerCase())
     );
   }, [appointments, search]);
 
-  /* ================= IST HELPERS ================= */
-  const toISTMillis = (date) =>
-    new Date(date).toLocaleString("en-US", {
-      timeZone: "Asia/Kolkata",
-    });
-
   const formatDiff = (totalSeconds) => {
-    if (totalSeconds <= 0) return "00 : 00 : 00";
-
-    const totalMinutes = Math.floor(totalSeconds / 60);
-    const days = Math.floor(totalMinutes / (24 * 60));
-    const hours = Math.floor(
-      (totalMinutes % (24 * 60)) / 60
-    );
-    const minutes = totalMinutes % 60;
-
-    return `${String(days).padStart(2, "0")} : ${String(
-      hours
-    ).padStart(2, "0")} : ${String(minutes).padStart(
-      2,
-      "0"
-    )}`;
+    if (totalSeconds <= 0) return "Ready";
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}m ${seconds}s`;
   };
 
   /* ================= COUNTDOWN ================= */
-useEffect(() => {
-  if (!selectedAppt) return;
-
-  const interval = setInterval(() => {
-    const date =
-      selectedAppt.appointment.appointmentDate.split("T")[0];
-
-    const start = new Date(
-      `${date}T${selectedAppt.appointment.startTime}`
-    ).getTime();
-
-    const diffSeconds = Math.floor(
-      (start - Date.now()) / 1000
-    );
-
-    setTimeLeft(diffSeconds);
-  }, 1000);
-
-  return () => clearInterval(interval);
-}, [selectedAppt]);
+  useEffect(() => {
+    if (!selectedAppt) return;
+    const interval = setInterval(() => {
+      const start = new Date(selectedAppt.appointment.startTime).getTime();
+      const diffSeconds = Math.floor((start - Date.now()) / 1000);
+      setTimeLeft(diffSeconds);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [selectedAppt]);
 
   /* ================= START CALL ================= */
-const startCall = async () => {
-  const roomId = `appointment-${selectedAppt.appointment.appointmentId}`;
+  const startCall = async () => {
+    // 1. Update UI state first
+    setCallStarted(true); 
 
-  const connection = await createRoomConnection({
-    roomId,
-    localVideoRef,
-    role: "DOCTOR",
-    onRemoteStream: (id, stream) => {
-      setRemoteStreams((s) => ({ ...s, [id]: stream }));
-    },
-    onStatus: setCallStatus,
-  });
+    // 2. Use the actual DB room ID, or fallback to generated one if logic dictates
+    const roomId = selectedAppt.appointment.roomId || `appointment-${selectedAppt.appointment.appointmentId}`;
 
-  setConn(connection);
-  setCallStarted(true);
-};
+    try {
+      const connection = await createRoomConnection({
+        roomId,
+        localVideoRef, // Ref is now guaranteed to exist because we un-hid the video
+        role: "DOCTOR",
+        onRemoteStream: (id, stream) => {
+          setRemoteStreams((prev) => ({ ...prev, [id]: stream }));
+        },
+        onStatus: setCallStatus,
+      });
+      setConn(connection);
+    } catch (error) {
+      console.error("Failed to start call:", error);
+      setCallStarted(false);
+      alert("Could not access camera/microphone.");
+    }
+  };
 
   /* ================= END CALL ================= */
-const endCallAndComplete = async () => {
-  conn?.leave();
-  setRemoteStreams({});
-  setCallStarted(false);
+  const endCallAndComplete = async () => {
+    conn?.leave();
+    setRemoteStreams({});
+    setCallStarted(false);
+    setConn(null);
 
-  await AppointmentAPI.completeAppointment(
-    selectedAppt.appointment.appointmentId
-  );
-
-  setSelectedAppt(null);
-  loadAppointments();
-};
-
+    try {
+      await AppointmentAPI.completeAppointment(
+        selectedAppt.appointment.appointmentId
+      );
+      setSelectedAppt(null);
+      loadAppointments();
+    } catch (err) {
+      console.error("Error completing appointment", err);
+    }
+  };
 
   return (
     <div style={styles.page}>
@@ -132,119 +122,97 @@ const endCallAndComplete = async () => {
         style={styles.search}
       />
 
+      {/* LIST */}
       {filtered.map((a) => {
-        const isSelected =
-          selectedAppt?.appointment.appointmentId ===
-          a.appointment.appointmentId;
-
+        const isSelected = selectedAppt?.appointment.appointmentId === a.appointment.appointmentId;
         return (
           <div
             key={a.appointment.appointmentId}
             style={{
               ...styles.card,
-              background: isSelected
-                ? "#dcfce7"
-                : "transparent",
+              background: isSelected ? "#dcfce7" : "transparent",
             }}
             onClick={() => {
+              if (callStarted) return; // Prevent changing while in call
               setSelectedAppt(a);
-              setCallStarted(false);
             }}
           >
             <div>
-              <strong>{a.user.name}</strong>
-              <div style={styles.sub}>
-                {a.user.email}
-              </div>
+              <strong>{a.user?.name}</strong>
+              <div style={styles.sub}>{a.user?.email}</div>
               <div style={styles.meta}>
-                {a.appointment.day} |{" "}
-                {new Date(
-                  a.appointment.startTime
-                ).toLocaleTimeString("en-IN", {
-                  timeZone: "Asia/Kolkata",
-                })}{" "}
-                –{" "}
-                {new Date(
-                  a.appointment.endTime
-                ).toLocaleTimeString("en-IN", {
-                  timeZone: "Asia/Kolkata",
-                })}
+                 {new Date(a.appointment.startTime).toLocaleTimeString()}
               </div>
             </div>
-
             <div>{a.appointment.status}</div>
           </div>
         );
       })}
 
+      {/* DETAILS PANEL */}
       {selectedAppt && (
         <div style={styles.details}>
-          <h4>Selected Appointment</h4>
+          <h4>Active Session: {selectedAppt.user.name}</h4>
+          <p>Time to start: <strong>{formatDiff(timeLeft)}</strong></p>
+          <p>Status: {callStatus || "Idle"}</p>
 
-          <p>
-            Patient:{" "}
-            <strong>{selectedAppt.user.name}</strong>
-          </p>
-
-          <p>
-            Time Left:{" "}
-            <strong>{formatDiff(timeLeft)}</strong>
-          </p>
-
-          {!callStarted &&
-            timeLeft !== null &&
-            timeLeft <= 600 &&
-            timeLeft > 0 && (
-              <button
-                style={styles.primaryBtn}
-                onClick={startCall}
-              >
-                Start Call
+          <div style={styles.controls}>
+            {!callStarted ? (
+              <button style={styles.primaryBtn} onClick={startCall}>
+                Start Video Call
+              </button>
+            ) : (
+              <button style={styles.dangerBtn} onClick={endCallAndComplete}>
+                End Call & Mark Complete
               </button>
             )}
-          {callStatus && <p>Status: {callStatus}</p>}
-          {callStarted && (
-            <button
-              style={styles.dangerBtn}
-              onClick={endCallAndComplete}
-            >
-              End Call & Complete
-            </button>
-          )}
+          </div>
 
-{callStarted && (
-  <div style={styles.videoBox}>
-    <video
-      ref={localVideoRef}
-      autoPlay
-      muted
-      style={styles.video}
-    />
-    {Object.entries(remoteStreams).map(([id, stream]) => (
-      <video
-        key={id}
-        autoPlay
-        style={styles.video}
-        ref={el => el && (el.srcObject = stream)}
-      />
-    ))}
-  </div>
-)}
+          {/* VIDEO CONTAINER */}
+          {/* CRITICAL FIX: We use 'display' to toggle visibility, but the element is ALWAYS mounted.
+              This ensures localVideoRef.current is never null. */}
+          <div style={{ ...styles.videoBox, display: callStarted ? 'flex' : 'none' }}>
+            
+            {/* Local Video */}
+            <div style={styles.videoWrapper}>
+                <span style={styles.label}>You</span>
+                <video
+                  ref={localVideoRef}
+                  autoPlay
+                  muted
+                  playsInline
+                  style={styles.video}
+                />
+            </div>
 
+            {/* Remote Videos */}
+            {Object.entries(remoteStreams).map(([id, stream]) => (
+               <div key={id} style={styles.videoWrapper}>
+                  <span style={styles.label}>Patient</span>
+                  <video
+                    autoPlay
+                    playsInline
+                    style={styles.video}
+                    ref={(el) => {
+                      if (el) el.srcObject = stream;
+                    }}
+                  />
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-/* ================= STYLES ================= */
 const styles = {
   page: { padding: 20 },
-  search: { marginBottom: 15, padding: 6, width: "100%" },
+  search: { marginBottom: 15, padding: 8, width: "100%", boxSizing: "border-box" },
   card: {
     display: "flex",
     justifyContent: "space-between",
-    padding: "10px",
+    padding: "12px",
     borderBottom: "1px solid #e5e7eb",
     cursor: "pointer",
   },
@@ -252,22 +220,54 @@ const styles = {
   meta: { fontSize: 13 },
   details: {
     marginTop: 20,
-    padding: 15,
+    padding: 20,
     border: "1px solid #e5e7eb",
+    borderRadius: 8,
+    background: "#f8fafc"
   },
+  controls: { marginBottom: 20 },
   primaryBtn: {
     marginRight: 10,
     background: "#2563eb",
     color: "#fff",
     border: "none",
-    padding: "8px 14px",
+    padding: "10px 20px",
+    borderRadius: 5,
+    cursor: "pointer"
   },
   dangerBtn: {
     background: "#dc2626",
     color: "#fff",
     border: "none",
-    padding: "8px 14px",
+    padding: "10px 20px",
+    borderRadius: 5,
+    cursor: "pointer"
   },
-  videoBox: { marginTop: 20, display: "flex", gap: 10 },
-  video: { width: "45%", border: "1px solid #e5e7eb" },
-};
+  videoBox: { 
+    marginTop: 20, 
+    display: "flex", 
+    gap: 15,
+    flexWrap: "wrap"
+  },
+  videoWrapper: {
+    position: 'relative',
+    width: "45%",
+    minWidth: "300px"
+  },
+  video: { 
+    width: "100%", 
+    background: "#000", 
+    borderRadius: 8,
+    border: "1px solid #ccc"
+  },
+  label: {
+    position: 'absolute',
+    top: 5,
+    left: 5,
+    background: "rgba(0,0,0,0.5)",
+    color: "white",
+    padding: "2px 8px",
+    borderRadius: 4,
+    fontSize: "12px"
+  }
+}
