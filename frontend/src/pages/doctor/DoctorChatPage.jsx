@@ -6,13 +6,15 @@ import { useOutletContext } from "react-router-dom";
 export default function DoctorChatPage() {
   const { user, doctor } = useOutletContext();
 
-  const [mode, setMode] = useState("CHATS"); // CHATS | NEW
+  const [mode, setMode] = useState("CHATS");
   const [patients, setPatients] = useState([]);
   const [search, setSearch] = useState("");
   const [selectedPatient, setSelectedPatient] = useState(null);
+  const [unreadMap, setUnreadMap] = useState({}); // patientId -> count
 
   useEffect(() => {
     loadPatients();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
 
   const loadPatients = async () => {
@@ -21,20 +23,40 @@ export default function DoctorChatPage() {
         ? await ChatAPI.getDoctorChatPatients(doctor.doctorId)
         : await ChatAPI.getDoctorNewPatients(doctor.doctorId);
 
+    const unread = {};
+
+    for (const p of res.data) {
+      const history = await ChatAPI.getChatHistory(
+        doctor.doctorId,
+        p.patient.patientId
+      );
+
+      unread[p.patient.patientId] = history.data.filter(
+        (m) => !m.read && m.senderRole === "PATIENT"
+      ).length;
+    }
+
+    setUnreadMap(unread);
     setPatients(res.data);
   };
 
-  const filtered = patients.filter(
-    (p) =>
-      p.user?.name?.toLowerCase().includes(search.toLowerCase()) ||
-      p.user?.email?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = patients
+    .filter(
+      (p) =>
+        p.user?.name?.toLowerCase().includes(search.toLowerCase()) ||
+        p.user?.email?.toLowerCase().includes(search.toLowerCase())
+    )
+    // 🔑 UNREAD FIRST
+    .sort((a, b) => {
+      const ua = unreadMap[a.patient.patientId] || 0;
+      const ub = unreadMap[b.patient.patientId] || 0;
+      return ub - ua;
+    });
 
   return (
     <div style={styles.page}>
       {/* ================= LEFT SIDEBAR ================= */}
       <div style={styles.sidebar}>
-        {/* TOP BUTTONS */}
         <div style={styles.topBar}>
           <button
             onClick={() => setMode("CHATS")}
@@ -67,20 +89,29 @@ export default function DoctorChatPage() {
         {/* PATIENT LIST */}
         <div style={styles.list}>
           {filtered.map((p) => {
+            const pid = p.patient.patientId;
+            const unread = unreadMap[pid] || 0;
             const isActive =
-              selectedPatient?.patientId === p.patient.patientId;
+              selectedPatient?.patient.patientId === pid;
 
             return (
               <div
-                key={p.patient.patientId}
+                key={pid}
                 style={{
                   ...styles.chatItem,
                   ...(isActive ? styles.activeChat : {}),
                 }}
                 onClick={() => setSelectedPatient(p)}
               >
-                <strong>{p.user?.name}</strong>
-                <div style={styles.email}>{p.user?.email}</div>
+                <strong>
+                  {p.user?.name}
+                  {unread > 0 && ` (${unread})`}
+                </strong>
+
+                <div style={styles.email}>
+                  {p.user?.email}
+                  {unread > 0 && " • unread"}
+                </div>
               </div>
             );
           })}
@@ -174,7 +205,6 @@ const styles = {
   /* ===== CHAT AREA ===== */
   chatArea: {
     flex: 1,
-    display: "flex",
   },
 
   empty: {

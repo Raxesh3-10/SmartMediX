@@ -20,6 +20,8 @@ public class ChatMessage {
     private String message;
     private List<String> fileUrls;
 
+    private boolean read = false; // ✅ read status
+
     private Instant sentAt;
 
     public String getMessageId() { return messageId; }
@@ -33,15 +35,18 @@ public class ChatMessage {
 
     public String getSenderRole() { return senderRole; }
     public void setSenderRole(String senderRole) { this.senderRole = senderRole; }
-    
-    public String getMessage() { return message; }
-    public void setMessage(String message) { this.message = message; }  
-    
-    public List<String> getFileUrls() { return fileUrls; }
-    public void setFileUrls(List<String> fileUrls) { this.fileUrls = fileUrls; }
 
     public String getSenderId() { return senderId; }
     public void setSenderId(String senderId) { this.senderId = senderId; }
+
+    public String getMessage() { return message; }
+    public void setMessage(String message) { this.message = message; }
+
+    public List<String> getFileUrls() { return fileUrls; }
+    public void setFileUrls(List<String> fileUrls) { this.fileUrls = fileUrls; }
+
+    public boolean isRead() { return read; }
+    public void setRead(boolean read) { this.read = read; }
 
     public Instant getSentAt() { return sentAt; }
     public void setSentAt(Instant sentAt) { this.sentAt = sentAt; }

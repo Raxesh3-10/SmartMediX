@@ -19,6 +19,7 @@ export default function PatientLayout() {
       setUser(u.data);
       setPatient(p.data);
     };
+
     load();
   }, [navigate]);
 
@@ -29,58 +30,76 @@ export default function PatientLayout() {
     navigate("/login");
   };
 
-  if (!user || !patient) return <p>Loading...</p>;
+  if (!user || !patient) return <p style={{ padding: 30 }}>Loading...</p>;
 
   return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <div>{user.name}</div>
+    <div style={styles.page}>
+      {/* ===== TOP BAR ===== */}
+      <div style={styles.topBar}>
         <div>
-          <Link to="/patient">Dashboard</Link>
-          <Link to="/patient/chat">Chats</Link>
-          <Link to="/patient/appointments">Appointments</Link>
-          <Link to="/patient/bills">Bills</Link>
-          <button onClick={handleLogout}>Logout</button>
+          <div>{user.name}</div>
+          <div style={styles.email}>{user.email}</div>
+        </div>
+
+        <div>
+          <Link to="/patient" style={styles.link}>Dashboard</Link>
+          <Link to="/patient/chat" style={styles.link}>Chats</Link>
+          <Link to="/patient/appointments" style={styles.link}>Appointments</Link>
+          <Link to="/patient/bills" style={styles.link}>Bills</Link>
+
+          <button style={styles.logoutBtn} onClick={handleLogout}>
+            Logout
+          </button>
         </div>
       </div>
 
+      {/* ===== PAGE CONTENT ===== */}
       <Outlet context={{ user, patient }} />
     </div>
   );
 }
+
+/* ================= STYLES ================= */
 
 const styles = {
   page: {
     padding: 40,
     maxWidth: 1300,
     margin: "auto",
+    fontFamily: "Arial, sans-serif",
     backgroundColor: "#f8fafc",
-    fontFamily: "Arial",
+    minHeight: "100vh",
   },
+
   topBar: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 30,
-    paddingBottom: 15,
     borderBottom: "2px solid #e5e7eb",
+    paddingBottom: 15,
+    marginBottom: 30,
   },
+
   email: {
     fontSize: 12,
     color: "#64748b",
   },
+
   link: {
     marginRight: 15,
-    textDecoration: "none",
     color: "#2563eb",
+    textDecoration: "none",
     fontWeight: 500,
   },
+
   logoutBtn: {
     padding: "8px 14px",
     background: "#0f172a",
-    color: "#fff",
-    borderRadius: 6,
+    color: "#ffffff",
     border: "none",
+    borderRadius: 6,
     cursor: "pointer",
+    fontSize: 13,
+    fontWeight: 600,
   },
 };

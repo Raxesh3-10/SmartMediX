@@ -23,4 +23,7 @@ public interface ChatRepository extends MongoRepository<ChatMessage, String> {
 
     boolean existsByMessageIdAndSenderId(String messageId, String senderId);
 
+    List<ChatMessage> findByDoctorIdAndPatientIdAndReadFalseAndSenderRole(String doctorId, String patientId,
+            String string);
+
 }

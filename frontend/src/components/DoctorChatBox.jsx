@@ -2,7 +2,31 @@ import { useEffect, useRef, useState } from "react";
 import { ChatAPI, ChatFileAPI } from "../api/api";
 import { encryptMessage, decryptMessage } from "../utils/chatCrypto";
 
-export default function DoctorChatBox({ user, patientUser,doctor, patient }) {
+/* ================= DATE FORMATTER ================= */
+
+const formatDateTime = (iso) => {
+  const d = new Date(iso);
+
+  const date = d.toLocaleDateString(undefined, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+
+  const time = d.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  return `${date} • ${time}`;
+};
+
+export default function DoctorChatBox({
+  user,
+  patientUser,
+  doctor,
+  patient,
+}) {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -39,7 +63,24 @@ export default function DoctorChatBox({ user, patientUser,doctor, patient }) {
         : "",
     }));
 
-    setMessages(decrypted);
+    // ===== READ FIRST, UNREAD LAST (PATIENT ONLY) =====
+    const readMessages = decrypted.filter(
+      (m) => m.read || m.senderRole === "DOCTOR"
+    );
+
+    const unreadMessages = decrypted.filter(
+      (m) => !m.read && m.senderRole === "PATIENT"
+    );
+
+    setMessages([...readMessages, ...unreadMessages]);
+
+    // ===== MARK READ AFTER DISPLAY =====
+    if (unreadMessages.length > 0) {
+      await ChatAPI.markChatAsRead(
+        doctor.doctorId,
+        patient.patientId
+      );
+    }
   };
 
   /* ================= SEND MESSAGE ================= */
@@ -89,12 +130,9 @@ export default function DoctorChatBox({ user, patientUser,doctor, patient }) {
 
       setText("");
       setSelectedFiles([]);
+      if (fileInputRef.current) fileInputRef.current.value = "";
 
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-
-      await loadChat();
+      await loadChat(); // refresh + auto mark read
     } finally {
       setUploading(false);
     }
@@ -120,58 +158,59 @@ export default function DoctorChatBox({ user, patientUser,doctor, patient }) {
 
       {/* CHAT */}
       <div style={styles.chat}>
-        {messages.map((m) => (
-          <div
-            key={m.messageId}
-            style={{
-              ...styles.msg,
-              alignSelf:
-                m.senderRole === "DOCTOR"
-                  ? "flex-end"
-                  : "flex-start",
-              background:
-                m.senderRole === "DOCTOR"
+        {messages.map((m) => {
+          const isDoctor = m.senderRole === "DOCTOR";
+          const isUnreadPatient =
+            !m.read && m.senderRole === "PATIENT";
+
+          return (
+            <div
+              key={m.messageId}
+              style={{
+                ...styles.msg,
+                alignSelf: isDoctor ? "flex-end" : "flex-start",
+                background: isUnreadPatient
+                  ? "#e6ffe6"
+                  : isDoctor
                   ? "#dcf8c6"
                   : "#ffffff",
-            }}
-          >
-            {m.message && <div>{m.message}</div>}
+              }}
+            >
+              {m.message && <div>{m.message}</div>}
 
-            {m.fileUrls?.map((url, i) => (
-              <div key={i} style={{ marginTop: 6 }}>
-                {url.includes("/images/") ? (
-                  <img
-                    src={url}
-                    alt="attachment"
-                    style={styles.image}
-                    onClick={() =>
-                      window.open(
-                        url,
-                        "_blank",
-                        "noopener,noreferrer"
-                      )
-                    }
-                  />
-                ) : (
-                  <a
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    📄 Open PDF
-                  </a>
-                )}
+              {m.fileUrls?.map((url, i) => (
+                <div key={i} style={{ marginTop: 6 }}>
+                  {url.includes("/images/") ? (
+                    <img
+                      src={url}
+                      alt="attachment"
+                      style={styles.image}
+                      onClick={() =>
+                        window.open(
+                          url,
+                          "_blank",
+                          "noopener,noreferrer"
+                        )
+                      }
+                    />
+                  ) : (
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      📄 Open PDF
+                    </a>
+                  )}
+                </div>
+              ))}
+
+              <div style={styles.time}>
+                {formatDateTime(m.sentAt)}
               </div>
-            ))}
-
-            <div style={styles.time}>
-              {new Date(m.sentAt).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
             </div>
-          </div>
-        ))}
+          );
+        })}
         <div ref={chatEndRef} />
       </div>
 
@@ -208,6 +247,7 @@ export default function DoctorChatBox({ user, patientUser,doctor, patient }) {
 const styles = {
   container: {
     height: "100%",
+    weight: "100%",
     display: "flex",
     flexDirection: "column",
     background: "#e5ddd5",
@@ -230,7 +270,7 @@ const styles = {
     gap: 8,
   },
   msg: {
-    maxWidth: "70%",
+    maxWidth: "100%",
     padding: 8,
     borderRadius: 6,
     fontSize: 14,

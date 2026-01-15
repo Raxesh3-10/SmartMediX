@@ -42,6 +42,18 @@ public class ChatController {
                 fileUrls
         );
     }
+
+    /* ================= MARK CHAT AS READ ================= */
+
+@PatchMapping("/read/{doctorId}/{patientId}")
+public void markChatAsRead(
+        @RequestHeader("JWT") String token,
+        @PathVariable String doctorId,
+        @PathVariable String patientId) {
+
+    service.markChatAsRead(token, doctorId, patientId);
+}
+
     /* ================= DELETE MESSAGE ================= */
 
 @DeleteMapping("/message/{messageId}")

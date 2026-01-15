@@ -121,6 +121,7 @@ public ChatMessage sendMessage(
     chat.setSenderRole(senderRole);
     chat.setSenderId(senderId); // domain ID (doctorId or patientId)
     chat.setMessage(message);
+    chat.setRead(false);
     chat.setFileUrls(fileUrls);
     chat.setSentAt(Instant.now());
 
@@ -208,6 +209,53 @@ public void deleteMessage(String token, String messageId) {
         return chatRepo
                 .findByDoctorIdAndPatientIdOrderBySentAtAsc(doctorId, patientId);
     }
+
+    /* ================= MARK CHAT AS READ ================= */
+
+public void markChatAsRead(
+        String token,
+        String doctorId,
+        String patientId) {
+
+    validateToken(token);
+
+    Role role = getRole(token);
+    String uid = getUserId(token);
+
+    if (role == Role.DOCTOR) {
+        Doctor doctor = doctorRepo.findById(doctorId)
+                .orElseThrow(() -> new RuntimeException("Doctor not found"));
+
+        if (!doctor.getUserId().equals(uid)) {
+            throw new RuntimeException("Unauthorized doctor");
+        }
+
+        List<ChatMessage> unread =
+                chatRepo.findByDoctorIdAndPatientIdAndReadFalseAndSenderRole(
+                        doctorId, patientId, "PATIENT"
+                );
+
+        unread.forEach(m -> m.setRead(true));
+        chatRepo.saveAll(unread);
+    }
+
+    if (role == Role.PATIENT) {
+        Patient patient = patientRepo.findById(patientId)
+                .orElseThrow(() -> new RuntimeException("Patient not found"));
+
+        if (!patient.getUserId().equals(uid)) {
+            throw new RuntimeException("Unauthorized patient");
+        }
+
+        List<ChatMessage> unread =
+                chatRepo.findByDoctorIdAndPatientIdAndReadFalseAndSenderRole(
+                        doctorId, patientId, "DOCTOR"
+                );
+
+        unread.forEach(m -> m.setRead(true));
+        chatRepo.saveAll(unread);
+    }
+}
 
     /* ================= DOCTOR ROUTES ================= */
 

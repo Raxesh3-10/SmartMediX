@@ -10,9 +10,11 @@ export default function PatientChatPage() {
   const [doctors, setDoctors] = useState([]);
   const [search, setSearch] = useState("");
   const [selectedDoctor, setSelectedDoctor] = useState(null);
+  const [unreadMap, setUnreadMap] = useState({}); // doctorId -> count
 
   useEffect(() => {
     loadDoctors();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
 
   const loadDoctors = async () => {
@@ -21,14 +23,35 @@ export default function PatientChatPage() {
         ? await ChatAPI.getPatientChatDoctors(patient.patientId)
         : await ChatAPI.getPatientNewDoctors(patient.patientId);
 
+    const unread = {};
+
+    for (const d of res.data) {
+      const history = await ChatAPI.getPatientChatHistory(
+        patient.patientId,
+        d.doctor.doctorId
+      );
+
+      unread[d.doctor.doctorId] = history.data.filter(
+        (m) => !m.read && m.senderRole === "DOCTOR"
+      ).length;
+    }
+
+    setUnreadMap(unread);
     setDoctors(res.data);
   };
 
-  const filtered = doctors.filter(
-    (d) =>
-      d.user?.name?.toLowerCase().includes(search.toLowerCase()) ||
-      d.user?.email?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = doctors
+    .filter(
+      (d) =>
+        d.user?.name?.toLowerCase().includes(search.toLowerCase()) ||
+        d.user?.email?.toLowerCase().includes(search.toLowerCase())
+    )
+    // 🔑 UNREAD FIRST
+    .sort((a, b) => {
+      const ua = unreadMap[a.doctor.doctorId] || 0;
+      const ub = unreadMap[b.doctor.doctorId] || 0;
+      return ub - ua;
+    });
 
   return (
     <div style={styles.page}>
@@ -67,20 +90,29 @@ export default function PatientChatPage() {
         {/* DOCTOR LIST */}
         <div style={styles.list}>
           {filtered.map((d) => {
+            const did = d.doctor.doctorId;
+            const unread = unreadMap[did] || 0;
             const isActive =
-              selectedDoctor?.doctorId === d.doctor.doctorId;
+              selectedDoctor?.doctor.doctorId === did;
 
             return (
               <div
-                key={d.doctor.doctorId}
+                key={did}
                 style={{
                   ...styles.chatItem,
                   ...(isActive ? styles.activeChat : {}),
                 }}
                 onClick={() => setSelectedDoctor(d)}
               >
-                <strong>{d.user?.name}</strong>
-                <div style={styles.email}>{d.user?.email}</div>
+                <strong>
+                  {d.user?.name}
+                  {unread > 0 && ` (${unread})`}
+                </strong>
+
+                <div style={styles.email}>
+                  {d.user?.email}
+                  {unread > 0 && " • unread"}
+                </div>
               </div>
             );
           })}
@@ -105,7 +137,6 @@ export default function PatientChatPage() {
     </div>
   );
 }
-
 /* ================= PAGE STYLES ================= */
 
 const styles = {
@@ -162,7 +193,6 @@ const styles = {
   },
   chatArea: {
     flex: 1,
-    display: "flex",
   },
   empty: {
     margin: "auto",

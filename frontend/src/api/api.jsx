@@ -52,6 +52,10 @@ export const ChatAPI = {
   deleteMessage: (messageId) =>
     api.delete(`/chat/message/${messageId}`),
 
+  /* ========== MARK READ ========== */
+  markChatAsRead: (doctorId, patientId) =>
+    api.patch(`/chat/read/${doctorId}/${patientId}`),
+  
   /* ========== CHAT HISTORY ========== */
   getChatHistory: (doctorId, patientId) =>
     api.get(`/chat/history/${doctorId}/${patientId}`),
@@ -222,6 +226,32 @@ export const PaymentAPI = {
     api.post("/payments/pay", null, {
       params: { appointmentId },
     }),
+};
+
+/* ======================================================
+   FAMILY API
+   Maps to: /api/family/**
+====================================================== */
+
+export const FamilyAPI = {
+  /* ========== CREATE FAMILY ========== */
+  createFamily: () =>
+    api.post("/family/create"),
+
+  /* ========== ADD FAMILY MEMBER ========== */
+  addMember: ({ patientId, relation }) =>
+    api.post("/family/add-member", {
+      patientId,
+      relation,
+    }),
+
+  /* ========== REMOVE FAMILY MEMBER ========== */
+  removeMember: (patientId) =>
+    api.delete(`/family/remove/${patientId}`),
+
+  /* ========== GET FAMILY MEMBERS ========== */
+  getMembers: () =>
+    api.get("/family/members"),
 };
 
 export default api;
