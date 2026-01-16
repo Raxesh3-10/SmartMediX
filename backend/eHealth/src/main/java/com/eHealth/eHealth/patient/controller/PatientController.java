@@ -1,7 +1,10 @@
 package com.eHealth.eHealth.patient.controller;
 
+import java.util.List;
+
 import org.springframework.web.bind.annotation.*;
 
+import com.eHealth.eHealth.dto.PatientWithUserDTO;
 import com.eHealth.eHealth.model.Patient;
 import com.eHealth.eHealth.patient.service.PatientService;
 
@@ -14,6 +17,11 @@ public class PatientController {
 
     public PatientController(PatientService patientService) {
         this.patientService = patientService;
+    }
+
+    @GetMapping
+    public List<PatientWithUserDTO> getAllPatients(@RequestHeader("JWT") String jwt) {
+        return patientService.getAllPatients(jwt);
     }
 
     // ================= CREATE =================

@@ -1,12 +1,15 @@
 package com.eHealth.eHealth.patient.service.impl;
 
 import java.time.Instant;
+import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.eHealth.eHealth.dto.PatientWithUserDTO;
 import com.eHealth.eHealth.model.Patient;
+import com.eHealth.eHealth.model.User;
 import com.eHealth.eHealth.patient.service.PatientService;
 import com.eHealth.eHealth.repository.JwtSessionRepository;
 import com.eHealth.eHealth.repository.PatientRepository;
@@ -24,6 +27,21 @@ public class PatientServiceImpl implements PatientService {
         this.patientRepo = patientRepo;
         this.userRepo=userRepo;
         this.jwtRepo=jwtRepo;
+    }
+
+    @Override
+    public List<PatientWithUserDTO> getAllPatients(String jwt) {
+        validatePatientJwt(jwt);
+        return patientRepo.findAll()
+                .stream()
+                .map(patient -> {
+                    User user = userRepo
+                            .findById(patient.getUserId())
+                            .orElse(null);
+
+                    return new PatientWithUserDTO(patient, user);
+                })
+                .toList();
     }
 
     // ================= VALIDATION =================

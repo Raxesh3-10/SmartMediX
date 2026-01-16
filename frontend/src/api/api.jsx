@@ -137,12 +137,27 @@ export const AuthAPI = {
 ====================================================== */
 
 export const AdminAPI = {
-  getAllUsers: () => api.get("/admin/users"),
-  getUserById: (id) => api.get(`/admin/users/${id}`),
-  createUser: (user) => api.post("/admin/users", user),
-  updateUser: (id, user) => api.put(`/admin/users/${id}`, user),
-  deleteUser: (id) => api.delete(`/admin/users/${id}`),
-  getActiveSessions: () => api.get("/admin/sessions"),
+  /* ================= DASHBOARD ================= */
+  getDashboardStats: () => api.get("/admin/dashboard"),
+
+  /* ================= USERS (FULL VIEW) ================= */
+
+  // 🔥 Admin full user view (User + Patient/Doctor + Appointments + Transactions + Family)
+  getAllUsersFull: () => api.get("/admin/users/full"),
+
+  // 🔥 Admin full delete (removes related patient/doctor data safely)
+  deleteUserFull: (userId) =>
+    api.delete(`/admin/users/${userId}/full`),
+
+  /* ================= ADMIN USER MANAGEMENT ================= */
+
+  // Create ADMIN only
+  createAdminUser: (user) =>
+    api.post("/admin/users", user),
+
+  // Update name / role only
+  updateUser: (id, user) =>
+    api.put(`/admin/users/${id}`, user),
 };
 
 /* ======================================================
@@ -174,6 +189,9 @@ export const PatientAPI = {
 
   deleteProfile: (patientId) =>
     api.delete(`/patients/${patientId}`),
+
+  getAllPatients: () =>
+    api.get("/patients"),
 };
 
 

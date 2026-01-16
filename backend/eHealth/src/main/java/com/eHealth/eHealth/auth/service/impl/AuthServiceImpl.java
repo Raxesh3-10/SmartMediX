@@ -72,43 +72,87 @@ public class AuthServiceImpl implements AuthService {
 
         return "Signup successful";
     }
-    @Override
-    public String updateProfile(UpdateProfileRequest request) {
-        User user = userRepository.findByEmail(request.getCurrentEmail())
-            .orElseThrow(() -> new RuntimeException("User not found"));
-        boolean isEmailChange = request.getNewEmail() != null &&
-                            !request.getNewEmail().equals(user.getEmail());
+@Override
+public String updateProfile(UpdateProfileRequest request) {
 
-    /* ---------------- EMAIL CHANGE FLOW ---------------- */
-        if (isEmailChange) {
-        // Check email availability
-            if (userRepository.findByEmail(request.getNewEmail()).isPresent()) {
-                return "Email already in use";
-            }
-        // OTP not yet provided → SEND OTP
-            if (request.getOtp() == null) {
-                otpService.sendEmailOtp(request.getNewEmail());
-                return "OTP sent to new email";
-            }
-        // OTP provided → VERIFY
-            boolean validOtp = otpService.verifyOtp(
-                    request.getNewEmail(),
-                    request.getOtp()
-            );
-            if (!validOtp) {
-            return "Invalid or expired OTP";
-            }
-        // Update email
-        user.setEmail(request.getNewEmail());
-        }
-    /* ---------------- NAME CHANGE FLOW ---------------- */
-        if (request.getNewName() != null &&
-            !request.getNewName().equals(user.getName())) {
-            user.setName(request.getNewName());
-            }
-        userRepository.save(user);
-        return "Profile updated successfully";
+    User user = userRepository.findByEmail(request.getCurrentEmail())
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+    boolean emailChange =
+            request.getNewEmail() != null &&
+            !request.getNewEmail().isBlank() &&
+            !request.getNewEmail().equals(user.getEmail());
+
+    boolean nameChange =
+            request.getNewName() != null &&
+            !request.getNewName().isBlank() &&
+            !request.getNewName().equals(user.getName());
+
+    boolean passwordChange =
+            request.getNewPassword() != null &&
+            !request.getNewPassword().isBlank();
+
+    if (!emailChange && !nameChange && !passwordChange) {
+        return "No changes requested";
     }
+
+    /* =====================================================
+       STEP 1: SEND OTP
+       ===================================================== */
+    if (request.getOtp() == null) {
+
+        if (emailChange &&
+            userRepository.findByEmail(request.getNewEmail()).isPresent()) {
+            return "Email already in use";
+        }
+
+        String otpTargetEmail = emailChange
+                ? request.getNewEmail()
+                : user.getEmail();
+
+        if (otpTargetEmail == null || otpTargetEmail.isBlank()) {
+            throw new RuntimeException("Invalid email for OTP");
+        }
+
+        otpService.sendEmailOtp(otpTargetEmail);
+        return "OTP sent";
+    }
+
+    /* =====================================================
+       STEP 2: VERIFY OTP
+       ===================================================== */
+    String otpTargetEmail = emailChange
+            ? request.getNewEmail()
+            : user.getEmail();
+
+    boolean validOtp = otpService.verifyOtp(
+            otpTargetEmail,
+            request.getOtp()
+    );
+
+    if (!validOtp) {
+        return "Invalid or expired OTP";
+    }
+
+    /* =====================================================
+       APPLY UPDATES
+       ===================================================== */
+    if (emailChange) {
+        user.setEmail(request.getNewEmail());
+    }
+
+    if (nameChange) {
+        user.setName(request.getNewName());
+    }
+
+    if (passwordChange) {
+        // TODO: hash later
+        user.setPassword(request.getNewPassword());
+    }
+
+    userRepository.save(user);
+    return "Profile updated successfully";
+}
 
     @Override
     public String logout(String token) {

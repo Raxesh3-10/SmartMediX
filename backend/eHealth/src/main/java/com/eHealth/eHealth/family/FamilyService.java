@@ -48,7 +48,8 @@ public class FamilyService {
 
         if (owner.getFamilyId() != null)
             throw new RuntimeException("Patient already belongs to a family");
-
+        if(familyRepository.findByOwnerPatientId(owner.getPatientId()).isPresent())
+            throw new RuntimeException("Family already exists for this patient");
         Family family = new Family();
         family.setOwnerPatientId(owner.getPatientId());
 
@@ -116,7 +117,7 @@ public class FamilyService {
             patientRepository.save(p);
         });
 
-        if (family.getMembers().size() == 1) {
+        if (family.getMembers().size() == 0) {
             // only owner remains
             owner.setFamilyId(null);
             patientRepository.save(owner);
@@ -146,7 +147,7 @@ public class FamilyService {
             if (p == null) continue;
 
             User u = userRepository.findById(p.getUserId()).orElse(null);
-            response.add(new FamilyMemberResponse(p, u));
+            response.add(new FamilyMemberResponse(p, u, m.getRelation(), m.isPrimary()));
         }
 
         return response;

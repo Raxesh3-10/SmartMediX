@@ -17,4 +17,6 @@ public interface AppointmentRepository extends MongoRepository<Appointment,Strin
     boolean existsByDoctorIdAndPatientId(String doctorId, String patientId);
     boolean existsByDoctorIdAndDayAndStartTimeAndEndTimeAndStatusNot(String doctorId, String day, LocalTime startTime,
             LocalTime endTime, String string);
+    void deleteByPatientId(String patientId);
+    void deleteByDoctorId(String doctorId);
 }

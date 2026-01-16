@@ -26,4 +26,6 @@ public interface ChatRepository extends MongoRepository<ChatMessage, String> {
     List<ChatMessage> findByDoctorIdAndPatientIdAndReadFalseAndSenderRole(String doctorId, String patientId,
             String string);
 
+        long count();
+
 }

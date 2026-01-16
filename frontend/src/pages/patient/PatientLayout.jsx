@@ -4,8 +4,20 @@ import { AuthAPI, PatientAPI } from "../../api/api";
 
 export default function PatientLayout() {
   const navigate = useNavigate();
+
   const [user, setUser] = useState(null);
   const [patient, setPatient] = useState(null);
+
+  const [showForm, setShowForm] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const [form, setForm] = useState({
+    newName: "",
+    newEmail: "",
+    newPassword: "",
+    otp: "",
+  });
 
   useEffect(() => {
     if (!localStorage.getItem("JWT")) {
@@ -30,15 +42,68 @@ export default function PatientLayout() {
     navigate("/login");
   };
 
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  /* ================= SEND OTP / VERIFY OTP ================= */
+
+  const handleUpdateProfile = async () => {
+    setLoading(true);
+
+    try {
+      const payload = {
+        currentEmail: user.email,
+        ...(form.newName.trim() && { newName: form.newName.trim() }),
+        ...(form.newEmail.trim() && { newEmail: form.newEmail.trim() }),
+        ...(form.newPassword.trim() && { newPassword: form.newPassword.trim() }),
+        ...(otpSent && { otp: form.otp.trim() }),
+      };
+
+      const res = await AuthAPI.updateProfile(payload);
+
+      const message =
+        typeof res.data === "string"
+          ? res.data
+          : res.data?.message || "Success";
+
+      alert(message);
+
+      if (message === "OTP sent") {
+        setOtpSent(true);
+      }
+
+      if (message === "Profile updated successfully") {
+        setShowForm(false);
+        setOtpSent(false);
+        setForm({ newName: "", newEmail: "", newPassword: "", otp: "" });
+
+        const refreshed = await AuthAPI.getUser();
+        setUser(refreshed.data);
+      }
+    } catch (err) {
+      alert(err.response?.data || "Error updating profile");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!user || !patient) return <p style={{ padding: 30 }}>Loading...</p>;
 
   return (
     <div style={styles.page}>
-      {/* ===== TOP BAR ===== */}
+      {/* ================= TOP BAR ================= */}
       <div style={styles.topBar}>
         <div>
-          <div>{user.name}</div>
+          <strong>{user.name}</strong>
           <div style={styles.email}>{user.email}</div>
+
+          <button
+            style={styles.editBtn}
+            onClick={() => setShowForm(!showForm)}
+          >
+            {showForm ? "Cancel" : "Edit Profile"}
+          </button>
         </div>
 
         <div>
@@ -53,7 +118,52 @@ export default function PatientLayout() {
         </div>
       </div>
 
-      {/* ===== PAGE CONTENT ===== */}
+      {/* ================= UPDATE PROFILE FORM ================= */}
+      {showForm && (
+        <div style={styles.formBox}>
+          <h3>Update Profile</h3>
+
+          <input
+            name="newName"
+            placeholder="New Name"
+            value={form.newName}
+            onChange={handleChange}
+          />
+
+          <input
+            name="newEmail"
+            placeholder="New Email"
+            value={form.newEmail}
+            onChange={handleChange}
+          />
+
+          <input
+            name="newPassword"
+            type="password"
+            placeholder="New Password"
+            value={form.newPassword}
+            onChange={handleChange}
+          />
+
+          {otpSent && (
+            <input
+              name="otp"
+              placeholder="Enter OTP"
+              value={form.otp}
+              onChange={handleChange}
+            />
+          )}
+
+          <button
+            style={styles.saveBtn}
+            onClick={handleUpdateProfile}
+            disabled={loading}
+          >
+            {otpSent ? "Verify OTP & Update" : "Send OTP"}
+          </button>
+        </div>
+      )}
+
       <Outlet context={{ user, patient }} />
     </div>
   );
@@ -66,15 +176,13 @@ const styles = {
     padding: 40,
     maxWidth: 1300,
     margin: "auto",
-    fontFamily: "Arial, sans-serif",
-    backgroundColor: "#f8fafc",
     minHeight: "100vh",
+    backgroundColor: "#f8fafc",
   },
 
   topBar: {
     display: "flex",
     justifyContent: "space-between",
-    alignItems: "center",
     borderBottom: "2px solid #e5e7eb",
     paddingBottom: 15,
     marginBottom: 30,
@@ -95,11 +203,43 @@ const styles = {
   logoutBtn: {
     padding: "8px 14px",
     background: "#0f172a",
-    color: "#ffffff",
+    color: "#fff",
     border: "none",
     borderRadius: 6,
     cursor: "pointer",
     fontSize: 13,
+    fontWeight: 600,
+  },
+
+  editBtn: {
+    marginTop: 6,
+    fontSize: 12,
+    padding: "4px 8px",
+    borderRadius: 4,
+    border: "1px solid #cbd5f5",
+    background: "#f8fafc",
+    cursor: "pointer",
+  },
+
+  formBox: {
+    maxWidth: 400,
+    padding: 20,
+    marginBottom: 30,
+    border: "1px solid #e5e7eb",
+    borderRadius: 8,
+    display: "flex",
+    flexDirection: "column",
+    gap: 10,
+    background: "#ffffff",
+  },
+
+  saveBtn: {
+    padding: "10px",
+    background: "#2563eb",
+    color: "#ffffff",
+    border: "none",
+    borderRadius: 6,
+    cursor: "pointer",
     fontWeight: 600,
   },
 };

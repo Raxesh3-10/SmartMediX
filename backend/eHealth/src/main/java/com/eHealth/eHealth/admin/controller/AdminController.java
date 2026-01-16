@@ -14,7 +14,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.eHealth.eHealth.admin.service.AdminService;
-import com.eHealth.eHealth.model.JwtSession;
+import com.eHealth.eHealth.dto.AdminDashboardStats;
+import com.eHealth.eHealth.dto.AdminUserFullView;
 import com.eHealth.eHealth.model.User;
 
 @CrossOrigin(origins = "http://localhost:5173")
@@ -28,44 +29,37 @@ public class AdminController {
         this.adminService = adminService;
     }
 
-    // ================= READ ALL USERS =================
-    @GetMapping("/users")
-    public List<User> getAllUsers(@RequestHeader("JWT") String jwt) {
-        return adminService.getAllUsers(jwt);
+    @GetMapping("/dashboard")
+    public AdminDashboardStats getDashboard(@RequestHeader("JWT") String jwt) {
+        return adminService.getDashboardStats(jwt);
     }
+// ================= FULL USER DATA =================
+@GetMapping("/users/full")
+public List<AdminUserFullView> getAllUsersFull(
+        @RequestHeader("JWT") String jwt) {
+    return adminService.getAllUsersFull(jwt);
+}
 
-    // ================= READ USER BY ID =================
-    @GetMapping("/users/{id}")
-    public User getUserById(@PathVariable String id,
-                            @RequestHeader("JWT") String jwt) {
-        return adminService.getUserById(id, jwt);
-    }
-
-    // ================= CREATE USER =================
-    @PostMapping("/users")
-    public String createUser(@RequestBody User user,
+// ================= FULL DELETE =================
+@DeleteMapping("/users/{id}/full")
+public String deleteUserFull(@PathVariable String id,
                              @RequestHeader("JWT") String jwt) {
+    return adminService.deleteUserFull(id, jwt);
+}
+    /* ================= CREATE ADMIN USER ================= */
+    @PostMapping("/users")
+    public String createAdminUser(
+            @RequestBody User user,
+            @RequestHeader("JWT") String jwt) {
         return adminService.createAdminUser(user, jwt);
     }
 
-    // ================= UPDATE USER =================
+    /* ================= UPDATE USER (NAME + ROLE ONLY) ================= */
     @PutMapping("/users/{id}")
-    public String updateUser(@PathVariable String id,
-                             @RequestBody User user,
-                             @RequestHeader("JWT") String jwt) {
+    public String updateUser(
+            @PathVariable String id,
+            @RequestBody User user,
+            @RequestHeader("JWT") String jwt) {
         return adminService.updateUser(id, user, jwt);
-    }
-
-    // ================= DELETE USER =================
-    @DeleteMapping("/users/{id}")
-    public String deleteUser(@PathVariable String id,
-                             @RequestHeader("JWT") String jwt) {
-        return adminService.deleteUser(id, jwt);
-    }
-
-    // ================= ACTIVE SESSIONS =================
-    @GetMapping("/sessions")
-    public List<JwtSession> getActiveSessions(@RequestHeader("JWT") String jwt) {
-        return adminService.getActiveSessions(jwt);
     }
 }

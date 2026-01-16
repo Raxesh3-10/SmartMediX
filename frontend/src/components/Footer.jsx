@@ -29,7 +29,7 @@ function Footer() {
           </div>
 
           <div style={{ marginTop: "8px" }}>
-            <strong>Rathod Ronak</strong> (CE134) <br />
+            <strong>Rathod Ronak</strong> (CE138) <br />
             <a href="mailto:ronakrathod202@gmail.com" style={styles.link}>
               ronakrathod202@gmail.com
             </a>
