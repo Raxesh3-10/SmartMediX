@@ -4,7 +4,7 @@ function Navbar() {
   const location = useLocation();
 
   // Hide navbar on routes where you may not want it later
-  const hideOnRoutes = ["/doctor", "/patient", "/admin","/doctor/chat","/patient/chat","/doctor/appointments","/patient/appointments","/patient/bills"];
+  const hideOnRoutes = ["/doctor", "/patient", "/admin","/doctor/chat","/patient/chat","/doctor/appointments","/patient/appointments","/patient/bills" ,"/doctor/bills"];
   if (hideOnRoutes.includes(location.pathname)) {
     return null;
   }

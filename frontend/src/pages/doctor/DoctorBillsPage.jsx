@@ -8,7 +8,7 @@ const formatIST = (isoDate) =>
     timeStyle: "short",
   });
 
-export default function PatientBillsPage() {
+export default function DoctorBillsPage() {
   const [rows, setRows] = useState([]);
   const [expanded, setExpanded] = useState(null);
   const [search, setSearch] = useState("");
@@ -25,20 +25,20 @@ export default function PatientBillsPage() {
   const normalized = useMemo(() => {
     return rows
       .map(r => {
-        // DTO case
+        // DTO case (recommended)
         if (r.transaction) {
           return {
             transaction: r.transaction,
-            doctorName: r.doctorName || "Doctor",
-            doctorEmail: r.doctorEmail || "N/A",
+            patientName: r.patientName || "Patient",
+            patientEmail: r.patientEmail || "N/A",
           };
         }
 
         // Raw Transaction fallback
         return {
           transaction: r,
-          doctorName: "Doctor",
-          doctorEmail: r.doctorId || "N/A",
+          patientName: "Patient",
+          patientEmail: r.patientId || "N/A",
         };
       })
       .filter(x => x.transaction)
@@ -57,25 +57,25 @@ export default function PatientBillsPage() {
     return normalized.filter(x => {
       const t = x.transaction;
       return (
-        x.doctorName.toLowerCase().includes(q) ||
-        x.doctorEmail.toLowerCase().includes(q) ||
-        String(t.totalPaidByPatient).includes(q) ||
+        x.patientName.toLowerCase().includes(q) ||
+        x.patientEmail.toLowerCase().includes(q) ||
+        String(t.totalDoctorReceives).includes(q) ||
         formatIST(t.paidAt).toLowerCase().includes(q)
       );
     });
   }, [normalized, search]);
-const totalBills = useMemo(() => {
+const totalEarnings = useMemo(() => {
   return filtered.reduce(
-    (sum, x) => sum + (x.transaction.totalPaidByPatient || 0),
+    (sum, x) => sum + (x.transaction.totalDoctorReceives || 0),
     0
   );
 }, [filtered]);
 
-  /* ================= GROUP ================= */
+  /* ================= GROUP BY PATIENT ================= */
   const grouped = useMemo(() => {
     const map = {};
     filtered.forEach(x => {
-      const key = x.doctorEmail;
+      const key = x.patientEmail;
       if (!map[key]) map[key] = [];
       map[key].push(x);
     });
@@ -84,10 +84,13 @@ const totalBills = useMemo(() => {
 
   return (
     <div style={styles.page}>
-      <h3>My Payments : ₹{totalBills.toLocaleString("en-IN")}</h3>
+    <h3>
+        My Earnings : ₹{totalEarnings.toLocaleString("en-IN")}
+    </h3>
+
 
       <input
-        placeholder="Search by doctor, email, amount, or time"
+        placeholder="Search by patient, email, amount, or time"
         value={search}
         onChange={e => setSearch(e.target.value)}
         style={styles.search}
@@ -99,14 +102,14 @@ const totalBills = useMemo(() => {
 
         return (
           <div key={key} style={styles.group}>
-            {/* DOCTOR HEADER */}
+            {/* PATIENT HEADER */}
             <div
               style={styles.groupHeader}
               onClick={() => setExpanded(open ? null : key)}
             >
               <div>
-                <strong>{head.doctorName}</strong>
-                <div style={styles.sub}>{head.doctorEmail}</div>
+                <strong>{head.patientName}</strong>
+                <div style={styles.sub}>{head.patientEmail}</div>
               </div>
               <div>{open ? "▲" : "▼"}</div>
             </div>
@@ -121,8 +124,13 @@ const totalBills = useMemo(() => {
                     style={styles.card}
                   >
                     <div>
-                      <strong>Amount:</strong> ₹
-                      {t.totalPaidByPatient}
+                      <strong>Consultation Fee:</strong> ₹
+                      {t.consultationFee}
+                    </div>
+
+                    <div>
+                      <strong>You Receive:</strong> ₹
+                      {t.totalDoctorReceives}
                     </div>
 
                     <div>

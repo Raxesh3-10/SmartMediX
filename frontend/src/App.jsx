@@ -11,7 +11,7 @@ import DoctorLayout from "./pages/doctor/DoctorLayout";
 import DoctorDashboard from "./pages/doctor/DoctorDashboard";
 import DoctorChatPage from "./pages/doctor/DoctorChatPage";
 import DoctorAppointmentsPage from "./pages/doctor/DoctorAppointmentsPage";
-
+import DoctorBillsPage from "./pages/doctor/DoctorBillsPage";
 import PatientLayout from "./pages/patient/PatientLayout";
 import PatientDashboard from "./pages/patient/PatientDashboard";
 import PatientChatPage from "./pages/patient/PatientChatPage";
@@ -32,6 +32,7 @@ export default function App() {
           <Route index element={<DoctorDashboard />} />
           <Route path="chat" element={<DoctorChatPage />} />
           <Route path="appointments" element={<DoctorAppointmentsPage />} />
+          <Route path="bills" element={<DoctorBillsPage />} />
         </Route>
 
         <Route path="/patient" element={<PatientLayout />}>

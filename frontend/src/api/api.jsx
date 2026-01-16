@@ -176,15 +176,6 @@ export const PatientAPI = {
     api.delete(`/patients/${patientId}`),
 };
 
-/* ======================================================
-   PATIENT BILLING API
-====================================================== */
-
-export const PatientBillingAPI = {
-  /* ========== PAYMENT & BILL HISTORY ========== */
-  getMyBillingHistory: () =>
-    api.get("/patients/billing/history"),
-};
 
 /* ======================================================
    APPOINTMENT API
@@ -226,6 +217,9 @@ export const PaymentAPI = {
     api.post("/payments/pay", null, {
       params: { appointmentId },
     }),
+    /* ========== TRANSACTION HISTORY (PATIENT / DOCTOR) ========== */
+  getMyTransactions: () =>
+    api.get("/payments/history"),
 };
 
 /* ======================================================
