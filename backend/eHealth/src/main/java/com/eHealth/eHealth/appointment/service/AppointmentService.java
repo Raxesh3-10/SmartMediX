@@ -118,12 +118,7 @@ public Appointment updateAppointment(String appointmentId, Appointment updated) 
     if ("COMPLETED".equals(appt.getStatus())) {
         throw new RuntimeException("Completed appointment cannot be modified");
     }
-
-    appt.setDay(updated.getDay());
-    appt.setStartTime(updated.getStartTime());
-    appt.setEndTime(updated.getEndTime());
-    appt.setAppointmentDate(updated.getAppointmentDate());
-    appt.setConferenceType(updated.getConferenceType());
+    appt.setRoomId(updated.getRoomId());
 
     return appointmentRepo.save(appt);
 }

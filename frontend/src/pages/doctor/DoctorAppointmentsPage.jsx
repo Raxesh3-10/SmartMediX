@@ -160,7 +160,7 @@ export default function DoctorAppointmentsPage() {
                   if (!selectedAppt.appointment.roomId) {
                     const roomId = generateRoomId();
                     await AppointmentAPI.updateAppointment(
-                      normalizeId(selectedAppt.appointment.appointmentid),
+                      normalizeId(selectedAppt.appointment.appointmentId),
                       { roomId }
                     );
                     await loadAppointments();
@@ -184,7 +184,7 @@ export default function DoctorAppointmentsPage() {
 
                 await AppointmentAPI.completeAppointment(
                   normalizeId(
-                    selectedAppt.appointment.appointmentid
+                    selectedAppt.appointment.appointmentId
                   )
                 );
                 setSelectedAppt(null);
