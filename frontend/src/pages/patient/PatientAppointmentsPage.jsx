@@ -234,7 +234,33 @@ useEffect(() => {
         Time Left:{" "}
         <strong>{formatCountdown(timeLeft)}</strong>
       </p>
-
+{selectedAppt?.appointment?.roomId && (
+  <div style={{ marginBottom: 10 }}>
+    <strong>Room ID:</strong>
+    <div
+      style={{
+        background: "#f1f5f9",
+        padding: 6,
+        borderRadius: 6,
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+      }}
+    >
+      <span>{selectedAppt.appointment.roomId}</span>
+      <button
+        onClick={() => {
+          navigator.clipboard.writeText(
+            selectedAppt.appointment.roomId
+          );
+          alert("Room ID copied");
+        }}
+      >
+        Copy
+      </button>
+    </div>
+  </div>
+)}
       {!callStarted ? (
         <button
           style={styles.primaryBtn}

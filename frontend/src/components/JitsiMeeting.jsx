@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 
-const MAX_PARTICIPANTS = 5; // 1 doctor + 4 patients
+const MAX_PARTICIPANTS = 5;
+const JITSI_DOMAIN = "meet.yourdomain.com";
 
 export default function JitsiMeeting({
   roomId,
@@ -13,45 +14,36 @@ export default function JitsiMeeting({
   const apiRef = useRef(null);
 
   useEffect(() => {
-    if (!window.JitsiMeetExternalAPI) return;
+    if (!window.JitsiMeetExternalAPI || !roomId) return;
 
-    const api = new window.JitsiMeetExternalAPI("meet.jit.si", {
+    const api = new window.JitsiMeetExternalAPI(JITSI_DOMAIN, {
       roomName: roomId,
       parentNode: ref.current,
       width: "100%",
-      height: 500,
-      userInfo: {
-        displayName,
-        email,
-      },
+      height: 520,
+      userInfo: { displayName, email },
+
       configOverwrite: {
         prejoinPageEnabled: false,
         disableDeepLinking: true,
-        maxParticipants: MAX_PARTICIPANTS, 
-         startWithAudioMuted: role === "PATIENT",
-        startWithVideoMuted: false,// 
+        startWithAudioMuted: role === "PATIENT",
+        startWithVideoMuted: false,
+        enableLayerSuspension: false,
+        maxParticipants: MAX_PARTICIPANTS,
       },
+
       interfaceConfigOverwrite: {
         SHOW_JITSI_WATERMARK: false,
+        SHOW_WATERMARK_FOR_GUESTS: false,
       },
     });
 
     apiRef.current = api;
 
-    /* ================= PARTICIPANT CONTROL ================= */
-
     api.addEventListener("participantJoined", async () => {
       const participants = await api.getParticipantsInfo();
-
-      // Hard safety check
       if (participants.length > MAX_PARTICIPANTS) {
-        alert("This consultation room is full.");
-        api.executeCommand("hangup");
-        return;
-      }
-
-      // Soft enforcement: doctor should not be kicked
-      if (role === "PATIENT" && participants.length > MAX_PARTICIPANTS) {
+        alert("Room is full");
         api.executeCommand("hangup");
       }
     });
@@ -61,9 +53,7 @@ export default function JitsiMeeting({
       onClose?.();
     });
 
-    return () => {
-      api.dispose();
-    };
+    return () => api.dispose();
   }, [roomId]);
 
   return <div ref={ref} />;

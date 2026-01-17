@@ -153,23 +153,27 @@ export default function DoctorAppointmentsPage() {
             selectedAppt.appointment.status === "CREATED" &&
             timeLeft > 0 &&
             timeLeft <= CALL_BUFFER_SECONDS && (
-              <button
-                style={styles.primaryBtn}
-                onClick={async () => {
-                  // 🔑 CREATE ROOM ID IF MISSING
-                  if (!selectedAppt.appointment.roomId) {
-                    const roomId = generateRoomId();
-                    await AppointmentAPI.updateAppointment(
-                      normalizeId(selectedAppt.appointment.appointmentId),
-                      { roomId }
-                    );
-                    await loadAppointments();
-                  }
-                  setCallStarted(true);
-                }}
-              >
-                Start Call
-              </button>
+<button
+  style={styles.primaryBtn}
+  onClick={async () => {
+    let roomId = selectedAppt.appointment.roomId;
+
+    if (!roomId) {
+      roomId = "ROOM_" + crypto.randomUUID();
+
+      await AppointmentAPI.updateAppointment(
+        normalizeId(selectedAppt.appointment.appointmentId),
+        { roomId }
+      );
+
+      await loadAppointments();
+    }
+
+    setCallStarted(true);
+  }}
+>
+  Start Call
+</button>
             )}
 
           {callStarted && (
