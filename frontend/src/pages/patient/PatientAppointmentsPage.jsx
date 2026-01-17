@@ -32,7 +32,6 @@ const formatCountdown = (seconds) => {
   )} : ${String(minutes).padStart(2, "0")}`;
 };
 
-
 const slotKey = (s) => `${s.day}-${s.startTime}-${s.endTime}`;
 
 /* ================= COMPONENT ================= */
@@ -81,47 +80,67 @@ export default function PatientAppointmentsPage() {
   }, [appointments, search]);
 
   /* ================= COUNTDOWN ================= */
-useEffect(() => {
-  if (!selectedAppt) {
-    setTimeLeft(0);
-    return;
-  }
-
-  const interval = setInterval(() => {
-    const { appointment } = selectedAppt;
-
-    if (!appointment?.startTime) {
+  useEffect(() => {
+    if (!selectedAppt) {
       setTimeLeft(0);
       return;
     }
 
-    // Use appointmentDate or today
-    const baseDate = appointment.appointmentDate
-      ? new Date(appointment.appointmentDate)
-      : new Date();
+    const interval = setInterval(() => {
+      const { appointment } = selectedAppt;
+      if (!appointment?.startTime) {
+        setTimeLeft(0);
+        return;
+      }
 
-    const [h, m] = appointment.startTime.split(":").map(Number);
+      const baseDate = appointment.appointmentDate
+        ? new Date(appointment.appointmentDate)
+        : new Date();
 
-    // Construct IST start datetime
-    const startIST = new Date(
-      baseDate.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
-    );
+      const [h, m] = appointment.startTime.split(":").map(Number);
 
-    startIST.setHours(h, m, 0, 0);
+      const startIST = new Date(
+        baseDate.toLocaleString("en-US", {
+          timeZone: "Asia/Kolkata",
+        })
+      );
+      startIST.setHours(h, m, 0, 0);
 
-    const nowIST = new Date(
-      new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
-    );
+      const nowIST = new Date(
+        new Date().toLocaleString("en-US", {
+          timeZone: "Asia/Kolkata",
+        })
+      );
 
-    const diffSeconds = Math.floor(
-      (startIST.getTime() - nowIST.getTime()) / 1000
-    );
+      const diffSeconds = Math.floor(
+        (startIST.getTime() - nowIST.getTime()) / 1000
+      );
 
-    setTimeLeft(Math.max(0, diffSeconds));
-  }, 1000);
+      setTimeLeft(Math.max(0, diffSeconds));
+    }, 1000);
 
-  return () => clearInterval(interval);
-}, [selectedAppt]);
+    return () => clearInterval(interval);
+  }, [selectedAppt]);
+
+  /* ================= CALL STATUS WATCH ================= */
+  useEffect(() => {
+    if (!callStarted || !selectedAppt) return;
+
+    const interval = setInterval(() => {
+      const latest = appointments.find(
+        (a) =>
+          normalizeId(a.appointment._id) ===
+          normalizeId(selectedAppt.appointment._id)
+      );
+
+      if (latest?.appointment.status === "COMPLETED") {
+        alert("Consultation ended by doctor");
+        setCallStarted(false);
+      }
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [callStarted, selectedAppt, appointments]);
 
   /* ================= SAVE ================= */
   const saveAppointment = async (isUpdate) => {
@@ -207,40 +226,42 @@ useEffect(() => {
         </div>
       ))}
 
-      {selectedAppt && (
-        <div style={styles.details}>
-          <p>
-            Time Left:{" "}
-            <strong>{formatCountdown(timeLeft)}</strong>
-          </p>
+      {selectedAppt &&
+        selectedAppt.appointment.roomId &&
+        selectedAppt.appointment.status === "CREATED" && (
+          <div style={styles.details}>
+            <p>
+              Time Left:{" "}
+              <strong>{formatCountdown(timeLeft)}</strong>
+            </p>
 
-          {!callStarted ? (
-            <button
-              style={styles.primaryBtn}
-              onClick={() => setCallStarted(true)}
-            >
-              Join Call
-            </button>
-          ) : (
-            <button
-              style={styles.dangerBtn}
-              onClick={() => setCallStarted(false)}
-            >
-              Leave Call
-            </button>
-          )}
+            {!callStarted ? (
+              <button
+                style={styles.primaryBtn}
+                onClick={() => setCallStarted(true)}
+              >
+                Join Call
+              </button>
+            ) : (
+              <button
+                style={styles.dangerBtn}
+                onClick={() => setCallStarted(false)}
+              >
+                Leave Call
+              </button>
+            )}
 
-          {callStarted && (
-            <JitsiMeeting
-              roomId={selectedAppt.appointment.roomId}
-              displayName={patient.name}
-              email={patient.email}
-              role="PATIENT"
-              onClose={() => setCallStarted(false)}
-            />
-          )}
-        </div>
-      )}
+            {callStarted && (
+              <JitsiMeeting
+                roomId={selectedAppt.appointment.roomId}
+                displayName={patient.name}
+                email={patient.email}
+                role="PATIENT"
+                onClose={() => setCallStarted(false)}
+              />
+            )}
+          </div>
+        )}
 
       {selectedAppt && selectedDoctor && (
         <div style={styles.details}>

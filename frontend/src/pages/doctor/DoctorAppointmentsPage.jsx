@@ -56,7 +56,7 @@ export default function DoctorAppointmentsPage() {
     );
   }, [appointments, search]);
 
-  /* ================= COUNTDOWN (MATCHES PATIENT) ================= */
+  /* ================= COUNTDOWN ================= */
   useEffect(() => {
     if (!selectedAppt) {
       setTimeLeft(0);
@@ -70,14 +70,12 @@ export default function DoctorAppointmentsPage() {
         return;
       }
 
-      // appointmentDate OR today
       const baseDate = appointment.appointmentDate
         ? new Date(appointment.appointmentDate)
         : new Date();
 
       const [h, m] = appointment.startTime.split(":").map(Number);
 
-      // Construct IST datetime
       const startIST = new Date(
         baseDate.toLocaleString("en-US", {
           timeZone: "Asia/Kolkata",
@@ -149,6 +147,7 @@ export default function DoctorAppointmentsPage() {
           </p>
 
           {!callStarted &&
+            selectedAppt.appointment.status === "CREATED" &&
             timeLeft > 0 &&
             timeLeft <= CALL_BUFFER_SECONDS && (
               <button
@@ -163,12 +162,12 @@ export default function DoctorAppointmentsPage() {
             <button
               style={styles.dangerBtn}
               onClick={async () => {
+                setCallStarted(false);
                 await AppointmentAPI.completeAppointment(
                   normalizeId(
                     selectedAppt.appointment._id
                   )
                 );
-                setCallStarted(false);
                 setSelectedAppt(null);
                 loadAppointments();
               }}
