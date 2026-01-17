@@ -7,12 +7,15 @@ import JitsiMeeting from "../../components/JitsiMeeting";
 const CALL_BUFFER_SECONDS = 10 * 60;
 
 /* ================= HELPERS ================= */
-const normalizeId = (id) =>
-  typeof id === "string" ? id : id?.$oid ?? "";
 
-const generateRoomId = () =>
-  "ROOM_" + crypto.randomUUID();
-
+const formatDate = (dateValue) => {
+  const date = new Date(dateValue);
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+};
 const formatCountdown = (seconds) => {
   if (!Number.isFinite(seconds) || seconds <= 0)
     return "00 : 00 : 00";
@@ -116,12 +119,11 @@ export default function DoctorAppointmentsPage() {
 
       {filtered.map((a) => (
         <div
-          key={normalizeId(a.appointment._id)}
+          key={a.appointment.appointmentId}
           style={{
             ...styles.card,
             background:
-              normalizeId(selectedAppt?.appointment?._id) ===
-              normalizeId(a.appointment._id)
+              selectedAppt?.appointment?.appointmentId === a.appointment.appointmentId
                 ? "#dcfce7"
                 : "transparent",
           }}
@@ -134,7 +136,7 @@ export default function DoctorAppointmentsPage() {
             <strong>{a.user.name}</strong>
             <div style={styles.sub}>{a.user.email}</div>
             <div style={styles.meta}>
-              {a.appointment.day} | {a.appointment.startTime} –{" "}
+             {formatDate(a.appointment.appointmentDate)} | {a.appointment.day} | {a.appointment.startTime} –{" "}
               {a.appointment.endTime}
             </div>
           </div>
@@ -142,7 +144,7 @@ export default function DoctorAppointmentsPage() {
         </div>
       ))}
 
-      {selectedAppt && (
+      {selectedAppt && selectedAppt.appointment.status === "CREATED" && (
         <div style={styles.details}>
           <p>
             Time Left:{" "}
@@ -162,13 +164,20 @@ export default function DoctorAppointmentsPage() {
       roomId = "ROOM_" + crypto.randomUUID();
 
       await AppointmentAPI.updateAppointment(
-        normalizeId(selectedAppt.appointment.appointmentId),
+        selectedAppt.appointment.appointmentId,
         { roomId }
       );
 
       await loadAppointments();
-    }
-
+    // 🔑 Update selectedAppt directly
+    setSelectedAppt((prev) => ({
+      ...prev,
+      appointment: {
+        ...prev.appointment,
+        roomId,
+      },
+    }));
+  }
     setCallStarted(true);
   }}
 >
@@ -187,9 +196,7 @@ export default function DoctorAppointmentsPage() {
                 await new Promise((r) => setTimeout(r, 300));
 
                 await AppointmentAPI.completeAppointment(
-                  normalizeId(
                     selectedAppt.appointment.appointmentId
-                  )
                 );
                 setSelectedAppt(null);
                 loadAppointments();

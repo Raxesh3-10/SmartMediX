@@ -269,6 +269,7 @@ public List<Map<String, Object>> getPatientAppointments(String patientId) {
                     .ifPresent(member -> {
                         map.put("relation", member.getRelation());
                         map.put("familyMemberPatientId", member.getPatientId());
+                        map.put("familyPatientUser", userRepo.findById(member.getPatientId()).orElse(null));
                     });
         }
 

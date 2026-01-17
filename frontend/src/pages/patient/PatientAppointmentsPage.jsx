@@ -3,6 +3,7 @@ import { useOutletContext } from "react-router-dom";
 import { AppointmentAPI, PaymentAPI } from "../../api/api";
 import JitsiMeeting from "../../components/JitsiMeeting";
 
+import FamilyAppointmentsSection from "../../components/FamilyAppointmentsSection";
 /* ================= CONSTANTS ================= */
 const DAYS = [
   "MONDAY",
@@ -13,10 +14,14 @@ const DAYS = [
   "SATURDAY",
   "SUNDAY",
 ];
-
-const normalizeId = (id) =>
-  typeof id === "string" ? id : id?.$oid ?? "";
-
+const formatDate = (dateValue) => {
+  const date = new Date(dateValue);
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+};
 const formatCountdown = (seconds) => {
   if (!Number.isFinite(seconds) || seconds <= 0)
     return "00 : 00 : 00";
@@ -39,6 +44,7 @@ export default function PatientAppointmentsPage() {
   const { patient } = useOutletContext();
 
   const [appointments, setAppointments] = useState([]);
+  const [familyAppointments, setFamilyAppointments] = useState([]);
   const [doctors, setDoctors] = useState([]);
 
   const [selectedAppt, setSelectedAppt] = useState(null);
@@ -60,7 +66,8 @@ export default function PatientAppointmentsPage() {
     const res = await AppointmentAPI.getPatientAppointments(
       patient.patientId
     );
-    setAppointments(res.data);
+    setAppointments(res.data.filter(a=> a.isPrimaryPatient));
+    setFamilyAppointments(res.data.filter(a=> !a.isPrimaryPatient));
   };
 
   const loadDoctors = async () => {
@@ -69,7 +76,6 @@ export default function PatientAppointmentsPage() {
     );
     setDoctors(res.data);
   };
-
   /* ================= SEARCH ================= */
   const filteredAppointments = useMemo(() => {
     return appointments.filter((a) =>
@@ -129,8 +135,7 @@ useEffect(() => {
   const interval = setInterval(() => {
     const latest = appointments.find(
       (a) =>
-        normalizeId(a.appointment.appointmentId) ===
-        normalizeId(selectedAppt.appointment.appointmentId)
+        a.appointment.appointmentId === selectedAppt.appointment.appointmentId
     );
 
     if (latest?.appointment.status === "COMPLETED") {
@@ -183,6 +188,10 @@ useEffect(() => {
   /* ================= UI ================= */
   return (
     <div style={styles.page}>
+      <FamilyAppointmentsSection
+        familyAppointments={familyAppointments}
+        currentPatient={patient} />
+
       <h3>My Appointments</h3>
 
       <input
@@ -194,12 +203,11 @@ useEffect(() => {
 
       {filteredAppointments.map((a) => (
         <div
-          key={normalizeId(a.appointment.appointmentId)}
+          key={a.appointment.appointmentId}
           style={{
             ...styles.card,
             background:
-              normalizeId(selectedAppt?.appointment?._id) ===
-              normalizeId(a.appointment.appointmentId)
+              selectedAppt?.appointment?.appointmentId === a.appointment.appointmentId
                 ? "#dcfce7"
                 : "transparent",
           }}
@@ -218,7 +226,7 @@ useEffect(() => {
             <strong>{a.user?.name}</strong>
             <div style={styles.sub}>{a.user?.email}</div>
             <div style={styles.meta}>
-              {a.appointment.day} | {a.appointment.startTime} –{" "}
+              {formatDate(a.appointment.appointmentDate)} | {a.appointment.day} | {a.appointment.startTime} –{" "}
               {a.appointment.endTime}
             </div>
           </div>
