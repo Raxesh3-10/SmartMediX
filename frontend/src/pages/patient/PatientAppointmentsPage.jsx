@@ -129,8 +129,8 @@ useEffect(() => {
   const interval = setInterval(() => {
     const latest = appointments.find(
       (a) =>
-        normalizeId(a.appointment._id) ===
-        normalizeId(selectedAppt.appointment._id)
+        normalizeId(a.appointment.appointmentid) ===
+        normalizeId(selectedAppt.appointment.appointmentid)
     );
 
     if (latest?.appointment.status === "COMPLETED") {
@@ -169,7 +169,7 @@ useEffect(() => {
       alert("Appointment booked");
     } else {
       await AppointmentAPI.updateAppointment(
-        selectedAppt.appointment._id,
+        selectedAppt.appointment.appointmentid,
         slot
       );
       alert("Appointment updated");
@@ -194,12 +194,12 @@ useEffect(() => {
 
       {filteredAppointments.map((a) => (
         <div
-          key={normalizeId(a.appointment._id)}
+          key={normalizeId(a.appointment.appointmentid)}
           style={{
             ...styles.card,
             background:
               normalizeId(selectedAppt?.appointment?._id) ===
-              normalizeId(a.appointment._id)
+              normalizeId(a.appointment.appointmentid)
                 ? "#dcfce7"
                 : "transparent",
           }}
