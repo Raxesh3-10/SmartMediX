@@ -123,24 +123,24 @@ export default function PatientAppointmentsPage() {
   }, [selectedAppt]);
 
   /* ================= CALL STATUS WATCH ================= */
-  useEffect(() => {
-    if (!callStarted || !selectedAppt) return;
+useEffect(() => {
+  if (!callStarted || !selectedAppt) return;
 
-    const interval = setInterval(() => {
-      const latest = appointments.find(
-        (a) =>
-          normalizeId(a.appointment._id) ===
-          normalizeId(selectedAppt.appointment._id)
-      );
+  const interval = setInterval(() => {
+    const latest = appointments.find(
+      (a) =>
+        normalizeId(a.appointment._id) ===
+        normalizeId(selectedAppt.appointment._id)
+    );
 
-      if (latest?.appointment.status === "COMPLETED") {
-        alert("Consultation ended by doctor");
-        setCallStarted(false);
-      }
-    }, 4000);
+    if (latest?.appointment.status === "COMPLETED") {
+      alert("Consultation ended by doctor");
+      setCallStarted(false);
+    }
+  }, 4000);
 
-    return () => clearInterval(interval);
-  }, [callStarted, selectedAppt, appointments]);
+  return () => clearInterval(interval);
+}, [callStarted, selectedAppt, appointments]);
 
   /* ================= SAVE ================= */
   const saveAppointment = async (isUpdate) => {
@@ -226,42 +226,42 @@ export default function PatientAppointmentsPage() {
         </div>
       ))}
 
-      {selectedAppt &&
-        selectedAppt.appointment.roomId &&
-        selectedAppt.appointment.status === "CREATED" && (
-          <div style={styles.details}>
-            <p>
-              Time Left:{" "}
-              <strong>{formatCountdown(timeLeft)}</strong>
-            </p>
+{selectedAppt &&
+  selectedAppt.appointment.roomId &&
+  selectedAppt.appointment.status === "CREATED" && (
+    <div style={styles.details}>
+      <p>
+        Time Left:{" "}
+        <strong>{formatCountdown(timeLeft)}</strong>
+      </p>
 
-            {!callStarted ? (
-              <button
-                style={styles.primaryBtn}
-                onClick={() => setCallStarted(true)}
-              >
-                Join Call
-              </button>
-            ) : (
-              <button
-                style={styles.dangerBtn}
-                onClick={() => setCallStarted(false)}
-              >
-                Leave Call
-              </button>
-            )}
+      {!callStarted ? (
+        <button
+          style={styles.primaryBtn}
+          onClick={() => setCallStarted(true)}
+        >
+          Join Call
+        </button>
+      ) : (
+        <button
+          style={styles.dangerBtn}
+          onClick={() => setCallStarted(false)}
+        >
+          Leave Call
+        </button>
+      )}
 
-            {callStarted && (
-              <JitsiMeeting
-                roomId={selectedAppt.appointment.roomId}
-                displayName={patient.name}
-                email={patient.email}
-                role="PATIENT"
-                onClose={() => setCallStarted(false)}
-              />
-            )}
-          </div>
-        )}
+      {callStarted && (
+        <JitsiMeeting
+          roomId={selectedAppt.appointment.roomId}
+          displayName={patient.name}
+          email={patient.email}
+          role="PATIENT"
+          onClose={() => setCallStarted(false)}
+        />
+      )}
+    </div>
+  )}
 
       {selectedAppt && selectedDoctor && (
         <div style={styles.details}>

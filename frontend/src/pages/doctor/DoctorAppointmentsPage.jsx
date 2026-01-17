@@ -10,6 +10,9 @@ const CALL_BUFFER_SECONDS = 10 * 60;
 const normalizeId = (id) =>
   typeof id === "string" ? id : id?.$oid ?? "";
 
+const generateRoomId = () =>
+  "ROOM_" + crypto.randomUUID();
+
 const formatCountdown = (seconds) => {
   if (!Number.isFinite(seconds) || seconds <= 0)
     return "00 : 00 : 00";
@@ -152,7 +155,18 @@ export default function DoctorAppointmentsPage() {
             timeLeft <= CALL_BUFFER_SECONDS && (
               <button
                 style={styles.primaryBtn}
-                onClick={() => setCallStarted(true)}
+                onClick={async () => {
+                  // 🔑 CREATE ROOM ID IF MISSING
+                  if (!selectedAppt.appointment.roomId) {
+                    const roomId = generateRoomId();
+                    await AppointmentAPI.updateAppointment(
+                      normalizeId(selectedAppt.appointment._id),
+                      { roomId }
+                    );
+                    await loadAppointments();
+                  }
+                  setCallStarted(true);
+                }}
               >
                 Start Call
               </button>
@@ -162,7 +176,12 @@ export default function DoctorAppointmentsPage() {
             <button
               style={styles.dangerBtn}
               onClick={async () => {
+                // Close Jitsi first
                 setCallStarted(false);
+
+                // Allow iframe cleanup
+                await new Promise((r) => setTimeout(r, 300));
+
                 await AppointmentAPI.completeAppointment(
                   normalizeId(
                     selectedAppt.appointment._id

@@ -27,7 +27,9 @@ export default function JitsiMeeting({
       configOverwrite: {
         prejoinPageEnabled: false,
         disableDeepLinking: true,
-        maxParticipants: MAX_PARTICIPANTS, // 🔒 HARD LIMIT
+        maxParticipants: MAX_PARTICIPANTS, 
+         startWithAudioMuted: role === "PATIENT",
+        startWithVideoMuted: false,// 
       },
       interfaceConfigOverwrite: {
         SHOW_JITSI_WATERMARK: false,
