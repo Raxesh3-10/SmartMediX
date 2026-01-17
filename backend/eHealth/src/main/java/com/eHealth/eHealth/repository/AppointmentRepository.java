@@ -11,6 +11,7 @@ import com.eHealth.eHealth.model.Appointment;
 public interface AppointmentRepository extends MongoRepository<Appointment,String>{
 
     int countByDoctorId(String doctorId);
+    List<Appointment> findByPatientIdIn(List<String> patientIds);
     long countByDoctorIdAndAppointmentDate(String doctorId, Instant date);
     List<Appointment> findByDoctorId(String doctorId);
     List<Appointment> findByPatientId(String patientId);

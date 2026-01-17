@@ -18,18 +18,21 @@ public class AppointmentService {
     private final PatientRepository patientRepo;
     private final UserRepository userRepo;
     private final JavaMailSender mailSender;
+    private final FamilyRepository familyRepo;
 
     public AppointmentService(
             AppointmentRepository appointmentRepo,
             DoctorRepository doctorRepo,
             PatientRepository patientRepo,
             UserRepository userRepo,
-            JavaMailSender mailSender
+            JavaMailSender mailSender,
+            FamilyRepository familyRepo
     ) {
         this.appointmentRepo = appointmentRepo;
         this.doctorRepo = doctorRepo;
         this.patientRepo = patientRepo;
         this.userRepo = userRepo;
+        this.familyRepo = familyRepo;
         this.mailSender = mailSender;
     }
 
@@ -221,11 +224,25 @@ public Appointment updateAppointment(String appointmentId, Appointment updated) 
 ====================================================== */
 public List<Map<String, Object>> getPatientAppointments(String patientId) {
 
-    List<Appointment> appointments =
-            appointmentRepo.findByPatientId(patientId);
-
     List<Map<String, Object>> result = new ArrayList<>();
 
+    // 1. Collect all patientIds (self + family members)
+    Set<String> patientIds = new HashSet<>();
+    patientIds.add(patientId);
+
+    Family family = familyRepo.findByOwnerPatientId(patientId).orElse(null);
+
+    if (family != null && family.getMembers() != null) {
+        for (FamilyMember member : family.getMembers()) {
+            patientIds.add(member.getPatientId());
+        }
+    }
+
+    // 2. Fetch appointments for all patientIds
+    List<Appointment> appointments =
+            appointmentRepo.findByPatientIdIn(new ArrayList<>(patientIds));
+
+    // 3. Build response
     for (Appointment appt : appointments) {
 
         Doctor doctor = doctorRepo
@@ -240,6 +257,20 @@ public List<Map<String, Object>> getPatientAppointments(String patientId) {
         map.put("appointment", appt);
         map.put("doctor", doctor);
         map.put("user", user);
+
+        // ownership metadata
+        boolean isSelf = appt.getPatientId().equals(patientId);
+        map.put("isPrimaryPatient", isSelf);
+
+        if (!isSelf && family != null) {
+            family.getMembers().stream()
+                    .filter(m -> m.getPatientId().equals(appt.getPatientId()))
+                    .findFirst()
+                    .ifPresent(member -> {
+                        map.put("relation", member.getRelation());
+                        map.put("familyMemberPatientId", member.getPatientId());
+                    });
+        }
 
         result.add(map);
     }
