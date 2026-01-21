@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { PaymentAPI } from "../../api/api";
+import "../../styles/Patient.css";
 
 const formatIST = (isoDate) =>
   new Date(isoDate).toLocaleString("en-IN", {
@@ -16,16 +17,13 @@ export default function PatientBillsPage() {
   useEffect(() => {
     PaymentAPI.getMyTransactions()
       .then(res => setRows(res.data || []))
-      .catch(err =>
-        console.error("Transaction history error:", err)
-      );
+      .catch(err => console.error("Transaction history error:", err));
   }, []);
 
   /* ================= NORMALIZE ================= */
   const normalized = useMemo(() => {
     return rows
       .map(r => {
-        // DTO case
         if (r.transaction) {
           return {
             transaction: r.transaction,
@@ -33,8 +31,6 @@ export default function PatientBillsPage() {
             doctorEmail: r.doctorEmail || "N/A",
           };
         }
-
-        // Raw Transaction fallback
         return {
           transaction: r,
           doctorName: "Doctor",
@@ -42,18 +38,13 @@ export default function PatientBillsPage() {
         };
       })
       .filter(x => x.transaction)
-      .sort(
-        (a, b) =>
-          new Date(b.transaction.paidAt) -
-          new Date(a.transaction.paidAt)
-      );
+      .sort((a, b) => new Date(b.transaction.paidAt) - new Date(a.transaction.paidAt));
   }, [rows]);
 
   /* ================= SEARCH ================= */
   const filtered = useMemo(() => {
     if (!search) return normalized;
     const q = search.toLowerCase();
-
     return normalized.filter(x => {
       const t = x.transaction;
       return (
@@ -64,12 +55,10 @@ export default function PatientBillsPage() {
       );
     });
   }, [normalized, search]);
-const totalBills = useMemo(() => {
-  return filtered.reduce(
-    (sum, x) => sum + (x.transaction.totalPaidByPatient || 0),
-    0
-  );
-}, [filtered]);
+
+  const totalBills = useMemo(() => {
+    return filtered.reduce((sum, x) => sum + (x.transaction.totalPaidByPatient || 0), 0);
+  }, [filtered]);
 
   /* ================= GROUP ================= */
   const grouped = useMemo(() => {
@@ -83,98 +72,80 @@ const totalBills = useMemo(() => {
   }, [filtered]);
 
   return (
-    <div style={styles.page}>
-      <h3>My Payments : ₹{totalBills.toLocaleString("en-IN")}</h3>
+    <main className="main-content">
+      {/* SUMMARY STAT CARD */}
+      <div className="profile-box bill-summary-card">
+        <div className="summary-content">
+          <span className="summary-label">Total Expenditure</span>
+          {/* Added "money-highlight" class here */}
+          <h2 className="summary-amount money-highlight">
+            ₹{totalBills.toLocaleString("en-IN")}
+          </h2>
+        </div>
+      <div className="summary-icon">🧾</div>
+      </div>
 
-      <input
-        placeholder="Search by doctor, email, amount, or time"
-        value={search}
-        onChange={e => setSearch(e.target.value)}
-        style={styles.search}
-      />
+      <div className="profile-box">
+        <h3>Transaction History</h3>
+        <input
+          className="input-field"
+          placeholder="Search by doctor, email, amount, or date..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
 
-      {Object.entries(grouped).map(([key, list]) => {
-        const head = list[0];
-        const open = expanded === key;
+        <div className="bill-groups-container">
+          {Object.entries(grouped).length > 0 ? (
+            Object.entries(grouped).map(([key, list]) => {
+              const head = list[0];
+              const open = expanded === key;
 
-        return (
-          <div key={key} style={styles.group}>
-            {/* DOCTOR HEADER */}
-            <div
-              style={styles.groupHeader}
-              onClick={() => setExpanded(open ? null : key)}
-            >
-              <div>
-                <strong>{head.doctorName}</strong>
-                <div style={styles.sub}>{head.doctorEmail}</div>
-              </div>
-              <div>{open ? "▲" : "▼"}</div>
-            </div>
-
-            {/* TRANSACTIONS */}
-            {open &&
-              list.map(x => {
-                const t = x.transaction;
-                return (
+              return (
+                <div key={key} className={`bill-group ${open ? "is-open" : ""}`}>
+                  {/* DOCTOR HEADER */}
                   <div
-                    key={t.transactionId}
-                    style={styles.card}
+                    className="bill-group-header"
+                    onClick={() => setExpanded(open ? null : key)}
                   >
-                    <div>
-                      <strong>Amount:</strong> ₹
-                      {t.totalPaidByPatient}
+                    <div className="bill-doc-info">
+                      <strong>Dr. {head.doctorName}</strong>
+                      <div className="doctor-subtext">{head.doctorEmail}</div>
                     </div>
-
-                    <div>
-                      <strong>Paid At:</strong>{" "}
-                      {formatIST(t.paidAt)}
-                    </div>
-
-                    <div>
-                      <strong>Status:</strong> {t.status}
+                    <div className="bill-group-meta">
+                      <span className="bill-count">{list.length} Bills</span>
+                      <span className="expand-chevron">{open ? "▲" : "▼"}</span>
                     </div>
                   </div>
-                );
-              })}
-          </div>
-        );
-      })}
-    </div>
+
+                  {/* TRANSACTIONS LIST */}
+                  {open && (
+                    <div className="bill-details-list">
+                      {list.map(x => {
+                        const t = x.transaction;
+                        return (
+                          <div key={t.transactionId} className="bill-item-row">
+                            <div className="bill-main">
+                              <span className="bill-amt">₹{t.totalPaidByPatient}</span>
+                              <span className="bill-date">{formatIST(t.paidAt)}</span>
+                            </div>
+                            <div className="bill-status">
+                              <span className={`status-pill ${t.status?.toLowerCase()}`}>
+                                {t.status}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          ) : (
+            <div className="empty-state">No transactions found matching your search.</div>
+          )}
+        </div>
+      </div>
+    </main>
   );
 }
-
-/* ================= STYLES ================= */
-
-const styles = {
-  page: {
-    padding: 20,
-    maxWidth: 800,
-  },
-  search: {
-    width: "100%",
-    padding: 8,
-    marginBottom: 16,
-    border: "1px solid #e5e7eb",
-    borderRadius: 6,
-  },
-  group: {
-    border: "1px solid #e5e7eb",
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  groupHeader: {
-    padding: 12,
-    cursor: "pointer",
-    display: "flex",
-    justifyContent: "space-between",
-    background: "#f8fafc",
-  },
-  card: {
-    padding: 12,
-    borderTop: "1px solid #e5e7eb",
-  },
-  sub: {
-    fontSize: 12,
-    color: "#64748b",
-  },
-};

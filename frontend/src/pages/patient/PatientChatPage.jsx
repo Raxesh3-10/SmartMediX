@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ChatAPI } from "../../api/api";
 import PatientChatBox from "../../components/PatientChatBox";
 import { useOutletContext } from "react-router-dom";
+import "../../styles/Patient.css"; // Using the shared CSS
 
 export default function PatientChatPage() {
   const { user, patient } = useOutletContext();
@@ -46,7 +47,6 @@ export default function PatientChatPage() {
         d.user?.name?.toLowerCase().includes(search.toLowerCase()) ||
         d.user?.email?.toLowerCase().includes(search.toLowerCase())
     )
-    // 🔑 UNREAD FIRST
     .sort((a, b) => {
       const ua = unreadMap[a.doctor.doctorId] || 0;
       const ub = unreadMap[b.doctor.doctorId] || 0;
@@ -54,73 +54,68 @@ export default function PatientChatPage() {
     });
 
   return (
-    <div style={styles.page}>
-      {/* LEFT SIDEBAR */}
-      <div style={styles.sidebar}>
-        {/* TOP BUTTONS */}
-        <div style={styles.topBar}>
+    <div className="chat-page-container">
+      {/* LEFT SIDEBAR (Doctor List) */}
+      <div className="chat-sidebar">
+        {/* TABS FOR CHATS / NEW */}
+        <div className="chat-tabs">
           <button
+            className={`chat-tab-btn ${mode === "CHATS" ? "active" : ""}`}
             onClick={() => setMode("CHATS")}
-            style={{
-              ...styles.tabBtn,
-              ...(mode === "CHATS" ? styles.activeTab : {}),
-            }}
           >
-            Chats
+            Recent Chats
           </button>
           <button
+            className={`chat-tab-btn ${mode === "NEW" ? "active" : ""}`}
             onClick={() => setMode("NEW")}
-            style={{
-              ...styles.tabBtn,
-              ...(mode === "NEW" ? styles.activeTab : {}),
-            }}
           >
-            New
+            Find Doctors
           </button>
         </div>
 
-        {/* SEARCH */}
-        <input
-          placeholder="Search doctor..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={styles.search}
-        />
+        {/* SEARCH BOX */}
+        <div className="chat-search-wrapper">
+          <input
+            className="input-field"
+            style={{ marginBottom: 0 }}
+            placeholder="Search by name..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
 
         {/* DOCTOR LIST */}
-        <div style={styles.list}>
-          {filtered.map((d) => {
-            const did = d.doctor.doctorId;
-            const unread = unreadMap[did] || 0;
-            const isActive =
-              selectedDoctor?.doctor.doctorId === did;
+        <div className="doctor-list-scroll">
+          {filtered.length > 0 ? (
+            filtered.map((d) => {
+              const did = d.doctor.doctorId;
+              const unread = unreadMap[did] || 0;
+              const isActive = selectedDoctor?.doctor.doctorId === did;
 
-            return (
-              <div
-                key={did}
-                style={{
-                  ...styles.chatItem,
-                  ...(isActive ? styles.activeChat : {}),
-                }}
-                onClick={() => setSelectedDoctor(d)}
-              >
-                <strong>
-                  {d.user?.name}
-                  {unread > 0 && ` (${unread})`}
-                </strong>
-
-                <div style={styles.email}>
-                  {d.user?.email}
-                  {unread > 0 && " • unread"}
+              return (
+                <div
+                  key={did}
+                  className={`doctor-item ${isActive ? "active" : ""} ${unread > 0 ? "has-unread" : ""}`}
+                  onClick={() => setSelectedDoctor(d)}
+                >
+                  <div className="doctor-info">
+                    <div className="doctor-name-row">
+                      <strong>{d.user?.name}</strong>
+                      {unread > 0 && <span className="unread-badge">{unread}</span>}
+                    </div>
+                    <div className="doctor-subtext">{d.user?.email}</div>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          ) : (
+            <div className="empty-list-msg">No doctors found.</div>
+          )}
         </div>
       </div>
 
-      {/* RIGHT CHAT */}
-      <div style={styles.chatArea}>
+      {/* RIGHT SIDE (Chat Window) */}
+      <div className="chat-main-window">
         {selectedDoctor ? (
           <PatientChatBox
             user={user}
@@ -129,74 +124,13 @@ export default function PatientChatPage() {
             doctorUser={selectedDoctor.user}
           />
         ) : (
-          <div style={styles.empty}>
-            Select a doctor to start chatting
+          <div className="chat-empty-state">
+            <div className="empty-icon">💬</div>
+            <h3>Your Consultations</h3>
+            <p>Select a doctor from the list to view history or start a new conversation.</p>
           </div>
         )}
       </div>
     </div>
   );
 }
-/* ================= PAGE STYLES ================= */
-
-const styles = {
-  page: {
-    display: "flex",
-    height: "100vh",
-    background: "#f0f2f5",
-  },
-  sidebar: {
-    width: "30%",
-    display: "flex",
-    flexDirection: "column",
-    borderRight: "1px solid #ddd",
-    background: "#fff",
-  },
-  topBar: {
-    display: "flex",
-    padding: 10,
-    gap: 8,
-    borderBottom: "1px solid #ddd",
-  },
-  tabBtn: {
-    flex: 1,
-    padding: "6px 0",
-    border: "1px solid #ccc",
-    background: "#f8f9fa",
-    cursor: "pointer",
-  },
-  activeTab: {
-    background: "#25d366",
-    color: "#fff",
-    border: "1px solid #25d366",
-  },
-  search: {
-    margin: 10,
-    padding: 8,
-    border: "1px solid #ccc",
-  },
-  list: {
-    flex: 1,
-    overflowY: "auto",
-  },
-  chatItem: {
-    padding: 12,
-    borderBottom: "1px solid #eee",
-    cursor: "pointer",
-  },
-  activeChat: {
-    background: "#dcf8c6",
-  },
-  email: {
-    fontSize: 12,
-    color: "#666",
-  },
-  chatArea: {
-    flex: 1,
-  },
-  empty: {
-    margin: "auto",
-    color: "#999",
-    fontSize: 16,
-  },
-};

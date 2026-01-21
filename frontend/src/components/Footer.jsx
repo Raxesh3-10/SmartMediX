@@ -1,78 +1,51 @@
 import { useLocation } from "react-router-dom";
+import "../styles/components/Footer.css";
 
 function Footer() {
   const location = useLocation();
 
-  // Hide footer on role-based dashboards
-  const hideOnRoutes = ["/doctor", "/patient", "/admin","/doctor/chat","/patient/chat" ,"/doctor/appointments","/patient/appointments","/patient/bills","/doctor/bills"];
-  if (hideOnRoutes.includes(location.pathname)) {
+  // Hide footer on dashboard-related routes to give more space to the workspace
+  const dashboardRoutes = ["/doctor", "/patient", "/admin"];
+  const shouldHide = dashboardRoutes.some(route => location.pathname.startsWith(route));
+
+  if (shouldHide) {
     return null;
   }
 
   return (
-    <footer style={styles.footer}>
-      <div style={styles.container}>
-        <div style={styles.left}>
-          © {new Date().getFullYear()} SmartMediX
+    <footer className="main-footer">
+      <div className="footer-container">
+        
+        <div className="footer-brand">
+          <h4>SmartMediX</h4>
+          <p className="dev-id">© {new Date().getFullYear()} All Rights Reserved</p>
         </div>
 
-        <div style={styles.center}>
-          Developed by
-        </div>
-
-        <div style={styles.right}>
-          <div>
-            <strong>Parmar Raxesh</strong> (CE121) <br />
-            <a href="mailto:goturaxesh@gmail.com" style={styles.link}>
+        <div className="footer-dev-section">
+          <div className="dev-card">
+            <span className="dev-label">Lead Developer</span>
+            <span className="dev-name">Parmar Raxesh</span>
+            <span className="dev-id">Roll No: CE121</span>
+            <br />
+            <a href="mailto:goturaxesh@gmail.com" className="footer-link">
               goturaxesh@gmail.com
             </a>
           </div>
 
-          <div style={{ marginTop: "8px" }}>
-            <strong>Rathod Ronak</strong> (CE138) <br />
-            <a href="mailto:ronakrathod202@gmail.com" style={styles.link}>
+          <div className="dev-card">
+            <span className="dev-label">Co-Developer</span>
+            <span className="dev-name">Rathod Ronak</span>
+            <span className="dev-id">Roll No: CE138</span>
+            <br />
+            <a href="mailto:ronakrathod202@gmail.com" className="footer-link">
               ronakrathod202@gmail.com
             </a>
           </div>
         </div>
+
       </div>
     </footer>
   );
 }
 
 export default Footer;
-
-/* =====================
-   Inline Styles
-===================== */
-
-const styles = {
-  footer: {
-    backgroundColor: "#0f172a",
-    color: "#ffffff",
-    padding: "16px 24px",
-    marginTop: "auto",
-  },
-  container: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    flexWrap: "wrap",
-    gap: "16px",
-  },
-  left: {
-    fontSize: "14px",
-  },
-  center: {
-    fontSize: "14px",
-    fontWeight: "500",
-  },
-  right: {
-    fontSize: "14px",
-    lineHeight: "1.4",
-  },
-  link: {
-    color: "#93c5fd",
-    textDecoration: "none",
-  },
-};

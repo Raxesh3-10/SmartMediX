@@ -1,14 +1,13 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { AuthAPI } from "../api/api";
+import "../styles/Signup.css"; // Using our new professional styles
 
 function Signup() {
   const navigate = useNavigate();
-
-  const [step, setStep] = useState(1); // 1 = details, 2 = OTP
+  const [step, setStep] = useState(1); 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
-
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -18,31 +17,19 @@ function Signup() {
   });
 
   const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
+    setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  /* ================= STEP 1: SEND OTP ================= */
   const handleSendOtp = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage("");
-
     try {
       const res = await AuthAPI.signup({
-        name: form.name,
-        email: form.email,
-        password: form.password,
-        role: form.role,
+        name: form.name, email: form.email, password: form.password, role: form.role,
       });
-
       setMessage(res.data);
-
-      if (res.data === "OTP sent to email") {
-        setStep(2);
-      }
+      if (res.data === "OTP sent to email") setStep(2);
     } catch (err) {
       setMessage(err.response?.data || "Signup failed");
     } finally {
@@ -50,27 +37,15 @@ function Signup() {
     }
   };
 
-  /* ================= STEP 2: VERIFY OTP ================= */
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage("");
-
     try {
-      const res = await AuthAPI.verifyOtp({
-        name: form.name,
-        email: form.email,
-        password: form.password,
-        role: form.role,
-        otp: form.otp,
-      });
-
+      const res = await AuthAPI.verifyOtp(form);
       setMessage(res.data);
-
       if (res.data === "Signup successful") {
-        setTimeout(() => {
-          navigate("/login");
-        }, 1500);
+        setTimeout(() => navigate("/login"), 1500);
       }
     } catch (err) {
       setMessage(err.response?.data || "OTP verification failed");
@@ -80,168 +55,63 @@ function Signup() {
   };
 
   return (
-    <div style={styles.container}>
-      <form
-        style={styles.form}
-        onSubmit={step === 1 ? handleSendOtp : handleVerifyOtp}
-      >
-        <h2 style={styles.title}>Create SmartMediX Account</h2>
+    <div className="auth-page">
+      <div className="auth-card">
+        <span className="step-text">Step {step} of 2</span>
+        <h2 className="auth-title">Create Account</h2>
 
         {message && (
-          <p
-            style={{
-              ...styles.message,
-              color: message.includes("successful") ? "green" : "red",
-            }}
-          >
+          <div className={`status-message ${message.includes("successful") || message.includes("sent") ? 'status-success' : 'status-error'}`}>
             {message}
-          </p>
-        )}
-
-        {/* ========== STEP 1 FORM ========== */}
-        {step === 1 && (
-          <>
-            <div style={styles.field}>
-              <label>Name</label>
-              <input
-                name="name"
-                required
-                value={form.name}
-                onChange={handleChange}
-                style={styles.input}
-              />
-            </div>
-
-            <div style={styles.field}>
-              <label>Email</label>
-              <input
-                type="email"
-                name="email"
-                required
-                value={form.email}
-                onChange={handleChange}
-                style={styles.input}
-              />
-            </div>
-
-            <div style={styles.field}>
-              <label>Password</label>
-              <input
-                type="password"
-                name="password"
-                required
-                value={form.password}
-                onChange={handleChange}
-                style={styles.input}
-              />
-            </div>
-
-            <div style={styles.field}>
-              <label>Role</label>
-              <select
-                name="role"
-                value={form.role}
-                onChange={handleChange}
-                style={styles.input}
-              >
-                <option value="PATIENT">Patient</option>
-                <option value="DOCTOR">Doctor</option>
-              </select>
-            </div>
-          </>
-        )}
-
-        {/* ========== STEP 2 OTP FORM ========== */}
-        {step === 2 && (
-          <div style={styles.field}>
-            <label>Enter OTP</label>
-            <input
-              name="otp"
-              required
-              value={form.otp}
-              onChange={handleChange}
-              style={styles.input}
-            />
           </div>
         )}
 
-        <button type="submit" style={styles.button} disabled={loading}>
-          {loading
-            ? "Processing..."
-            : step === 1
-            ? "Send OTP"
-            : "Verify OTP & Signup"}
-        </button>
+        <form onSubmit={step === 1 ? handleSendOtp : handleVerifyOtp}>
+          {step === 1 && (
+            <>
+              <div className="form-group">
+                <label>Full Name</label>
+                <input name="name" required value={form.name} onChange={handleChange} className="form-input" placeholder="John Doe" />
+              </div>
+              <div className="form-group">
+                <label>Email Address</label>
+                <input type="email" name="email" required value={form.email} onChange={handleChange} className="form-input" placeholder="john@example.com" />
+              </div>
+              <div className="form-group">
+                <label>Password</label>
+                <input type="password" name="password" required value={form.password} onChange={handleChange} className="form-input" placeholder="••••••••" />
+              </div>
+              <div className="form-group">
+                <label>User Role</label>
+                <select name="role" value={form.role} onChange={handleChange} className="form-select">
+                  <option value="PATIENT">Patient</option>
+                  <option value="DOCTOR">Doctor</option>
+                </select>
+              </div>
+            </>
+          )}
+
+          {step === 2 && (
+            <div className="form-group">
+              <label>Enter 6-Digit OTP</label>
+              <input name="otp" required value={form.otp} onChange={handleChange} className="form-input" placeholder="000000" />
+              <p className="auth-subtitle">Please check your email for the verification code.</p>
+            </div>
+          )}
+
+          <button type="submit" className="btn-submit" disabled={loading}>
+            {loading ? "Processing..." : step === 1 ? "Get Verification Code" : "Verify & Complete Signup"}
+          </button>
+        </form>
 
         {step === 1 && (
-          <p style={styles.footerText}>
-            Already have an account?{" "}
-            <Link to="/login" style={styles.link}>
-              Login
-            </Link>
+          <p className="auth-footer">
+            Already have an account? <Link to="/login" className="auth-link">Login</Link>
           </p>
         )}
-      </form>
+      </div>
     </div>
   );
 }
 
 export default Signup;
-
-/* =====================
-   Inline Styles
-===================== */
-
-const styles = {
-  container: {
-    minHeight: "80vh",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#f8fafc",
-  },
-  form: {
-    width: "380px",
-    padding: "24px",
-    backgroundColor: "#ffffff",
-    borderRadius: "6px",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-  },
-  title: {
-    textAlign: "center",
-    marginBottom: "16px",
-  },
-  field: {
-    display: "flex",
-    flexDirection: "column",
-    marginBottom: "12px",
-  },
-  input: {
-    padding: "8px",
-    fontSize: "14px",
-    marginTop: "4px",
-  },
-  button: {
-    width: "100%",
-    padding: "10px",
-    backgroundColor: "#0f172a",
-    color: "#ffffff",
-    border: "none",
-    cursor: "pointer",
-    marginTop: "8px",
-  },
-  message: {
-    fontSize: "14px",
-    textAlign: "center",
-    marginBottom: "8px",
-  },
-  footerText: {
-    textAlign: "center",
-    marginTop: "12px",
-    fontSize: "14px",
-  },
-  link: {
-    color: "#2563eb",
-    textDecoration: "none",
-  },
-};

@@ -1,30 +1,42 @@
 import { Link, useLocation } from "react-router-dom";
+import "../styles/components/Navbar.css";
 
 function Navbar() {
   const location = useLocation();
 
-  // Hide navbar on routes where you may not want it later
-  const hideOnRoutes = ["/doctor", "/patient", "/admin","/doctor/chat","/patient/chat","/doctor/appointments","/patient/appointments","/patient/bills" ,"/doctor/bills"];
-  if (hideOnRoutes.includes(location.pathname)) {
+  // Optimized: Hide navbar on any route starting with doctor, patient, or admin
+  const dashboardRoutes = ["/doctor", "/patient", "/admin"];
+  const shouldHide = dashboardRoutes.some(route => location.pathname.startsWith(route));
+
+  if (shouldHide) {
     return null;
   }
 
   return (
-    <nav style={styles.nav}>
-      <div style={styles.logo}>
-        <Link to="/" style={styles.link}>
-          SmartMediX
+    <nav className="main-nav">
+      <div className="nav-logo">
+        <Link to="/" className="nav-logo-link">
+          Smart<span>MediX</span>
         </Link>
       </div>
 
-      <div style={styles.menu}>
-        <Link to="/" style={styles.link}>
+      <div className="nav-menu">
+        <Link 
+          to="/" 
+          className={`nav-link ${location.pathname === "/" ? "active" : ""}`}
+        >
           Home
         </Link>
-        <Link to="/login" style={styles.link}>
+        <Link 
+          to="/login" 
+          className={`nav-link ${location.pathname === "/login" ? "active" : ""}`}
+        >
           Login
         </Link>
-        <Link to="/signup" style={styles.link}>
+        <Link 
+          to="/signup" 
+          className={`nav-link nav-signup-btn ${location.pathname === "/signup" ? "active" : ""}`}
+        >
           Signup
         </Link>
       </div>
@@ -33,31 +45,3 @@ function Navbar() {
 }
 
 export default Navbar;
-
-/* =====================
-   Simple Inline Styles
-   (Replace with CSS later)
-===================== */
-
-const styles = {
-  nav: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "12px 24px",
-    backgroundColor: "#0f172a",
-  },
-  logo: {
-    fontSize: "20px",
-    fontWeight: "bold",
-  },
-  menu: {
-    display: "flex",
-    gap: "16px",
-  },
-  link: {
-    color: "#ffffff",
-    textDecoration: "none",
-    fontSize: "16px",
-  },
-};

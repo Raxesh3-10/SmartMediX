@@ -1,112 +1,71 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { AuthAPI, PatientAPI, FamilyAPI } from "../../api/api";
+import { useNavigate, useOutletContext } from "react-router-dom";
+import { PatientAPI, FamilyAPI } from "../../api/api";
+import "../../styles/Patient.css";
 
 function Patient() {
   const navigate = useNavigate();
+  // Getting user and initial patient data from the Layout's Outlet context
+  const { user, patient: initialPatient } = useOutletContext();
 
-  const [loading, setLoading] = useState(true);
-  const [patient, setPatient] = useState(null);
-  const [user, setUser] = useState(null);
-
+  const [patient, setPatient] = useState(initialPatient);
   const [familyMembers, setFamilyMembers] = useState([]);
   const [addingMember, setAddingMember] = useState(false);
-
-  /* ===== PROFILE EDIT ===== */
   const [editingProfile, setEditingProfile] = useState(false);
-  const [editForm, setEditForm] = useState({
-    mobile: "",
-    gender: "",
-    age: "",
+  const [editForm, setEditForm] = useState({ 
+    mobile: initialPatient?.mobile || "", 
+    gender: initialPatient?.gender || "", 
+    age: initialPatient?.age || "" 
   });
-
-  /* ===== SEARCH + SELECTION ===== */
+  
   const [allPatients, setAllPatients] = useState([]);
   const [search, setSearch] = useState("");
   const [selectedPatient, setSelectedPatient] = useState(null);
-
   const [newMember, setNewMember] = useState({ relation: "" });
+  const [form, setForm] = useState({ mobile: "", gender: "", age: "" });
 
-  const [form, setForm] = useState({
-    mobile: "",
-    gender: "",
-    age: "",
-  });
-
-  /* ================= AUTH CHECK ================= */
   useEffect(() => {
-    if (!localStorage.getItem("JWT")) navigate("/login");
-  }, [navigate]);
-
-  /* ================= FETCH DATA ================= */
-  useEffect(() => {
-    const load = async () => {
+    const loadFamily = async () => {
       try {
-        const userRes = await AuthAPI.getUser();
-        setUser(userRes.data);
-
-        const patientRes = await PatientAPI.getMyProfile();
-        setPatient(patientRes.data);
-
-        setEditForm({
-          mobile: patientRes.data.mobile,
-          gender: patientRes.data.gender,
-          age: patientRes.data.age,
-        });
-
         const famRes = await FamilyAPI.getMembers();
         setFamilyMembers(famRes.data || []);
-      } catch {
-        navigate("/login");
-      } finally {
-        setLoading(false);
+      } catch (err) {
+        console.error("Error loading family:", err);
       }
     };
-    load();
-  }, [navigate]);
+    if (patient) loadFamily();
+  }, [patient]);
 
-  /* ================= HELPERS ================= */
   const refreshFamily = async () => {
     const res = await FamilyAPI.getMembers();
     setFamilyMembers(res.data || []);
   };
 
-  /**
-   * SELF + primary = true → family admin
-   * DTO fields used:
-   * - relation
-   * - primary
-   */
-  const selfMember = familyMembers.find(
-    (m) => m.patient.patientId === patient?.patientId
-  );
+  const selfMember = familyMembers.find((m) => m.patient.patientId === patient?.patientId);
+  const isPrimarySelf = selfMember?.relation === "SELF" && selfMember?.primary === true;
 
-  const isPrimarySelf =
-    selfMember?.relation === "SELF" && selfMember?.primary === true;
-
-  /* ================= PROFILE ================= */
   const handleCreateProfile = async () => {
-    const res = await PatientAPI.createProfile({
-      ...form,
-      age: Number(form.age),
-    });
-    setPatient(res.data);
+    try {
+      const res = await PatientAPI.createProfile({ ...form, age: Number(form.age) });
+      setPatient(res.data);
+    } catch (err) {
+      alert("Error creating profile");
+    }
   };
 
   const handleUpdateProfile = async () => {
     try {
-      const res = await PatientAPI.updateProfile(patient.patientId, {
-        ...editForm,
-        age: Number(editForm.age),
+      const res = await PatientAPI.updateProfile(patient.patientId, { 
+        ...editForm, 
+        age: Number(editForm.age) 
       });
       setPatient(res.data);
       setEditingProfile(false);
-    } catch {
-      alert("Failed to update profile");
+    } catch { 
+      alert("Failed to update profile"); 
     }
   };
 
-  /* ================= FAMILY ================= */
   const handleCreateFamily = async () => {
     await FamilyAPI.createFamily();
     await refreshFamily();
@@ -114,37 +73,27 @@ function Patient() {
 
   const handleAddMember = async () => {
     if (!isPrimarySelf) return;
-
     if (!selectedPatient || !newMember.relation) {
-      alert("Please select a patient and relation");
+      alert("Please select a patient and enter a relation");
       return;
     }
-
-    await FamilyAPI.addMember({
-      patientId: selectedPatient.patient.patientId,
-      relation: newMember.relation,
-    });
-
-    resetAddMemberState();
-    await refreshFamily();
+    try {
+      await FamilyAPI.addMember({ 
+        patientId: selectedPatient.patient.patientId, 
+        relation: newMember.relation 
+      });
+      resetAddMemberState();
+      await refreshFamily();
+    } catch (err) {
+      alert("Error adding member");
+    }
   };
 
   const handleRemoveMember = async (patientId) => {
     if (!isPrimarySelf) return;
-    if (!window.confirm("Remove member?")) return;
-
+    if (!window.confirm("Remove this member from your family group?")) return;
     await FamilyAPI.removeMember(patientId);
     await refreshFamily();
-  };
-
-  const handleDeleteFamily = async () => {
-    if (!isPrimarySelf) return;
-
-    if (!window.confirm("Delete entire family group?")) return;
-
-    await FamilyAPI.removeMember(patient.patientId);
-    setFamilyMembers([]);
-    setPatient({ ...patient, familyId: null });
   };
 
   const resetAddMemberState = () => {
@@ -154,276 +103,113 @@ function Patient() {
     setNewMember({ relation: "" });
   };
 
-  /* ================= LOAD ALL PATIENTS ================= */
   const loadAllPatients = async () => {
     if (allPatients.length > 0) return;
     const res = await PatientAPI.getAllPatients();
     setAllPatients(res.data);
   };
 
-  if (loading) return <p style={{ padding: 30 }}>Loading...</p>;
-
   const hasFamily = patient?.familyId || familyMembers.length > 0;
-
-  const familyPatientIds = new Set(
-    familyMembers.map((m) => m.patient.patientId)
-  );
-
+  const familyPatientIds = new Set(familyMembers.map((m) => m.patient.patientId));
+  
   const filteredPatients = allPatients.filter((p) => {
     const pid = p.patient.patientId;
-
     if (pid === patient.patientId) return false;
     if (familyPatientIds.has(pid)) return false;
-
-    return `${p.user.name} ${p.user.email}`
-      .toLowerCase()
-      .includes(search.toLowerCase());
+    return `${p.user.name} ${p.user.email}`.toLowerCase().includes(search.toLowerCase());
   });
 
   return (
-    <div style={styles.page}>
+    <main className="main-content">
       {!patient ? (
-        <div style={styles.box}>
-          <h2>Create Patient Profile</h2>
-
-          <input
-            style={styles.input}
-            placeholder="Mobile"
-            onChange={(e) => setForm({ ...form, mobile: e.target.value })}
-          />
-
-          <select
-            style={styles.input}
-            onChange={(e) => setForm({ ...form, gender: e.target.value })}
-          >
+        <div className="profile-box">
+          <h2>Complete Your Profile</h2>
+          <input className="input-field" placeholder="Mobile Number" onChange={(e) => setForm({ ...form, mobile: e.target.value })} />
+          <select className="input-field" onChange={(e) => setForm({ ...form, gender: e.target.value })}>
             <option value="">Select Gender</option>
             <option value="MALE">Male</option>
             <option value="FEMALE">Female</option>
             <option value="OTHER">Other</option>
           </select>
-
-          <input
-            style={styles.input}
-            type="number"
-            placeholder="Age"
-            onChange={(e) => setForm({ ...form, age: e.target.value })}
-          />
-
-          <button style={styles.primaryBtn} onClick={handleCreateProfile}>
-            Create Profile
-          </button>
+          <input className="input-field" type="number" placeholder="Age" onChange={(e) => setForm({ ...form, age: e.target.value })} />
+          <button className="primary-btn" onClick={handleCreateProfile}>Create My Profile</button>
         </div>
       ) : (
         <>
-          <div style={styles.box}>
-            <h2>My Profile</h2>
-
+          {/* PROFILE CARD */}
+          <div className="profile-box">
+            <h2>My Health Profile</h2>
             {!editingProfile ? (
-              <>
-                <p><strong>Name:</strong> {user?.name}</p>
-                <p><strong>Email:</strong> {user?.email}</p>
+              <div className="profile-details">
+                <p><strong>Full Name:</strong> {user?.name}</p>
+                <p><strong>Email Address:</strong> {user?.email}</p>
                 <p><strong>Mobile:</strong> {patient.mobile}</p>
                 <p><strong>Age:</strong> {patient.age}</p>
                 <p><strong>Gender:</strong> {patient.gender}</p>
-
-                <button
-                  style={styles.secondaryBtn}
-                  onClick={() => setEditingProfile(true)}
-                >
-                  Edit Profile
-                </button>
-              </>
+                <button className="secondary-btn" onClick={() => setEditingProfile(true)}>Update Details</button>
+              </div>
             ) : (
               <>
-                <input
-                  style={styles.input}
-                  value={editForm.mobile}
-                  onChange={(e) =>
-                    setEditForm({
-                      ...editForm,
-                      mobile: e.target.value.replace(/\D/g, ""),
-                    })
-                  }
-                />
-
-                <select
-                  style={styles.input}
-                  value={editForm.gender}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, gender: e.target.value })
-                  }
-                >
+                <input className="input-field" value={editForm.mobile} onChange={(e) => setEditForm({ ...editForm, mobile: e.target.value })} />
+                <select className="input-field" value={editForm.gender} onChange={(e) => setEditForm({ ...editForm, gender: e.target.value })}>
                   <option value="MALE">Male</option>
                   <option value="FEMALE">Female</option>
                   <option value="OTHER">Other</option>
                 </select>
-
-                <input
-                  style={styles.input}
-                  type="number"
-                  value={editForm.age}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, age: e.target.value })
-                  }
-                />
-
-                <button style={styles.primaryBtn} onClick={handleUpdateProfile}>
-                  Save Changes
-                </button>
-
-                <button
-                  style={styles.secondaryBtn}
-                  onClick={() => setEditingProfile(false)}
-                >
-                  Cancel
-                </button>
+                <input className="input-field" type="number" value={editForm.age} onChange={(e) => setEditForm({ ...editForm, age: e.target.value })} />
+                <button className="primary-btn" onClick={handleUpdateProfile}>Save Changes</button>
+                <button className="secondary-btn" onClick={() => setEditingProfile(false)}>Cancel</button>
               </>
             )}
-
             {!hasFamily && (
-              <button style={styles.primaryBtn} onClick={handleCreateFamily}>
-                Create Family
+              <button className="primary-btn" style={{marginTop: '15px'}} onClick={handleCreateFamily}>
+                Create Family Group
               </button>
             )}
           </div>
 
+          {/* FAMILY CARD */}
           {hasFamily && (
-            <div style={styles.box}>
-              <h3>Family Members</h3>
-
+            <div className="profile-box">
+              <h3>Family Health Group</h3>
               {familyMembers.map((m) => (
-                <div key={m.patient.patientId} style={styles.record}>
-                  <p>
-                    <strong>
-                      {m.user.name} ({m.relation})
-                    </strong>
-                    {m.primary && " ⭐"}
-                  </p>
-                  <p>{m.user.email}</p>
-
-                  {isPrimarySelf &&
-                    m.patient.patientId !== patient.patientId && (
-                      <button
-                        style={styles.dangerBtn}
-                        onClick={() =>
-                          handleRemoveMember(m.patient.patientId)
-                        }
-                      >
-                        Remove
-                      </button>
-                    )}
+                <div key={m.patient.patientId} className="record-card">
+                  <div>
+                    <strong>{m.user.name}</strong> ({m.relation}) {m.primary && "⭐"}
+                    <div style={{fontSize: '0.85rem', color: '#64748b'}}>{m.user.email}</div>
+                  </div>
+                  {isPrimarySelf && m.patient.patientId !== patient.patientId && (
+                    <button className="danger-btn" onClick={() => handleRemoveMember(m.patient.patientId)}>Remove</button>
+                  )}
                 </div>
               ))}
-
-              {isPrimarySelf && familyMembers.length === 1 && (
-                <button style={styles.dangerBtn} onClick={handleDeleteFamily}>
-                  Delete Family
-                </button>
-              )}
-
+              
               {isPrimarySelf && !addingMember && (
-                <button
-                  style={styles.secondaryBtn}
-                  onClick={() => {
-                    setAddingMember(true);
-                    loadAllPatients();
-                  }}
-                >
-                  Add Member
-                </button>
+                <button className="secondary-btn" onClick={() => { setAddingMember(true); loadAllPatients(); }}>+ Add Member</button>
               )}
 
-              {isPrimarySelf && addingMember && (
-                <>
-                  <input
-                    style={styles.input}
-                    placeholder="Search by name or email"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                  />
-
-                  {filteredPatients.map((p) => (
-                    <div
-                      key={p.patient.patientId}
-                      style={styles.searchItem}
-                      onClick={() => {
-                        setSelectedPatient(p);
-                        setSearch("");
-                      }}
-                    >
-                      <strong>{p.user.name}</strong>
-                      <div>{p.user.email}</div>
-                    </div>
-                  ))}
-
-                  {selectedPatient && (
-                    <div style={styles.selected}>
-                      Selected: <strong>{selectedPatient.user.name}</strong>
-                    </div>
-                  )}
-
-                  <input
-                    style={styles.input}
-                    placeholder="Relation"
-                    value={newMember.relation}
-                    onChange={(e) =>
-                      setNewMember({ relation: e.target.value })
-                    }
-                  />
-
-                  <button style={styles.primaryBtn} onClick={handleAddMember}>
-                    Save Member
-                  </button>
-
-                  <button
-                    style={styles.secondaryBtn}
-                    onClick={resetAddMemberState}
-                  >
-                    Cancel
-                  </button>
-                </>
+              {addingMember && (
+                <div style={{marginTop: '20px', padding: '15px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0'}}>
+                  <input className="input-field" placeholder="Search by name or email..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                  <div style={{maxHeight: '150px', overflowY: 'auto', marginBottom: '10px'}}>
+                    {filteredPatients.map((p) => (
+                      <div key={p.patient.patientId} className="search-item" style={{padding: '10px', cursor: 'pointer', borderBottom: '1px solid #eee'}} onClick={() => { setSelectedPatient(p); setSearch(""); }}>
+                        {p.user.name} ({p.user.email})
+                      </div>
+                    ))}
+                  </div>
+                  {selectedPatient && <div style={{margin: '10px 0', fontWeight: 'bold', color: '#2563eb'}}>Selected: {selectedPatient.user.name}</div>}
+                  <input className="input-field" placeholder="Relationship (e.g. Father, Spouse)" value={newMember.relation} onChange={(e) => setNewMember({ relation: e.target.value })} />
+                  <button className="primary-btn" onClick={handleAddMember}>Confirm Addition</button>
+                  <button className="secondary-btn" onClick={resetAddMemberState}>Cancel</button>
+                </div>
               )}
             </div>
           )}
         </>
       )}
-    </div>
+    </main>
   );
 }
 
 export default Patient;
-
-/* ================= STYLES ================= */
-const styles = {
-  page: { padding: 40, maxWidth: 1200, margin: "auto" },
-  box: {
-    width: 420,
-    margin: "0 auto 30px",
-    padding: 24,
-    border: "2px solid #e5e7eb",
-    borderRadius: 12,
-  },
-  input: { width: "90%", padding: 12, marginBottom: 10 },
-  primaryBtn: {
-    width: "100%",
-    padding: 12,
-    background: "#2563eb",
-    color: "#fff",
-    border: "none",
-  },
-  secondaryBtn: { width: "100%", padding: 12, marginTop: 10 },
-  dangerBtn: {
-    padding: "6px 10px",
-    background: "#ef4444",
-    color: "#fff",
-    border: "none",
-    marginTop: 8,
-  },
-  record: { padding: 12, border: "1px solid #ddd", marginBottom: 10 },
-  searchItem: {
-    padding: 8,
-    borderBottom: "1px solid #eee",
-    cursor: "pointer",
-  },
-  selected: { padding: 10, background: "#f1f5f9", marginBottom: 10 },
-};

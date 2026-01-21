@@ -1,0 +1,86 @@
+/* Footer.css */
+.main-footer {
+  background-color: #0f172a; /* Deep Navy to match project theme */
+  color: #cbd5e1; /* Soft grey text for readability */
+  padding: 40px 20px;
+  margin-top: auto;
+  font-family: 'Inter', sans-serif;
+  border-top: 1px solid #1e293b;
+}
+
+.footer-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 30px;
+}
+
+.footer-brand {
+  flex: 1;
+  min-width: 200px;
+}
+
+.footer-brand h4 {
+  color: #ffffff;
+  margin-bottom: 8px;
+  font-size: 1.2rem;
+}
+
+.footer-dev-section {
+  flex: 2;
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.dev-card {
+  min-width: 200px;
+}
+
+.dev-label {
+  color: #2563eb; /* SmartMediX Blue */
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+  display: block;
+}
+
+.dev-name {
+  color: #ffffff;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.dev-id {
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.footer-link {
+  color: #93c5fd;
+  text-decoration: none;
+  font-size: 0.85rem;
+  transition: color 0.2s ease;
+}
+
+.footer-link:hover {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .footer-container {
+    flex-direction: column;
+    text-align: center;
+  }
+  .footer-dev-section {
+    justify-content: center;
+  }
+}
