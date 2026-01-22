@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ChatAPI } from "../../api/api";
 import DoctorChatBox from "../../components/DoctorChatBox";
 import { useOutletContext } from "react-router-dom";
+import "../../styles/Doctor.css"; // We will use the same classes here
 
 export default function DoctorChatPage() {
   const { user, doctor } = useOutletContext();
@@ -46,7 +47,6 @@ export default function DoctorChatPage() {
         p.user?.name?.toLowerCase().includes(search.toLowerCase()) ||
         p.user?.email?.toLowerCase().includes(search.toLowerCase())
     )
-    // 🔑 UNREAD FIRST
     .sort((a, b) => {
       const ua = unreadMap[a.patient.patientId] || 0;
       const ub = unreadMap[b.patient.patientId] || 0;
@@ -54,72 +54,69 @@ export default function DoctorChatPage() {
     });
 
   return (
-    <div style={styles.page}>
+    <div className="chat-page-container">
       {/* ================= LEFT SIDEBAR ================= */}
-      <div style={styles.sidebar}>
-        <div style={styles.topBar}>
+      <div className="chat-sidebar">
+        <div className="chat-tabs">
           <button
             onClick={() => setMode("CHATS")}
-            style={{
-              ...styles.tabBtn,
-              ...(mode === "CHATS" ? styles.activeTab : {}),
-            }}
+            className={`chat-tab-btn ${mode === "CHATS" ? "active" : ""}`}
           >
-            Chats
+            My Conversations
           </button>
           <button
             onClick={() => setMode("NEW")}
-            style={{
-              ...styles.tabBtn,
-              ...(mode === "NEW" ? styles.activeTab : {}),
-            }}
+            className={`chat-tab-btn ${mode === "NEW" ? "active" : ""}`}
           >
-            New
+            New Requests
           </button>
         </div>
 
         {/* SEARCH */}
-        <input
-          placeholder="Search patient..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={styles.search}
-        />
+        <div className="chat-search-wrapper">
+          <input
+            className="input-field"
+            placeholder="Search patient by name..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ marginBottom: 0 }}
+          />
+        </div>
 
         {/* PATIENT LIST */}
-        <div style={styles.list}>
-          {filtered.map((p) => {
-            const pid = p.patient.patientId;
-            const unread = unreadMap[pid] || 0;
-            const isActive =
-              selectedPatient?.patient.patientId === pid;
+        <div className="doctor-list-scroll">
+          {filtered.length > 0 ? (
+            filtered.map((p) => {
+              const pid = p.patient.patientId;
+              const unread = unreadMap[pid] || 0;
+              const isActive = selectedPatient?.patient.patientId === pid;
 
-            return (
-              <div
-                key={pid}
-                style={{
-                  ...styles.chatItem,
-                  ...(isActive ? styles.activeChat : {}),
-                }}
-                onClick={() => setSelectedPatient(p)}
-              >
-                <strong>
-                  {p.user?.name}
-                  {unread > 0 && ` (${unread})`}
-                </strong>
+              return (
+                <div
+                  key={pid}
+                  className={`doctor-item ${isActive ? "active" : ""}`}
+                  onClick={() => setSelectedPatient(p)}
+                >
+                  <div className="doctor-name-row">
+                    <strong>{p.user?.name}</strong>
+                    {unread > 0 && <span className="unread-badge">{unread}</span>}
+                  </div>
 
-                <div style={styles.email}>
-                  {p.user?.email}
-                  {unread > 0 && " • unread"}
+                  <div className="doctor-subtext">
+                    {p.user?.email}
+                    {unread > 0 && <span style={{ color: "#ef4444", fontWeight: "bold" }}> • New Message</span>}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          ) : (
+            <div className="empty-list-msg">No patients found in {mode.toLowerCase()}</div>
+          )}
         </div>
       </div>
 
-      {/* ================= RIGHT CHAT ================= */}
-      <div style={styles.chatArea}>
+      {/* ================= RIGHT CHAT AREA ================= */}
+      <div className="chat-main-window">
         {selectedPatient ? (
           <DoctorChatBox
             user={user}
@@ -128,88 +125,13 @@ export default function DoctorChatPage() {
             patientUser={selectedPatient.user}
           />
         ) : (
-          <div style={styles.empty}>
-            Select a patient to start chatting
+          <div className="chat-empty-state">
+            <div className="empty-icon">💬</div>
+            <h3>Patient Consultation Room</h3>
+            <p>Select a patient from the left to view medical history and chat.</p>
           </div>
         )}
       </div>
     </div>
   );
 }
-
-/* ================= FIXED WHATSAPP-LIKE STYLES ================= */
-
-const styles = {
-  page: {
-    display: "flex",
-    height: "100vh",
-    background: "#f0f2f5",
-  },
-
-  /* ===== SIDEBAR ===== */
-  sidebar: {
-    width: "30%",
-    display: "flex",
-    flexDirection: "column",
-    borderRight: "1px solid #ddd",
-    background: "#fff",
-  },
-
-  topBar: {
-    display: "flex",
-    padding: 10,
-    gap: 8,
-    borderBottom: "1px solid #ddd",
-  },
-
-  tabBtn: {
-    flex: 1,
-    padding: "6px 0",
-    border: "1px solid #ccc",
-    background: "#f8f9fa",
-    cursor: "pointer",
-  },
-
-  activeTab: {
-    background: "#25d366",
-    color: "#fff",
-    border: "1px solid #25d366",
-  },
-
-  search: {
-    margin: 10,
-    padding: 8,
-    border: "1px solid #ccc",
-  },
-
-  list: {
-    flex: 1,
-    overflowY: "auto",
-  },
-
-  chatItem: {
-    padding: 12,
-    borderBottom: "1px solid #eee",
-    cursor: "pointer",
-  },
-
-  activeChat: {
-    background: "#dcf8c6", // WhatsApp green highlight
-  },
-
-  email: {
-    fontSize: 12,
-    color: "#666",
-  },
-
-  /* ===== CHAT AREA ===== */
-  chatArea: {
-    flex: 1,
-  },
-
-  empty: {
-    margin: "auto",
-    color: "#999",
-    fontSize: 16,
-  },
-};

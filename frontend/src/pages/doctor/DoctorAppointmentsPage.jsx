@@ -2,12 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { AppointmentAPI } from "../../api/api";
 import JitsiMeeting from "../../components/JitsiMeeting";
+import "../../styles/Doctor.css"; // We will use the same classes here
 
 /* ================= CONSTANTS ================= */
 const CALL_BUFFER_SECONDS = 10 * 60;
 
 /* ================= HELPERS ================= */
-
 const formatDate = (dateValue) => {
   const date = new Date(dateValue);
   return date.toLocaleDateString("en-US", {
@@ -16,6 +16,7 @@ const formatDate = (dateValue) => {
     day: "numeric",
   });
 };
+
 const formatCountdown = (seconds) => {
   if (!Number.isFinite(seconds) || seconds <= 0)
     return "00 : 00 : 00";
@@ -47,9 +48,7 @@ export default function DoctorAppointmentsPage() {
   }, [doctor]);
 
   const loadAppointments = async () => {
-    const res = await AppointmentAPI.getDoctorAppointments(
-      doctor.doctorId
-    );
+    const res = await AppointmentAPI.getDoctorAppointments(doctor.doctorId);
     setAppointments(res.data);
   };
 
@@ -105,151 +104,125 @@ export default function DoctorAppointmentsPage() {
     return () => clearInterval(interval);
   }, [selectedAppt]);
 
-  /* ================= UI ================= */
   return (
-    <div style={styles.page}>
-      <h3>Doctor Appointments</h3>
+    <div className="main-content">
+      <div className="profile-box">
+        <h3>Doctor Appointments</h3>
+        
+        {/* Unified Search Input */}
+        <input
+          className="input-field"
+          placeholder="Search patient by name or email..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{ width: "100%", marginBottom: "20px" }}
+        />
 
-      <input
-        placeholder="Search patient..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        style={styles.search}
-      />
+        {/* Appointment List */}
+        <div className="appointments-list-container">
+          {filtered.length > 0 ? (
+            filtered.map((a) => {
+              const isSelected = selectedAppt?.appointment?.appointmentId === a.appointment.appointmentId;
+              return (
+                <div
+                  key={a.appointment.appointmentId}
+                  className={`record-card appointment-item ${isSelected ? "active" : ""}`}
+                  onClick={() => {
+                    setSelectedAppt(a);
+                    setCallStarted(false);
+                  }}
+                  style={{ cursor: "pointer", marginBottom: "10px" }}
+                >
+                  <div className="record-details">
+                    <strong style={{ fontSize: "1.1rem", color: "#1e293b" }}>{a.user.name}</strong>
+                    <div className="record-meta" style={{ color: "#64748b", margin: "4px 0" }}>{a.user.email}</div>
+                    <div className="record-meta">
+                      📅 {formatDate(a.appointment.appointmentDate)} | 🕒 {a.appointment.startTime} – {a.appointment.endTime}
+                    </div>
+                  </div>
+                  <div className="status-badge-container">
+                    <span className={`status-badge ${a.appointment.status.toLowerCase()}`}>
+                      {a.appointment.status}
+                    </span>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <p className="empty-msg">No appointments found matching your search.</p>
+          )}
+        </div>
+      </div>
 
-      {filtered.map((a) => (
-        <div
-          key={a.appointment.appointmentId}
-          style={{
-            ...styles.card,
-            background:
-              selectedAppt?.appointment?.appointmentId === a.appointment.appointmentId
-                ? "#dcfce7"
-                : "transparent",
-          }}
-          onClick={() => {
-            setSelectedAppt(a);
-            setCallStarted(false);
-          }}
-        >
-          <div>
-            <strong>{a.user.name}</strong>
-            <div style={styles.sub}>{a.user.email}</div>
-            <div style={styles.meta}>
-             {formatDate(a.appointment.appointmentDate)} | {a.appointment.day} | {a.appointment.startTime} –{" "}
-              {a.appointment.endTime}
+      {/* CALL SECTION */}
+      {selectedAppt && selectedAppt.appointment.status === "CREATED" && (
+        <div className="profile-box animate-fade-in" style={{ borderTop: "4px solid #2563eb" }}>
+          <div className="call-header">
+            <h3>Consultation with {selectedAppt.user.name}</h3>
+            <div className="timer-box">
+              Starts in: <span className="timer-countdown">{formatCountdown(timeLeft)}</span>
             </div>
           </div>
-          <div>{a.appointment.status}</div>
-        </div>
-      ))}
-
-      {selectedAppt && selectedAppt.appointment.status === "CREATED" && (
-        <div style={styles.details}>
-          <p>
-            Time Left:{" "}
-            <strong>{formatCountdown(timeLeft)}</strong>
-          </p>
 
           {!callStarted &&
             selectedAppt.appointment.status === "CREATED" &&
             timeLeft > 0 &&
             timeLeft <= CALL_BUFFER_SECONDS && (
-<button
-  style={styles.primaryBtn}
-  onClick={async () => {
-    let roomId = selectedAppt.appointment.roomId;
-
-    if (!roomId) {
-      roomId = "ROOM_" + crypto.randomUUID();
-
-      await AppointmentAPI.updateAppointment(
-        selectedAppt.appointment.appointmentId,
-        { roomId }
-      );
-
-      await loadAppointments();
-    // 🔑 Update selectedAppt directly
-    setSelectedAppt((prev) => ({
-      ...prev,
-      appointment: {
-        ...prev.appointment,
-        roomId,
-      },
-    }));
-  }
-    setCallStarted(true);
-  }}
->
-  Start Call
-</button>
+              <button
+                className="primary-btn"
+                style={{ marginTop: "20px" }}
+                onClick={async () => {
+                  let roomId = selectedAppt.appointment.roomId;
+                  if (!roomId) {
+                    roomId = "ROOM_" + crypto.randomUUID();
+                    await AppointmentAPI.updateAppointment(
+                      selectedAppt.appointment.appointmentId,
+                      { roomId }
+                    );
+                    await loadAppointments();
+                    setSelectedAppt((prev) => ({
+                      ...prev,
+                      appointment: { ...prev.appointment, roomId },
+                    }));
+                  }
+                  setCallStarted(true);
+                }}
+              >
+                Join Video Consultation
+              </button>
             )}
 
           {callStarted && (
-            <button
-              style={styles.dangerBtn}
-              onClick={async () => {
-                // Close Jitsi first
-                setCallStarted(false);
-
-                // Allow iframe cleanup
-                await new Promise((r) => setTimeout(r, 300));
-
-                await AppointmentAPI.completeAppointment(
+            <div className="jitsi-wrapper animate-fade-in" style={{ marginTop: "20px" }}>
+              <button
+                className="logout-btn"
+                style={{ marginBottom: "15px", width: "100%" }}
+                onClick={async () => {
+                  setCallStarted(false);
+                  await new Promise((r) => setTimeout(r, 300));
+                  await AppointmentAPI.completeAppointment(
                     selectedAppt.appointment.appointmentId
-                );
-                setSelectedAppt(null);
-                loadAppointments();
-              }}
-            >
-              End Call & Complete
-            </button>
-          )}
-
-          {callStarted && (
-            <JitsiMeeting
-              roomId={selectedAppt.appointment.roomId}
-              displayName={`Dr. ${doctor.name}`}
-              email={doctor.email}
-              role="DOCTOR"
-              onClose={() => setCallStarted(false)}
-            />
+                  );
+                  setSelectedAppt(null);
+                  loadAppointments();
+                }}
+              >
+                End Call & Mark as Completed
+              </button>
+              
+              <div className="video-container" style={{ height: "500px", borderRadius: "12px", overflow: "hidden" }}>
+                <JitsiMeeting
+                  roomId={selectedAppt.appointment.roomId}
+                  displayName={`Dr. ${doctor.name}`}
+                  email={doctor.email}
+                  role="DOCTOR"
+                  onClose={() => setCallStarted(false)}
+                />
+              </div>
+            </div>
           )}
         </div>
       )}
     </div>
   );
 }
-
-/* ================= STYLES ================= */
-const styles = {
-  page: { padding: 20 },
-  search: { marginBottom: 15, padding: 6, width: "100%" },
-  card: {
-    display: "flex",
-    justifyContent: "space-between",
-    padding: 10,
-    borderBottom: "1px solid #e5e7eb",
-    cursor: "pointer",
-  },
-  sub: { fontSize: 12, color: "#64748b" },
-  meta: { fontSize: 13 },
-  details: {
-    marginTop: 20,
-    padding: 15,
-    border: "1px solid #e5e7eb",
-  },
-  primaryBtn: {
-    marginRight: 10,
-    background: "#2563eb",
-    color: "#fff",
-    border: "none",
-    padding: "8px 14px",
-  },
-  dangerBtn: {
-    background: "#dc2626",
-    color: "#fff",
-    border: "none",
-    padding: "8px 14px",
-  },
-};

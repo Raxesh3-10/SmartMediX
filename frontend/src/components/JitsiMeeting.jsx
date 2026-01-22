@@ -1,4 +1,3 @@
-
 //<script src="https://meet.yourdomain.com/external_api.js"></script>
 import { useEffect, useRef } from "react";
 

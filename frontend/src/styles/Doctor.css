@@ -1,0 +1,592 @@
+/* Copy your entire PatientDashboard.css content here first */
+/* Then add these few specific Doctor tweaks at the bottom */
+
+.edit-profile-mini-btn {
+    background: none;
+    border: none;
+    color: #3b82f6;
+    font-size: 0.7rem;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0;
+    text-align: right;
+    font-weight: 600;
+}
+
+.loading-state {
+    padding: 50px;
+    text-align: center;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.form-container {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    max-width: 400px;
+    margin-top: 15px;
+}
+
+/* Ensure the header meta doesn't get too cramped */
+.user-meta {
+    margin-right: 10px;
+}
+
+/* DOCTOR CHAT SPECIFIC STYLES */
+
+/* Ensure the container fills the screen below the header */
+.chat-page-container {
+  display: flex;
+  height: calc(100vh - 80px); /* Adjust based on your header height */
+  background: #ffffff;
+}
+
+/* Sidebar Styling */
+.chat-sidebar {
+  width: 350px;
+  border-right: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  background: #f8fafc;
+}
+
+.chat-tabs {
+  display: flex;
+  padding: 15px;
+  gap: 10px;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.chat-tab-btn {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #e2e8f0;
+  background: #f1f5f9;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: 0.2s;
+  color: #64748b;
+}
+
+.chat-tab-btn.active {
+  background: #2563eb;
+  color: white;
+  border-color: #2563eb;
+}
+
+/* Patient List Styling */
+.doctor-list-scroll {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.doctor-item {
+  padding: 15px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  cursor: pointer;
+  transition: 0.2s;
+  background: #ffffff;
+}
+
+.doctor-item:hover {
+  background: #f1f5f9;
+}
+
+.doctor-item.active {
+  background: #eff6ff;
+  border-left: 5px solid #2563eb;
+}
+
+.unread-badge {
+  background: #ef4444;
+  color: white;
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 800;
+}
+
+/* Empty State Styling */
+.chat-main-window {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+}
+
+.chat-empty-state {
+  margin: auto;
+  text-align: center;
+  color: #94a3b8;
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 15px;
+}
+
+.empty-list-msg {
+  padding: 40px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+/* Schedule Grid Tweaks */
+.day-column {
+  background: #f8fafc;
+  border-radius: 8px;
+  min-height: 150px;
+  padding: 5px;
+  border: 1px dashed #cbd5e1;
+}
+
+.slot-pill.booked {
+  background: #dcfce7; /* Green for booked (completed) slots for doctor */
+  color: #166534;
+  border-color: #166534;
+  cursor: default;
+}
+
+.slot-pill.selected {
+  background: #ef4444; /* Red to indicate "Ready to Delete" */
+  color: white;
+  border-color: #b91c1c;
+}
+
+/* APPOINTMENT SPECIFIC STYLES */
+
+.appointment-item {
+  transition: transform 0.2s, border-color 0.2s;
+  border: 1px solid #e2e8f0;
+}
+
+.appointment-item:hover {
+  border-color: #2563eb;
+  background-color: #f8fafc;
+}
+
+.appointment-item.active {
+  border-left: 5px solid #2563eb;
+  background-color: #eff6ff;
+}
+
+/* Status Badges */
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.status-badge.created { background: #dcfce7; color: #166534; }
+.status-badge.completed { background: #f1f5f9; color: #475569; }
+
+/* Call Timer Styles */
+.call-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.timer-box {
+  background: #1e293b;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.timer-countdown {
+  color: #60a5fa;
+  font-family: monospace;
+  font-size: 1.1rem;
+}
+
+.empty-msg {
+  text-align: center;
+  padding: 40px;
+  color: #94a3b8;
+}
+
+/* BILLING & EARNINGS SPECIFIC */
+
+.earnings-summary {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  color: white;
+  border: none;
+}
+
+.summary-label {
+  color: #94a3b8;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.total-amount {
+  color: #60a5fa;
+  font-size: 2.2rem;
+  margin: 5px 0;
+}
+
+.earnings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.earnings-icon {
+  font-size: 2.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 10px;
+  border-radius: 12px;
+}
+
+.billing-group-box {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  margin-bottom: 15px;
+  overflow: hidden;
+}
+
+.billing-group-header {
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  background: #ffffff;
+  transition: background 0.2s;
+}
+
+.billing-group-header:hover {
+  background: #f8fafc;
+}
+
+.patient-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.patient-avatar {
+  width: 40px;
+  height: 40px;
+  background: #3b82f6;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: bold;
+}
+
+.billing-card-detail {
+  padding: 15px 20px;
+  border-top: 1px solid #f1f5f9;
+  background: #fbfcfe;
+}
+
+.bill-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+  font-size: 0.95rem;
+}
+
+.bill-row.highlight {
+  font-weight: bold;
+  border-top: 1px dashed #cbd5e1;
+  padding-top: 5px;
+  margin-top: 5px;
+}
+
+.amount-val.green {
+  color: #16a34a;
+}
+
+.bill-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+/* CHAT BOX SPECIFIC UI */
+
+.chat-box-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #f1f5f9; /* Slate background */
+}
+
+.chat-header-bar {
+  padding: 15px 20px;
+  background: #1e293b;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.patient-info { display: flex; align-items: center; gap: 12px; }
+
+.avatar-circle {
+  width: 40px;
+  height: 40px;
+  background: #3b82f6;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.chat-name { font-weight: 600; font-size: 1rem; }
+.chat-sub { font-size: 0.75rem; opacity: 0.8; }
+
+.chat-messages-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.message-bubble {
+  max-width: 70%;
+  padding: 12px;
+  border-radius: 12px;
+  position: relative;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.doctor-msg {
+  align-self: flex-end;
+  background: #2563eb;
+  color: white;
+  border-bottom-right-radius: 2px;
+}
+
+.patient-msg {
+  align-self: flex-start;
+  background: white;
+  color: #1e293b;
+  border-bottom-left-radius: 2px;
+  border: 1px solid #e2e8f0;
+}
+
+.unread-glow {
+  border: 2px solid #22c55e;
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.2);
+}
+
+.message-time {
+  font-size: 0.7rem;
+  margin-top: 5px;
+  opacity: 0.7;
+  text-align: right;
+}
+
+.chat-input-wrapper {
+  padding: 15px 20px;
+  background: white;
+  border-top: 1px solid #e2e8f0;
+}
+
+.input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chat-input-field {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 25px;
+  outline: none;
+  font-size: 0.95rem;
+}
+
+.chat-input-field:focus { border-color: #2563eb; }
+
+.chat-send-btn {
+  background: #2563eb;
+  color: white;
+  border: none;
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  transition: transform 0.2s;
+}
+
+.chat-send-btn:hover { transform: scale(1.05); }
+
+.chat-img-preview {
+  max-width: 100%;
+  border-radius: 8px;
+  margin-top: 8px;
+  cursor: pointer;
+}
+
+.pdf-link {
+  display: block;
+  margin-top: 8px;
+  padding: 8px;
+  background: rgba(0,0,0,0.05);
+  border-radius: 6px;
+  text-decoration: none;
+  color: inherit;
+  font-size: 0.85rem;
+}
+
+/* ============================================================
+   FAMILY APPOINTMENTS & VIDEO CONSULTATION UI
+   ============================================================ */
+
+/* 1. SECTION TITLES */
+.section-title {
+  color: #1e293b;
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+  border-left: 4px solid #2563eb;
+  padding-left: 12px;
+}
+
+/* 2. FAMILY MEMBER CARDS (The Outer Group) */
+.billing-group-box {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+  overflow: hidden;
+}
+
+.billing-group-header {
+  padding: 16px 20px;
+  background: #f8fafc;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.patient-meta {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.patient-avatar {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.2rem;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+}
+
+/* 3. INDIVIDUAL APPOINTMENT LIST (Inside the group) */
+.transaction-sublist {
+  background: #ffffff;
+  padding: 10px;
+}
+
+.record-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  margin-bottom: 8px;
+  border-radius: 10px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.record-card:last-child {
+  margin-bottom: 0;
+}
+
+.active-selection {
+  background: #eff6ff !important;
+  border-color: #2563eb !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+}
+
+.record-details strong {
+  color: #334155;
+  display: block;
+}
+
+.record-meta {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* 4. CALL PANEL & TIMER */
+.call-panel {
+  background: white;
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+}
+
+.earnings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.total-amount {
+  font-family: 'Inter', sans-serif;
+  letter-spacing: -0.5px;
+}
+
+.bill-row code {
+  background: #f1f5f9;
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: #475569;
+  font-size: 0.9rem;
+}
+
+/* 5. VIDEO CALL CONTAINER */
+.video-container {
+  background: #1e293b;
+  padding: 15px;
+  border-radius: 12px;
+  margin-top: 15px;
+}
+
+/* 6. STATUS COLORS */
+.status-badge.created { background: #dcfce7; color: #166534; }
+.status-badge.pending { background: #fef9c3; color: #854d0e; }
+.status-badge.completed { background: #f1f5f9; color: #475569; }

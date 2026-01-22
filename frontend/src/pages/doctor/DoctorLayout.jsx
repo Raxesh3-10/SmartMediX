@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
-import { Outlet, useNavigate, Link } from "react-router-dom";
+import { Outlet, useNavigate, Link, useLocation } from "react-router-dom";
 import { AuthAPI, DoctorAPI } from "../../api/api";
+import "../../styles/Doctor.css"; // We will use the same classes here
 
 export default function DoctorLayout() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [user, setUser] = useState(null);
   const [doctor, setDoctor] = useState(null);
-
   const [showForm, setShowForm] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -24,14 +25,16 @@ export default function DoctorLayout() {
       navigate("/login");
       return;
     }
-
     const load = async () => {
-      const u = await AuthAPI.getUser();
-      const d = await DoctorAPI.getMyProfile();
-      setUser(u.data);
-      setDoctor(d.data);
+      try {
+        const u = await AuthAPI.getUser();
+        const d = await DoctorAPI.getMyProfile();
+        setUser(u.data);
+        setDoctor(d.data);
+      } catch (err) {
+        console.error(err);
+      }
     };
-
     load();
   }, [navigate]);
 
@@ -46,183 +49,97 @@ export default function DoctorLayout() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  /* ================= SEND OTP / VERIFY OTP ================= */
+  const handleUpdateProfile = async () => {
+    setLoading(true);
+    try {
+      const payload = {
+        currentEmail: user.email,
+        ...(form.newName.trim() && { newName: form.newName.trim() }),
+        ...(form.newEmail.trim() && { newEmail: form.newEmail.trim() }),
+        ...(form.newPassword.trim() && { newPassword: form.newPassword.trim() }),
+        ...(otpSent && { otp: form.otp.trim() }),
+      };
 
-const handleUpdateProfile = async () => {
-  setLoading(true);
+      const res = await AuthAPI.updateProfile(payload);
+      const message = typeof res.data === "string" ? res.data : res.data?.message || "Success";
+      alert(message);
 
-  try {
-    const payload = {
-      currentEmail: user.email,
-      ...(form.newName.trim() && { newName: form.newName.trim() }),
-      ...(form.newEmail.trim() && { newEmail: form.newEmail.trim() }),
-      ...(form.newPassword.trim() && { newPassword: form.newPassword.trim() }),
-      ...(otpSent && { otp: form.otp.trim() }),
-    };
-
-    const res = await AuthAPI.updateProfile(payload);
-
-    const message =
-      typeof res.data === "string"
-        ? res.data
-        : res.data?.message || "Success";
-
-    alert(message);
-
-    if (message === "OTP sent") {
-      setOtpSent(true);
+      if (message === "OTP sent") setOtpSent(true);
+      if (message === "Profile updated successfully") {
+        setShowForm(false);
+        setOtpSent(false);
+        setForm({ newName: "", newEmail: "", newPassword: "", otp: "" });
+        const refreshed = await AuthAPI.getUser();
+        setUser(refreshed.data);
+      }
+    } catch (err) {
+      alert(err.response?.data || "Error updating profile");
+    } finally {
+      setLoading(false);
     }
+  };
 
-    if (message === "Profile updated successfully") {
-      setShowForm(false);
-      setOtpSent(false);
-      setForm({ newName: "", newEmail: "", newPassword: "", otp: "" });
-
-      const refreshed = await AuthAPI.getUser();
-      setUser(refreshed.data);
-    }
-  } catch (err) {
-    alert(err.response?.data || "Error updating profile");
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-  if (!user || !doctor) return <p style={{ padding: 30 }}>Loading...</p>;
+  if (!user || !doctor) return <div className="loading-state">Loading Doctor Portal...</div>;
 
   return (
-    <div style={styles.page}>
-      {/* ================= TOP BAR ================= */}
-      <div style={styles.topBar}>
-        <div>
-          <strong>{user.name}</strong>
-          <div style={styles.email}>{user.email}</div>
+    <div className="dashboard-container">
+      {/* HEADER - SAME AS PATIENT */}
+      <header className="dashboard-header">
+        <Link to="/doctor" className="header-logo">
+          Smart<span>MediX</span>
+        </Link>
 
-          <button
-            style={styles.editBtn}
-            onClick={() => setShowForm(!showForm)}
-          >
-            {showForm ? "Cancel" : "Edit Profile"}
-          </button>
-        </div>
+        <nav className="header-nav">
+          <Link to="/doctor" className={`nav-link ${location.pathname === "/doctor" ? "active" : ""}`}>
+            Dashboard
+          </Link>
+          <Link to="/doctor/chat" className={`nav-link ${location.pathname === "/doctor/chat" ? "active" : ""}`}>
+            Chats
+          </Link>
+          <Link to="/doctor/appointments" className={`nav-link ${location.pathname === "/doctor/appointments" ? "active" : ""}`}>
+            Appointments
+          </Link>
+          <Link to="/doctor/bills" className={`nav-link ${location.pathname === "/doctor/bills" ? "active" : ""}`}>
+            Bills
+          </Link>
 
-        <div>
-          <Link to="/doctor" style={styles.link}>Dashboard</Link>
-          <Link to="/doctor/chat" style={styles.link}>Chats</Link>
-          <Link to="/doctor/appointments" style={styles.link}>Appointments</Link>
-          <Link to="/doctor/bills" style={styles.link}>Bills</Link>
+          <div className="user-meta">
+            <span className="user-name">Dr. {user.name}</span>
+            <span className="user-email">{user.email}</span>
+            <button className="edit-profile-mini-btn" onClick={() => setShowForm(!showForm)}>
+              {showForm ? "Cancel" : "Edit Profile"}
+            </button>
+          </div>
 
-          <button style={styles.logoutBtn} onClick={handleLogout}>
+          <button className="logout-btn" onClick={handleLogout}>
             Logout
           </button>
-        </div>
-      </div>
+        </nav>
+      </header>
 
-      {/* ================= UPDATE PROFILE FORM ================= */}
-      {showForm && (
-        <div style={styles.formBox}>
-          <h3>Update Profile</h3>
+      {/* CONTENT AREA */}
+      <main className="main-content">
+        {showForm && (
+          <div className="profile-box animate-fade-in">
+            <h3>Update Doctor Profile</h3>
+            <div className="form-container">
+              <input className="input-field" name="newName" placeholder="New Name" value={form.newName} onChange={handleChange} />
+              <input className="input-field" name="newEmail" placeholder="New Email" value={form.newEmail} onChange={handleChange} />
+              <input className="input-field" name="newPassword" type="password" placeholder="New Password" value={form.newPassword} onChange={handleChange} />
+              
+              {otpSent && (
+                <input className="input-field" name="otp" placeholder="Enter OTP" value={form.otp} onChange={handleChange} style={{border: '2px solid #3b82f6'}} />
+              )}
 
-          <input
-            name="newName"
-            placeholder="New Name"
-            value={form.newName}
-            onChange={handleChange}
-          />
+              <button className="primary-btn" onClick={handleUpdateProfile} disabled={loading}>
+                {otpSent ? "Verify OTP & Update" : "Send OTP to Update"}
+              </button>
+            </div>
+          </div>
+        )}
 
-          <input
-            name="newEmail"
-            placeholder="New Email"
-            value={form.newEmail}
-            onChange={handleChange}
-          />
-
-          <input
-            name="newPassword"
-            type="password"
-            placeholder="New Password"
-            value={form.newPassword}
-            onChange={handleChange}
-          />
-
-          {otpSent && (
-            <input
-              name="otp"
-              placeholder="Enter OTP"
-              value={form.otp}
-              onChange={handleChange}
-            />
-          )}
-
-          <button
-            style={styles.saveBtn}
-            onClick={handleUpdateProfile}
-            disabled={loading}
-          >
-            {otpSent ? "Verify OTP & Update" : "Send OTP"}
-          </button>
-        </div>
-      )}
-
-      <Outlet context={{ user, doctor }} />
+        <Outlet context={{ user, doctor }} />
+      </main>
     </div>
   );
 }
-
-/* ================= STYLES ================= */
-
-const styles = {
-  page: { padding: 40, maxWidth: 1300, margin: "auto" },
-
-  topBar: {
-    display: "flex",
-    justifyContent: "space-between",
-    borderBottom: "2px solid #e5e7eb",
-    paddingBottom: 15,
-    marginBottom: 30,
-  },
-
-  email: { fontSize: 12, color: "#64748b" },
-
-  link: { marginRight: 15, color: "#2563eb", textDecoration: "none" },
-
-  logoutBtn: {
-    padding: "8px 14px",
-    background: "#0f172a",
-    color: "#fff",
-    border: "none",
-    borderRadius: 6,
-    cursor: "pointer",
-  },
-
-  editBtn: {
-    marginTop: 6,
-    fontSize: 12,
-    padding: "4px 8px",
-    borderRadius: 4,
-    border: "1px solid #cbd5f5",
-    background: "#f8fafc",
-    cursor: "pointer",
-  },
-
-  formBox: {
-    maxWidth: 400,
-    padding: 20,
-    marginBottom: 30,
-    border: "1px solid #e5e7eb",
-    borderRadius: 8,
-    display: "flex",
-    flexDirection: "column",
-    gap: 10,
-  },
-
-  saveBtn: {
-    padding: "10px",
-    background: "#2563eb",
-    color: "#fff",
-    border: "none",
-    borderRadius: 6,
-    cursor: "pointer",
-  },
-};

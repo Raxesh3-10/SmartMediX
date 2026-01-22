@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { PaymentAPI } from "../../api/api";
+import "../../styles/Doctor.css"; // We will use the same classes here
 
 const formatIST = (isoDate) =>
   new Date(isoDate).toLocaleString("en-IN", {
@@ -25,7 +26,6 @@ export default function DoctorBillsPage() {
   const normalized = useMemo(() => {
     return rows
       .map(r => {
-        // DTO case (recommended)
         if (r.transaction) {
           return {
             transaction: r.transaction,
@@ -33,8 +33,6 @@ export default function DoctorBillsPage() {
             patientEmail: r.patientEmail || "N/A",
           };
         }
-
-        // Raw Transaction fallback
         return {
           transaction: r,
           patientName: "Patient",
@@ -64,12 +62,13 @@ export default function DoctorBillsPage() {
       );
     });
   }, [normalized, search]);
-const totalEarnings = useMemo(() => {
-  return filtered.reduce(
-    (sum, x) => sum + (x.transaction.totalDoctorReceives || 0),
-    0
-  );
-}, [filtered]);
+
+  const totalEarnings = useMemo(() => {
+    return filtered.reduce(
+      (sum, x) => sum + (x.transaction.totalDoctorReceives || 0),
+      0
+    );
+  }, [filtered]);
 
   /* ================= GROUP BY PATIENT ================= */
   const grouped = useMemo(() => {
@@ -83,106 +82,86 @@ const totalEarnings = useMemo(() => {
   }, [filtered]);
 
   return (
-    <div style={styles.page}>
-    <h3>
-        My Earnings : ₹{totalEarnings.toLocaleString("en-IN")}
-    </h3>
+    <div className="main-content">
+      {/* EARNINGS SUMMARY CARD */}
+      <div className="profile-box earnings-summary animate-fade-in">
+        <div className="earnings-header">
+          <div>
+            <span className="summary-label">Total Professional Earnings</span>
+            <h2 className="total-amount">₹{totalEarnings.toLocaleString("en-IN")}</h2>
+          </div>
+          <div className="earnings-icon">💰</div>
+        </div>
+        
+        <input
+          className="input-field"
+          placeholder="Search by patient name, email, amount, or date..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ width: "100%", marginTop: "15px", marginBottom: "0" }}
+        />
+      </div>
 
+      {/* BILLING GROUPS */}
+      <div className="billing-list-container">
+        {Object.entries(grouped).length > 0 ? (
+          Object.entries(grouped).map(([key, list]) => {
+            const head = list[0];
+            const open = expanded === key;
 
-      <input
-        placeholder="Search by patient, email, amount, or time"
-        value={search}
-        onChange={e => setSearch(e.target.value)}
-        style={styles.search}
-      />
-
-      {Object.entries(grouped).map(([key, list]) => {
-        const head = list[0];
-        const open = expanded === key;
-
-        return (
-          <div key={key} style={styles.group}>
-            {/* PATIENT HEADER */}
-            <div
-              style={styles.groupHeader}
-              onClick={() => setExpanded(open ? null : key)}
-            >
-              <div>
-                <strong>{head.patientName}</strong>
-                <div style={styles.sub}>{head.patientEmail}</div>
-              </div>
-              <div>{open ? "▲" : "▼"}</div>
-            </div>
-
-            {/* TRANSACTIONS */}
-            {open &&
-              list.map(x => {
-                const t = x.transaction;
-                return (
-                  <div
-                    key={t.transactionId}
-                    style={styles.card}
-                  >
+            return (
+              <div key={key} className={`billing-group-box ${open ? "is-expanded" : ""}`}>
+                {/* PATIENT HEADER */}
+                <div
+                  className="billing-group-header"
+                  onClick={() => setExpanded(open ? null : key)}
+                >
+                  <div className="patient-meta">
+                    <div className="patient-avatar">{head.patientName.charAt(0)}</div>
                     <div>
-                      <strong>Consultation Fee:</strong> ₹
-                      {t.consultationFee}
-                    </div>
-
-                    <div>
-                      <strong>You Receive:</strong> ₹
-                      {t.totalDoctorReceives}
-                    </div>
-
-                    <div>
-                      <strong>Paid At:</strong>{" "}
-                      {formatIST(t.paidAt)}
-                    </div>
-
-                    <div>
-                      <strong>Status:</strong> {t.status}
+                      <strong>{head.patientName}</strong>
+                      <div className="record-meta">{head.patientEmail}</div>
                     </div>
                   </div>
-                );
-              })}
-          </div>
-        );
-      })}
+                  <div className="group-stats">
+                    <span className="transaction-count">{list.length} Records</span>
+                    <span className="expand-chevron">{open ? "▲" : "▼"}</span>
+                  </div>
+                </div>
+
+                {/* TRANSACTIONS SUB-LIST */}
+                {open && (
+                  <div className="transaction-sublist animate-fade-in">
+                    {list.map(x => {
+                      const t = x.transaction;
+                      return (
+                        <div key={t.transactionId} className="billing-card-detail">
+                          <div className="bill-row">
+                            <span>Consultation Fee</span>
+                            <span className="amount-val">₹{t.consultationFee}</span>
+                          </div>
+                          <div className="bill-row highlight">
+                            <span>You Received</span>
+                            <span className="amount-val green">₹{t.totalDoctorReceives}</span>
+                          </div>
+                          <div className="bill-footer">
+                            <span>📅 {formatIST(t.paidAt)}</span>
+                            <span className={`status-badge ${t.status?.toLowerCase()}`}>
+                              {t.status}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })
+        ) : (
+          <div className="profile-box empty-msg">No transaction records found.</div>
+        )}
+      </div>
     </div>
   );
 }
-
-/* ================= STYLES ================= */
-
-const styles = {
-  page: {
-    padding: 20,
-    maxWidth: 800,
-  },
-  search: {
-    width: "100%",
-    padding: 8,
-    marginBottom: 16,
-    border: "1px solid #e5e7eb",
-    borderRadius: 6,
-  },
-  group: {
-    border: "1px solid #e5e7eb",
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  groupHeader: {
-    padding: 12,
-    cursor: "pointer",
-    display: "flex",
-    justifyContent: "space-between",
-    background: "#f8fafc",
-  },
-  card: {
-    padding: 12,
-    borderTop: "1px solid #e5e7eb",
-  },
-  sub: {
-    fontSize: 12,
-    color: "#64748b",
-  },
-};
