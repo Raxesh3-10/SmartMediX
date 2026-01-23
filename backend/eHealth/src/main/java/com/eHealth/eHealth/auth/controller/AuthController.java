@@ -51,8 +51,8 @@ public class AuthController {
     }
 
 @PostMapping("/login")
-public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest req ,@RequestHeader("JWT") String jwt) {
-    return ResponseEntity.ok(authService.login(req,jwt));
+public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest req ) {
+    return ResponseEntity.ok(authService.login(req));
 }
 
 }

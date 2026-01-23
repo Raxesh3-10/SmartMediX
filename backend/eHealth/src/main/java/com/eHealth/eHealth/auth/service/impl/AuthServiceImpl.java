@@ -161,7 +161,7 @@ public String updateProfile(UpdateProfileRequest request) {
         return "Logout successful";
     }
 @Override
-public LoginResponse login(LoginRequest request,String oldJwt) {
+public LoginResponse login(LoginRequest request) {
 
     User user = userRepository.findByEmail(request.getEmail())
             .orElseThrow(() -> new RuntimeException("Invalid credentials"));
@@ -169,8 +169,6 @@ public LoginResponse login(LoginRequest request,String oldJwt) {
     if (!user.getPassword().equals(request.getPassword())) {
         throw new RuntimeException("Invalid credentials");
     }
-    if(oldJwt!=null && !oldJwt.isEmpty())
-        jwtRepo.deleteByJwt(oldJwt);
     String jwt = JwtUtil.generateToken(user.getEmail(), user.getRole());
 
     JwtSession session = new JwtSession();

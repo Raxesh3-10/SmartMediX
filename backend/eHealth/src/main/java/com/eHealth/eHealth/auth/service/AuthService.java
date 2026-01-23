@@ -15,5 +15,5 @@ public interface AuthService {
     String updateProfile(UpdateProfileRequest request);
     String signup(SignupRequest request);
     String verifyOtpAndCreateUser(VerifyOtpRequest request);
-    LoginResponse  login(LoginRequest request,String jwt);
+    LoginResponse  login(LoginRequest request);
 }
