@@ -1,4 +1,4 @@
-package com.eHealth.eHealth.auth;
+package com.eHealth.eHealth.dto;
 
 public class LoginResponse {
 

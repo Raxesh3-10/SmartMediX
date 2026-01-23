@@ -5,10 +5,10 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
-import com.eHealth.eHealth.auth.LoginResponse;
 import com.eHealth.eHealth.auth.service.AuthService;
 import com.eHealth.eHealth.utility.JwtUtil;
 import com.eHealth.eHealth.dto.LoginRequest;
+import com.eHealth.eHealth.dto.LoginResponse;
 import com.eHealth.eHealth.dto.SignupRequest;
 import com.eHealth.eHealth.dto.UpdateProfileRequest;
 import com.eHealth.eHealth.dto.VerifyOtpRequest;
@@ -161,7 +161,7 @@ public String updateProfile(UpdateProfileRequest request) {
         return "Logout successful";
     }
 @Override
-public LoginResponse login(LoginRequest request) {
+public LoginResponse login(LoginRequest request,String oldJwt) {
 
     User user = userRepository.findByEmail(request.getEmail())
             .orElseThrow(() -> new RuntimeException("Invalid credentials"));
@@ -169,7 +169,8 @@ public LoginResponse login(LoginRequest request) {
     if (!user.getPassword().equals(request.getPassword())) {
         throw new RuntimeException("Invalid credentials");
     }
-
+    if(oldJwt!=null && !oldJwt.isEmpty())
+        jwtRepo.deleteByJwt(oldJwt);
     String jwt = JwtUtil.generateToken(user.getEmail(), user.getRole());
 
     JwtSession session = new JwtSession();

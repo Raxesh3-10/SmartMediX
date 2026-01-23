@@ -3,9 +3,9 @@ package com.eHealth.eHealth.auth.controller;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.eHealth.eHealth.auth.LoginResponse;
 import com.eHealth.eHealth.auth.service.AuthService;
 import com.eHealth.eHealth.dto.LoginRequest;
+import com.eHealth.eHealth.dto.LoginResponse;
 import com.eHealth.eHealth.dto.SignupRequest;
 import com.eHealth.eHealth.dto.UpdateProfileRequest;
 import com.eHealth.eHealth.dto.VerifyOtpRequest;
@@ -51,8 +51,8 @@ public class AuthController {
     }
 
 @PostMapping("/login")
-public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest req) {
-    return ResponseEntity.ok(authService.login(req));
+public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest req ,@RequestHeader("JWT") String jwt) {
+    return ResponseEntity.ok(authService.login(req,jwt));
 }
 
 }
