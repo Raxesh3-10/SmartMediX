@@ -16,9 +16,7 @@ import io.jsonwebtoken.security.Keys;
 
 public class JwtUtil {
 
-    // ================= CONFIG =================
-
-    private static final long EXPIRATION_TIME = 60 * 60 * 1000 * 6; // 6 hour
+    private static final long EXPIRATION_TIME = 60 * 60 * 1000 * 3; // 3 hours
 
     private static final String SECRET =
             "MyVeryStrongJwtSecretKeyThatIsAtLeast32Chars";
@@ -26,20 +24,19 @@ public class JwtUtil {
     private static final Key SECRET_KEY =
             Keys.hmacShaKeyFor(SECRET.getBytes());
 
-    // ================= TOKEN GENERATION =================
-    public static String generateToken(String email, Role role) {
+    public static String generateToken(String email, Role role, String ipAddress) {
 
         return Jwts.builder()
                 .setSubject(email)
+                .claim("role", role) 
+                .claim("ip", ipAddress) 
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .signWith(SECRET_KEY, SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    // ================= TOKEN PARSING =================
     private static Claims getClaims(String token) {
-
         return Jwts.parserBuilder()
                 .setSigningKey(SECRET_KEY)
                 .build()
@@ -47,90 +44,59 @@ public class JwtUtil {
                 .getBody();
     }
 
-    // ================= VALIDATION =================
-    public static boolean isTokenValid(
-            String token,
-            JwtSessionRepository jwtSessionRepository
-    ) {
+    public static boolean isTokenValid(String token,JwtSessionRepository jwtSessionRepository,String requestIp) {
         try {
             JwtSession session = jwtSessionRepository.findByJwt(token)
                     .orElse(null);
 
             if (session == null) return false;
 
-            // validate JWT signature & expiry
             Claims claims = getClaims(token);
-            return claims.getExpiration().after(new Date());
+            boolean isNotExpired = claims.getExpiration().after(new Date());
+            
+            if (!isNotExpired) return false;
+
+            String tokenIp = claims.get("ip", String.class);
+            
+            return tokenIp != null && tokenIp.equals(requestIp);
 
         } catch (Exception e) {
             return false;
         }
     }
 
-    public static String getUserId(String token,UserRepository userRepository,JwtSessionRepository jwtSessionRepository)
-    {
+    public static String getUserId(String token, UserRepository userRepository, JwtSessionRepository jwtSessionRepository) {
         String email = getEmail(token, jwtSessionRepository);
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new RuntimeException("User not found for email: " + email));
+                .orElseThrow(() -> new RuntimeException("User not found for email: " + email));
 
         return user.getId();
     }
-    // ================= DATA EXTRACTION =================
-    public static String getEmail(
-            String token,
-            JwtSessionRepository jwtSessionRepository
-    ) {
+
+    public static String getEmail(String token, JwtSessionRepository jwtSessionRepository) {
         JwtSession session = jwtSessionRepository.findByJwt(token)
-                .orElseThrow(() ->
-                        new RuntimeException("Session expired or invalid"));
+                .orElseThrow(() -> new RuntimeException("Session expired or invalid"));
 
         return session.getEmail();
     }
 
-    /**
-     * Role is resolved via:
-     * JWT → JwtSession → email → User → role
-     */
-    public static Role getRole(
-            String token,
-            UserRepository userRepository,
-            JwtSessionRepository jwtSessionRepository
-    ) {
+    public static Role getRole(String token, UserRepository userRepository, JwtSessionRepository jwtSessionRepository) {
         String email = getEmail(token, jwtSessionRepository);
-
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new RuntimeException("User not found for email: " + email));
+                .orElseThrow(() -> new RuntimeException("User not found for email: " + email));
 
         return user.getRole();
     }
 
-    // ================= ROLE CHECKS =================
-    public static boolean isAdmin(
-            String token,
-            UserRepository userRepository,
-            JwtSessionRepository jwtSessionRepository
-    ) {
-        return isTokenValid(token, jwtSessionRepository)
-                && getRole(token, userRepository, jwtSessionRepository) == Role.ADMIN;
+    public static boolean isAdmin(String token, UserRepository uRepo, JwtSessionRepository jRepo, String requestIp) {
+        return isTokenValid(token, jRepo, requestIp) && getRole(token, uRepo, jRepo) == Role.ADMIN;
     }
 
-    public static boolean isPatient(
-            String token,
-            UserRepository userRepository,
-            JwtSessionRepository jwtSessionRepository
-    ) {
-        return isTokenValid(token, jwtSessionRepository)
-                && getRole(token, userRepository, jwtSessionRepository) == Role.PATIENT;
+    public static boolean isDoctor(String token, UserRepository uRepo, JwtSessionRepository jRepo, String requestIp) {
+        return isTokenValid(token, jRepo, requestIp) && getRole(token, uRepo, jRepo) == Role.DOCTOR;
     }
 
-    public static boolean isDoctor(
-            String token,
-            UserRepository userRepository,
-            JwtSessionRepository jwtSessionRepository
-    ) {
-        return isTokenValid(token, jwtSessionRepository)
-                && getRole(token, userRepository, jwtSessionRepository) == Role.DOCTOR;
+    public static boolean isPatient(String token, UserRepository uRepo, JwtSessionRepository jRepo, String requestIp) {
+        return isTokenValid(token, jRepo, requestIp) && getRole(token, uRepo, jRepo) == Role.PATIENT;
     }
 }

@@ -1,23 +1,17 @@
 package com.eHealth.eHealth.model;
-
 import java.time.LocalTime;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
 public class AvailabilitySlot {
-
     private String day;          // MONDAY, FRIDAY, etc.
     private LocalTime startTime; // 09:00
     private LocalTime endTime;   // 09:30
     private boolean booked;
-
-    public String getDay() { return day; }
-    public void setDay(String day) { this.day = day; }
-
-    public LocalTime getStartTime() { return startTime; }
-    public void setStartTime(LocalTime startTime) { this.startTime = startTime; }
-
-    public LocalTime getEndTime() { return endTime; }
-    public void setEndTime(LocalTime endTime) { this.endTime = endTime; }
-
-    public boolean isBooked() { return booked; }
-    public void setBooked(boolean booked) { this.booked = booked; }
 }

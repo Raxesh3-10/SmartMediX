@@ -1,13 +1,16 @@
 package com.eHealth.eHealth.doctor.service.impl;
 
 import java.time.Instant;
-
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.eHealth.eHealth.doctor.service.DoctorService;
+import com.eHealth.eHealth.dto.DoctorWithUserDTO;
 import com.eHealth.eHealth.model.Doctor;
+import com.eHealth.eHealth.model.User;
 import com.eHealth.eHealth.repository.DoctorRepository;
 import com.eHealth.eHealth.repository.JwtSessionRepository;
 import com.eHealth.eHealth.repository.UserRepository;
@@ -26,21 +29,24 @@ public class DoctorServiceImpl implements DoctorService {
         this.jwtRepo=JwtRepo;
     }
 
-    // ================= VALIDATION =================
-    private String validateDoctorJwt(String jwt) {
-        if (!JwtUtil.isDoctor(jwt,userRepo,jwtRepo)) {
-            throw new RuntimeException("DOCTOR access only");
-        }
-        return JwtUtil.getEmail(jwt,jwtRepo); // used as unique identity
-    }
-
-    // ================= CREATE =================
     @Override
-    public Doctor createDoctorProfile(Doctor doctor, String jwt) {
+    @Transactional
+    public List<DoctorWithUserDTO> getAllDoctors() {
+        return doctorRepo.findAll()
+                .stream()
+                .map(Doctor -> {
+                    User user = userRepo
+                            .findById(Doctor.getUserId())
+                            .orElse(null);
 
-        validateDoctorJwt(jwt);
+                    return new DoctorWithUserDTO(Doctor, user);
+                })
+                .toList();
+    }
+    @Override
+    @Transactional
+    public Doctor createDoctorProfile(Doctor doctor, String jwt) {
         String userId=JwtUtil.getUserId(jwt, userRepo, jwtRepo);
-        // Enforce ONE doctor profile per user
         if (doctorRepo.findByUserId(doctor.getUserId()).isPresent()) {
             throw new RuntimeException("Doctor profile already exists for this user");
         }
@@ -51,25 +57,15 @@ public class DoctorServiceImpl implements DoctorService {
     }
 
 @Override
+@Transactional
 public Doctor getDoctorByUser(String jwt) {
-    validateDoctorJwt(jwt);
     String id = JwtUtil.getUserId(jwt, userRepo, jwtRepo);
-
-    return doctorRepo.findByUserId(id)
-            .orElseThrow(() ->
-                new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Doctor profile not created"
-                )
-            );
+    return doctorRepo.findByUserId(id).orElseThrow(() ->new ResponseStatusException(HttpStatus.NOT_FOUND,"Doctor profile not created"));
 }
 
-
-    // ================= UPDATE =================
     @Override
-    public Doctor updateDoctor(String doctorId, Doctor updated, String jwt) {
-
-        validateDoctorJwt(jwt);
+    @Transactional
+    public Doctor updateDoctor(String doctorId, Doctor updated) {
 
         return doctorRepo.findById(doctorId).map(d -> {
             d.setSpecialization(updated.getSpecialization());
@@ -80,17 +76,5 @@ public Doctor getDoctorByUser(String jwt) {
             d.setSlots(updated.getSlots());
             return doctorRepo.save(d);
         }).orElseThrow(() -> new RuntimeException("Doctor not found"));
-    }
-
-    // ================= DELETE =================
-    @Override
-    public String deleteDoctor(String doctorId, String jwt) {
-
-        if (!JwtUtil.isAdmin(jwt,userRepo,jwtRepo)) {
-            throw new RuntimeException("ADMIN only operation");
-        }
-
-        doctorRepo.deleteById(doctorId);
-        return "Doctor profile deleted";
     }
 }

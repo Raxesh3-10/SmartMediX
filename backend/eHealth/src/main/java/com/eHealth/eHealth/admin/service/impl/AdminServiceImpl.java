@@ -7,14 +7,15 @@ import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
-
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.eHealth.eHealth.enumRole.Role;
 import com.eHealth.eHealth.admin.service.AdminService;
 import com.eHealth.eHealth.dto.*;
 import com.eHealth.eHealth.model.*;
 import com.eHealth.eHealth.repository.*;
-import com.eHealth.eHealth.utility.JwtUtil;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Service
 public class AdminServiceImpl implements AdminService {
@@ -27,6 +28,7 @@ public class AdminServiceImpl implements AdminService {
     private final PatientRepository patientRepo;
     private final DoctorRepository doctorRepo;
     private final AppointmentRepository appointmentRepo;
+    private final PasswordEncoder passwordEncoder;
 
     public AdminServiceImpl(UserRepository userRepo,
                             JwtSessionRepository jwtRepo,
@@ -35,7 +37,8 @@ public class AdminServiceImpl implements AdminService {
                             FamilyRepository familyRepo ,
                             PatientRepository patientRepo,
                             DoctorRepository doctorRepo,
-                            AppointmentRepository appointmentRepo) {
+                            AppointmentRepository appointmentRepo,
+                            PasswordEncoder passwordEncoder) {
         this.userRepo = userRepo;
         this.jwtRepo = jwtRepo;
         this.chatRepo = chatRepo;
@@ -44,57 +47,38 @@ public class AdminServiceImpl implements AdminService {
         this.patientRepo = patientRepo;
         this.doctorRepo = doctorRepo;
         this.appointmentRepo = appointmentRepo;
-    }
-
-    private void validateAdmin(String jwt) {
-        if (!JwtUtil.isAdmin(jwt,userRepo,jwtRepo)) {
-            throw new RuntimeException("ADMIN only");
-        }
+        this.passwordEncoder = passwordEncoder;
     }
 @Override
-public String createAdminUser(User user, String adminJwt) {
-    validateAdmin(adminJwt);
-
-    if (user.getRole() != Role.ADMIN) {
-        throw new RuntimeException("Only ADMIN role can be created");
-    }
-
+@Transactional
+public String createAdminUser(User user) {
     if (userRepo.findByEmail(user.getEmail()).isPresent()) {
         throw new RuntimeException("User already exists");
     }
     user.setRole(Role.ADMIN);
-    // IMPORTANT: password must already be encoded by caller or auth service
+    user.setPassword(passwordEncoder.encode(user.getPassword()));
     userRepo.save(user);
     return "ADMIN user created successfully";
 }
-
 @Override
-public String updateUser(String id, User user, String adminJwt) {
-    validateAdmin(adminJwt);
-
+@Transactional
+public String updateUser(String id, User user) {
     return userRepo.findById(id).map(existing -> {
-
-        // 🔒 ONLY these two fields are allowed
-        existing.setName(user.getName());
+        if(user.getName() != null )     existing.setName(user.getName());
         existing.setRole(Role.ADMIN);
-
+        if(user.getEmail() != null)    existing.setEmail(user.getEmail());
+        if(user.getPassword() != null) existing.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepo.save(existing);
         return "User updated successfully";
-
     }).orElseThrow(() -> new RuntimeException("User not found"));
 }
-
 @Override
-public List<AdminUserFullView> getAllUsersFull(String adminJwt) {
-    validateAdmin(adminJwt);
-
+@Transactional
+public List<AdminUserFullView> getAllUsersFull() {
     return userRepo.findAll().stream().map(user -> {
-
         AdminUserFullView view = new AdminUserFullView();
         view.setUser(user);
-
         if (user.getRole() == Role.PATIENT) {
-
             patientRepo.findByUserId(user.getId()).ifPresent(patient -> {
                 view.setPatient(patient);
                 view.setAppointments(
@@ -106,9 +90,7 @@ public List<AdminUserFullView> getAllUsersFull(String adminJwt) {
                 familyRepo.findByOwnerPatientId(patient.getPatientId())
                         .ifPresent(view::setFamily);
             });
-
         } else if (user.getRole() == Role.DOCTOR) {
-
             doctorRepo.findByUserId(user.getId()).ifPresent(doctor -> {
                 view.setDoctor(doctor);
                 view.setAppointments(
@@ -119,34 +101,25 @@ public List<AdminUserFullView> getAllUsersFull(String adminJwt) {
                 );
             });
         }
-
         return view;
-
     }).toList();
 }
 
 @Override
-public String deleteUserFull(String userId, String adminJwt) {
-    validateAdmin(adminJwt);
-
+@Transactional
+public String deleteUserFull(String userId) {
     User user = userRepo.findById(userId)
             .orElseThrow(() -> new RuntimeException("User not found"));
-
     jwtRepo.deleteByEmail(user.getEmail());
-
     if (user.getRole() == Role.PATIENT) {
-
         patientRepo.findByUserId(userId).ifPresent(patient -> {
-
             appointmentRepo.deleteByPatientId(patient.getPatientId());
             txRepo.deleteByPatientId(patient.getPatientId());
-
             familyRepo.findByOwnerPatientId(patient.getPatientId())
                     .ifPresent(familyRepo::delete);
 
             patientRepo.delete(patient);
         });
-
     } else if (user.getRole() == Role.DOCTOR) {
 
         doctorRepo.findByUserId(userId).ifPresent(doctor -> {
@@ -157,14 +130,13 @@ public String deleteUserFull(String userId, String adminJwt) {
             doctorRepo.delete(doctor);
         });
     }
-
     userRepo.delete(user);
     return "User and related data deleted successfully";
 }
 
     @Override
-    public AdminDashboardStats getDashboardStats(String adminJwt) {
-        validateAdmin(adminJwt);
+    @Transactional
+    public AdminDashboardStats getDashboardStats() {
 
         AdminDashboardStats stats = new AdminDashboardStats();
         stats.setTotalChatMessages(chatRepo.count());

@@ -4,8 +4,12 @@ import com.eHealth.eHealth.model.*;
 import com.eHealth.eHealth.repository.*;
 import com.eHealth.eHealth.dto.TransactionHistoryResponse;
 import com.eHealth.eHealth.utility.JwtUtil;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import com.eHealth.eHealth.appointment.service.AppointmentService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -38,9 +42,7 @@ public class TransactionService {
         this.jwtRepo = jwtRepo;
         this.patientRepo = patientRepo;
     }
-
-    /* ================= PAYMENT ================= */
-
+    @Transactional
     public Transaction processTransaction(String appointmentId) {
         Appointment appt = appointmentRepo.findById(appointmentId)
                 .orElseThrow(() -> new RuntimeException("Appointment not found"));
@@ -60,7 +62,7 @@ public class TransactionService {
         tx.setConsultationFee(fee);
         tx.setPatientPlatformFee(patientFee);
         tx.setDoctorPlatformFee(doctorFee);
-        tx.setTax(0.0);
+        tx.setTax(3.0);
 
         tx.setTotalPaidByPatient(fee + patientFee);
         tx.setTotalDoctorReceives(fee - doctorFee);
@@ -79,20 +81,18 @@ public class TransactionService {
         return saved;
     }
 
-    /* ================= HISTORY ================= */
-
-    public List<TransactionHistoryResponse> getMyTransactions(String jwt) {
+    public List<TransactionHistoryResponse> getMyTransactions(String jwt,HttpServletRequest request) {
 
         List<Transaction> transactions;
 
-        if (JwtUtil.isPatient(jwt, userRepo, jwtRepo)) {
+        if (JwtUtil.isPatient(jwt, userRepo, jwtRepo,request.getRemoteAddr())) {
             String userId = JwtUtil.getUserId(jwt, userRepo, jwtRepo);
             Patient patient = patientRepo.findByUserId(userId)
                     .orElseThrow(() -> new RuntimeException("Patient profile not found"));
 
             transactions = transactionRepo.findByPatientId(patient.getPatientId());
 
-        } else if (JwtUtil.isDoctor(jwt, userRepo, jwtRepo)) {
+        } else if (JwtUtil.isDoctor(jwt, userRepo, jwtRepo,request.getRemoteAddr())) {
             String userId = JwtUtil.getUserId(jwt, userRepo, jwtRepo);
             Doctor doctor = doctorRepo.findByUserId(userId)
                     .orElseThrow(() -> new RuntimeException("Doctor profile not found"));

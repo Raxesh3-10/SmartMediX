@@ -3,10 +3,15 @@ package com.eHealth.eHealth.auth.service.impl;
 import java.time.Instant;
 import java.util.Optional;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.eHealth.eHealth.auth.service.AuthService;
 import com.eHealth.eHealth.utility.JwtUtil;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import com.eHealth.eHealth.dto.LoginRequest;
 import com.eHealth.eHealth.dto.LoginResponse;
 import com.eHealth.eHealth.dto.SignupRequest;
@@ -24,17 +29,19 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final JwtSessionRepository jwtRepo;
     private final OtpService otpService;
+    private final PasswordEncoder passwordEncoder;
 
     public AuthServiceImpl(UserRepository userRepository,
                            JwtSessionRepository jwtRepo,
-                           OtpService otpService) {
+                           OtpService otpService,
+                           PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.jwtRepo = jwtRepo;
         this.otpService = otpService;
+        this.passwordEncoder = passwordEncoder;
     }
-
-    // STEP 1: Send OTP only
     @Override
+    @Transactional
     public String signup(SignupRequest request) {
 
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
@@ -44,147 +51,79 @@ public class AuthServiceImpl implements AuthService {
         otpService.sendEmailOtp(request.getEmail());
         return "OTP sent to email";
     }
-
-    // STEP 2: Verify OTP and save user
     @Override
+    @Transactional
     public String verifyOtpAndCreateUser(VerifyOtpRequest request) {
-
-        boolean validOtp = otpService.verifyOtp(
-                request.getEmail(),
-                request.getOtp()
-        );
-
-        if (!validOtp) {
+        boolean validOtp = otpService.verifyOtp(request.getEmail(),request.getOtp());
+        if (!validOtp) 
             return "Invalid or expired OTP";
-        }
-
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) 
             return "User already exists";
-        }
-
         User user = new User();
         user.setName(request.getName());
         user.setEmail(request.getEmail());
-        user.setPassword(request.getPassword()); // later hash
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(request.getRole());
 
         userRepository.save(user);
 
         return "Signup successful";
     }
-@Override
-public String updateProfile(UpdateProfileRequest request) {
-
-    User user = userRepository.findByEmail(request.getCurrentEmail())
-            .orElseThrow(() -> new RuntimeException("User not found"));
-
-    boolean emailChange =
-            request.getNewEmail() != null &&
-            !request.getNewEmail().isBlank() &&
-            !request.getNewEmail().equals(user.getEmail());
-
-    boolean nameChange =
-            request.getNewName() != null &&
-            !request.getNewName().isBlank() &&
-            !request.getNewName().equals(user.getName());
-
-    boolean passwordChange =
-            request.getNewPassword() != null &&
-            !request.getNewPassword().isBlank();
-
-    if (!emailChange && !nameChange && !passwordChange) {
-        return "No changes requested";
-    }
-
-    /* =====================================================
-       STEP 1: SEND OTP
-       ===================================================== */
-    if (request.getOtp() == null) {
-
-        if (emailChange &&
-            userRepository.findByEmail(request.getNewEmail()).isPresent()) {
-            return "Email already in use";
-        }
-
-        String otpTargetEmail = emailChange
-                ? request.getNewEmail()
-                : user.getEmail();
-
-        if (otpTargetEmail == null || otpTargetEmail.isBlank()) {
-            throw new RuntimeException("Invalid email for OTP");
-        }
-
-        otpService.sendEmailOtp(otpTargetEmail);
-        return "OTP sent";
-    }
-
-    /* =====================================================
-       STEP 2: VERIFY OTP
-       ===================================================== */
-    String otpTargetEmail = emailChange
-            ? request.getNewEmail()
-            : user.getEmail();
-
-    boolean validOtp = otpService.verifyOtp(
-            otpTargetEmail,
-            request.getOtp()
-    );
-
-    if (!validOtp) {
-        return "Invalid or expired OTP";
-    }
-
-    /* =====================================================
-       APPLY UPDATES
-       ===================================================== */
-    if (emailChange) {
-        user.setEmail(request.getNewEmail());
-    }
-
-    if (nameChange) {
-        user.setName(request.getNewName());
-    }
-
-    if (passwordChange) {
-        // TODO: hash later
-        user.setPassword(request.getNewPassword());
-    }
-
-    userRepository.save(user);
-    return "Profile updated successfully";
-}
-
     @Override
+    @Transactional
+    public String updateProfile(UpdateProfileRequest request) {
+        User user = userRepository.findByEmail(request.getCurrentEmail())
+            .orElseThrow(() -> new RuntimeException("User not found"));
+        boolean emailChange =request.getNewEmail() != null &&!request.getNewEmail().isBlank() &&!request.getNewEmail().equals(user.getEmail());
+        boolean nameChange =request.getNewName() != null &&!request.getNewName().isBlank() &&!request.getNewName().equals(user.getName());
+        boolean passwordChange =request.getNewPassword() != null && !request.getNewPassword().isBlank();
+        if (!emailChange && !nameChange && !passwordChange) return "No changes requested";
+        if (request.getOtp() == null) {
+            if (emailChange &&
+                userRepository.findByEmail(request.getNewEmail()).isPresent()) {
+                return "Email already in use";
+            }
+            String otpTargetEmail = emailChange ? request.getNewEmail() : user.getEmail();
+            if (otpTargetEmail == null || otpTargetEmail.isBlank()) throw new RuntimeException("Invalid email for OTP");
+            otpService.sendEmailOtp(otpTargetEmail);
+            return "OTP sent";
+        }
+        String otpTargetEmail = emailChange ? request.getNewEmail() : user.getEmail();
+        boolean validOtp = otpService.verifyOtp(otpTargetEmail,request.getOtp());
+        if(!validOtp) return "Invalid or expired OTP";
+        if(emailChange) user.setEmail(request.getNewEmail());
+        if(nameChange) user.setName(request.getNewName());
+        if(passwordChange) user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+        return "Profile updated successfully";
+    }
+    @Override
+    @Transactional
     public String logout(String token) {
         String jwt = token.replace("Bearer ", "");
         jwtRepo.deleteByJwt(jwt);
         return "Logout successful";
     }
-@Override
-public LoginResponse login(LoginRequest request) {
-
-    User user = userRepository.findByEmail(request.getEmail())
+    @Override
+    @Transactional
+    public LoginResponse login(LoginRequest request, HttpServletRequest httpRequest) {
+        User user = userRepository.findByEmail(request.getEmail())
             .orElseThrow(() -> new RuntimeException("Invalid credentials"));
-
-    if (!user.getPassword().equals(request.getPassword())) {
-        throw new RuntimeException("Invalid credentials");
+        if (request.getPassword()==user.getPassword()) {
+            throw new RuntimeException("Invalid credentials");
+        }
+        String jwt = JwtUtil.generateToken(user.getEmail(), user.getRole(), httpRequest.getRemoteAddr());
+        JwtSession session = new JwtSession();
+        session.setEmail(user.getEmail());
+        session.setJwt(jwt);
+        session.setLoginTime(Instant.now());
+        session.setExpiryTime(Instant.now().plusSeconds(3600));
+        jwtRepo.save(session);
+        return new LoginResponse(jwt, user.getRole().name());
     }
-    String jwt = JwtUtil.generateToken(user.getEmail(), user.getRole());
-
-    JwtSession session = new JwtSession();
-    session.setEmail(user.getEmail());
-    session.setJwt(jwt);
-    session.setLoginTime(Instant.now());
-    session.setExpiryTime(Instant.now().plusSeconds(3600));
-
-    jwtRepo.save(session);
-
-    return new LoginResponse(jwt, user.getRole().name());
-}
-
-@Override
-public Optional<User> getUser(String token) {
-   return userRepository.findById(JwtUtil.getUserId(token, userRepository, jwtRepo));
-}
-
+    @Override
+    @Transactional
+    public Optional<User> getUser(String token) {
+        return userRepository.findById(JwtUtil.getUserId(token, userRepository, jwtRepo));
+    }
 }

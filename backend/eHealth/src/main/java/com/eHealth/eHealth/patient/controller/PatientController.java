@@ -1,14 +1,12 @@
 package com.eHealth.eHealth.patient.controller;
 
 import java.util.List;
-
 import org.springframework.web.bind.annotation.*;
 
 import com.eHealth.eHealth.dto.PatientWithUserDTO;
 import com.eHealth.eHealth.model.Patient;
 import com.eHealth.eHealth.patient.service.PatientService;
 
-@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/api/patients")
 public class PatientController {
@@ -20,8 +18,8 @@ public class PatientController {
     }
 
     @GetMapping
-    public List<PatientWithUserDTO> getAllPatients(@RequestHeader("JWT") String jwt) {
-        return patientService.getAllPatients(jwt);
+    public List<PatientWithUserDTO> getAllPatients() {
+        return patientService.getAllPatients();
     }
 
     // ================= CREATE =================
@@ -39,16 +37,7 @@ public class PatientController {
 
     // ================= UPDATE =================
     @PutMapping("/{id}")
-    public Patient updatePatient(@PathVariable String id,
-                                 @RequestBody Patient patient,
-                                 @RequestHeader("JWT") String jwt) {
-        return patientService.updatePatient(id, patient, jwt);
-    }
-
-    // ================= DELETE =================
-    @DeleteMapping("/{id}")
-    public String deletePatient(@PathVariable String id,
-                                @RequestHeader("JWT") String jwt) {
-        return patientService.deletePatient(id, jwt);
+    public Patient updatePatient(@PathVariable String id,@RequestBody Patient patient) {
+        return patientService.updatePatient(id, patient);
     }
 }

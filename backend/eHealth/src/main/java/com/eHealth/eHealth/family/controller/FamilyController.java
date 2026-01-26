@@ -4,11 +4,10 @@ import com.eHealth.eHealth.dto.AddFamilyMemberRequest;
 import com.eHealth.eHealth.dto.FamilyMemberResponse;
 import com.eHealth.eHealth.family.FamilyService;
 import com.eHealth.eHealth.model.Family;
+
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
-@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/api/family")
 public class FamilyController {
@@ -22,7 +21,7 @@ public class FamilyController {
     /* CREATE FAMILY */
     @PostMapping("/create")
     public Family createFamily(
-            @RequestHeader("Authorization") String token
+            @RequestHeader("JWT") String token
     ) {
         return familyService.createFamily(token);
     }
@@ -30,7 +29,7 @@ public class FamilyController {
     /* ADD MEMBER */
     @PostMapping("/add-member")
     public Family addMember(
-            @RequestHeader("Authorization") String token,
+            @RequestHeader("JWT") String token,
             @RequestBody AddFamilyMemberRequest request
     ) {
         return familyService.addMember(token, request);
@@ -39,7 +38,7 @@ public class FamilyController {
     /* REMOVE MEMBER */
     @DeleteMapping("/remove/{patientId}")
     public void removeMember(
-            @RequestHeader("Authorization") String token,
+            @RequestHeader("JWT") String token,
             @PathVariable String patientId
     ) {
         familyService.removeMember(token, patientId);
@@ -48,7 +47,7 @@ public class FamilyController {
     /* GET FAMILY */
     @GetMapping("/members")
     public List<FamilyMemberResponse> members(
-            @RequestHeader("Authorization") String token
+            @RequestHeader("JWT") String token
     ) {
         return familyService.getFamilyMembers(token);
     }

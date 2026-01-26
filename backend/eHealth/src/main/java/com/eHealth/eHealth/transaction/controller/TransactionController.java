@@ -4,13 +4,13 @@ import com.eHealth.eHealth.dto.TransactionHistoryResponse;
 import com.eHealth.eHealth.model.Transaction;
 import com.eHealth.eHealth.transaction.service.TransactionService;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/payments")
-@CrossOrigin(origins = "http://localhost:5173")
 public class TransactionController {
 
     private final TransactionService service;
@@ -26,8 +26,8 @@ public class TransactionController {
 
     @GetMapping("/history")
     public List<TransactionHistoryResponse> myTransactions(
-            @RequestHeader("JWT") String jwt) {
+            @RequestHeader("JWT") String jwt,HttpServletRequest request) {
 
-        return service.getMyTransactions(jwt);
+        return service.getMyTransactions(jwt,request);
     }
 }

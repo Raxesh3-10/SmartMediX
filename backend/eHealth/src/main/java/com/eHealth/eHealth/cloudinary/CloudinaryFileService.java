@@ -3,6 +3,7 @@ package com.eHealth.eHealth.cloudinary;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
@@ -17,7 +18,7 @@ public class CloudinaryFileService {
     }
 
     /* ================= IMAGE ================= */
-
+    @Transactional
     public String uploadImage(
             MultipartFile file,
             String folder,
@@ -37,13 +38,13 @@ public class CloudinaryFileService {
 
         return result.get("secure_url").toString();
     }
-
+    @Transactional
     public void deleteImage(String publicId) {
         delete(publicId, "image");
     }
 
     /* ================= DOCUMENT (PDF) ================= */
-
+    @Transactional
     public String uploadDocument(
             MultipartFile file,
             String folder,
@@ -63,13 +64,14 @@ public class CloudinaryFileService {
 
         return result.get("secure_url").toString();
     }
-
+    
+    @Transactional
     public void deleteDocument(String publicId) {
         delete(publicId, "raw");
     }
 
     /* ================= COMMON DELETE ================= */
-
+    @Transactional
     private void delete(String publicId, String resourceType) {
         try {
             cloudinary.uploader().destroy(
@@ -84,7 +86,7 @@ public class CloudinaryFileService {
     }
 
     /* ================= VALIDATION ================= */
-
+    
     private void validateImage(MultipartFile file) {
         if (file.getContentType() == null ||
             !file.getContentType().startsWith("image/")) {

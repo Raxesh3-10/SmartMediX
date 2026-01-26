@@ -4,23 +4,17 @@ import com.eHealth.eHealth.communication.CommunicationService;
 import com.eHealth.eHealth.dto.DoctorWithUserDTO;
 import com.eHealth.eHealth.dto.PatientWithUserDTO;
 import com.eHealth.eHealth.model.ChatMessage;
-
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/api/chat")
 public class ChatController {
-
     private final CommunicationService service;
-
     public ChatController(CommunicationService service) {
         this.service = service;
     }
-
-    /* ================= SEND MESSAGE ================= */
 
     @PostMapping("/send")
     public ChatMessage sendMessage(
@@ -81,8 +75,7 @@ public void deleteMessage(
             @RequestHeader("JWT") String token,
             @PathVariable String patientId,
             @PathVariable String doctorId) {
-
-        return service.getChatHistory(token, doctorId,patientId);
+        return service.getChatHistory(token, doctorId, patientId);
     }
 
     /* ================= DOCTOR ROUTES ================= */
@@ -91,7 +84,6 @@ public void deleteMessage(
     public List<PatientWithUserDTO> doctorChatPatients(
             @RequestHeader("JWT") String token,
             @PathVariable String doctorId) {
-
         return service.getDoctorChatPatients(token, doctorId);
     }
 

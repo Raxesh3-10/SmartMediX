@@ -9,11 +9,13 @@ import com.eHealth.eHealth.dto.UpdateProfileRequest;
 import com.eHealth.eHealth.dto.VerifyOtpRequest;
 import com.eHealth.eHealth.model.User;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 public interface AuthService {
     String logout(String token);
     Optional<User> getUser(String token);
     String updateProfile(UpdateProfileRequest request);
     String signup(SignupRequest request);
     String verifyOtpAndCreateUser(VerifyOtpRequest request);
-    LoginResponse  login(LoginRequest request);
+    LoginResponse  login(LoginRequest request, HttpServletRequest httpRequest);
 }

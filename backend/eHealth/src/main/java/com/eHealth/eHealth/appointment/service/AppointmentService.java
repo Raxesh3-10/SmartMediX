@@ -2,10 +2,10 @@ package com.eHealth.eHealth.appointment.service;
 
 import com.eHealth.eHealth.model.*;
 import com.eHealth.eHealth.repository.*;
-
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.*;
@@ -35,182 +35,88 @@ public class AppointmentService {
         this.familyRepo = familyRepo;
         this.mailSender = mailSender;
     }
-
-    /* ======================================================
-       CREATE APPOINTMENT (RACE SAFE)
-    ====================================================== */
+    @Transactional
     public Appointment createAppointment(Appointment appt, String specialization) {
-
         if (appt.getDoctorId() == null && specialization != null) {
             Doctor aiDoctor = chooseDoctorByAI(specialization);
             appt.setDoctorId(aiDoctor.getDoctorId());
         }
-
-        Doctor doctor = doctorRepo.findById(appt.getDoctorId())
-                .orElseThrow(() -> new RuntimeException("Doctor not found"));
-
-        // 🔒 Prevent double booking (DB-level safety)
+        Doctor doctor = doctorRepo.findById(appt.getDoctorId()).orElseThrow(() -> new RuntimeException("Doctor not found"));
         boolean alreadyBooked =
-                appointmentRepo.existsByDoctorIdAndDayAndStartTimeAndEndTimeAndStatusNot(
-                        appt.getDoctorId(),
-                        appt.getDay(),
-                        appt.getStartTime(),
-                        appt.getEndTime(),
-                        "CANCELLED"
+                appointmentRepo.existsByDoctorIdAndDayAndStartTimeAndEndTimeAndStatusNot(appt.getDoctorId(),appt.getDay(),appt.getStartTime(),appt.getEndTime(),"CANCELLED"
                 );
-
-        if (alreadyBooked) {
+        if (alreadyBooked) 
             throw new RuntimeException("Slot already booked");
-        }
-
-        int token = (int) appointmentRepo
-                .countByDoctorIdAndAppointmentDate(
-                        appt.getDoctorId(),
-                        appt.getAppointmentDate()
-                ) + 1;
-
-        appt.setTokenNumber(token);
-        appt.setEstimatedWaitMinutes(token * 10);
         appt.setStatus("CREATED");
         appt.setRoomId("ROOM_" + UUID.randomUUID());
         appt.setCreatedAt(Instant.now());
-
         Appointment saved = appointmentRepo.save(appt);
-
-        // ✅ Mark slot as booked
         markSlotAsBooked(doctor, saved);
-
         return saved;
     }
-
-    /* ======================================================
-       MARK SLOT AS BOOKED (LocalTime-safe)
-    ====================================================== */
     private void markSlotAsBooked(Doctor doctor, Appointment appt) {
-
         List<AvailabilitySlot> updatedSlots = new ArrayList<>();
-
         for (AvailabilitySlot s : doctor.getSlots()) {
-
-            if (
-                s.getDay().equals(appt.getDay()) &&
-                s.getStartTime().equals(appt.getStartTime()) &&
-                s.getEndTime().equals(appt.getEndTime())
-            ) {
-                if (s.isBooked()) {
+            if (s.getDay().equals(appt.getDay()) &&s.getStartTime().equals(appt.getStartTime()) &&s.getEndTime().equals(appt.getEndTime())) {
+                if (s.isBooked()) 
                     throw new RuntimeException("Slot already booked");
-                }
                 s.setBooked(true);
             }
-
             updatedSlots.add(s);
         }
-
         doctor.setSlots(updatedSlots);
         doctorRepo.save(doctor);
     }
-
-    /* ======================================================
-   UPDATE / RESCHEDULE (NO PAYMENT)
-====================================================== */
+    @Transactional
 public Appointment updateAppointment(String appointmentId, Appointment updated) {
-
-    Appointment appt = appointmentRepo.findById(appointmentId)
-            .orElseThrow(() -> new RuntimeException("Appointment not found"));
-
-    if ("COMPLETED".equals(appt.getStatus())) {
+    Appointment appt = appointmentRepo.findById(appointmentId).orElseThrow(() -> new RuntimeException("Appointment not found"));
+    if ("COMPLETED".equals(appt.getStatus())) 
         throw new RuntimeException("Completed appointment cannot be modified");
-    }
     appt.setRoomId(updated.getRoomId());
-
     return appointmentRepo.save(appt);
 }
-
-    /* ======================================================
-       DOCTOR DASHBOARD
-    ====================================================== */
+@Transactional
     public List<Map<String, Object>> getDoctorAppointments(String doctorId) {
-
-        List<Appointment> appointments =
-                appointmentRepo.findByDoctorId(doctorId);
-
+        List<Appointment> appointments =appointmentRepo.findByDoctorId(doctorId);
         List<Map<String, Object>> result = new ArrayList<>();
-
         for (Appointment appt : appointments) {
-
-            Patient patient = patientRepo
-                    .findById(appt.getPatientId())
-                    .orElse(null);
-
-            User user = (patient != null)
-                    ? userRepo.findById(patient.getUserId()).orElse(null)
-                    : null;
-
+            Patient patient = patientRepo.findById(appt.getPatientId()).orElse(null);
+            User user = (patient != null) ? userRepo.findById(patient.getUserId()).orElse(null) : null;
             Map<String, Object> map = new HashMap<>();
             map.put("appointment", appt);
             map.put("patient", patient);
             map.put("user", user);
-
             result.add(map);
         }
         return result;
     }
-
-    /* ======================================================
-       PATIENT → ASSOCIATED DOCTORS (FIXED)
-    ====================================================== */
+    @Transactional
     public List<Map<String, Object>> getDoctorsByPatient(String patientId) {
-
-        List<Appointment> appointments =
-                appointmentRepo.findByPatientId(patientId);
-
+        List<Appointment> appointments = appointmentRepo.findByPatientId(patientId);
         Set<String> doctorIds = new HashSet<>();
-        for (Appointment a : appointments) {
+        for (Appointment a : appointments) 
             doctorIds.add(a.getDoctorId());
-        }
-
         List<Map<String, Object>> result = new ArrayList<>();
-
         for (String doctorId : doctorIds) {
-
             Doctor doctor = doctorRepo.findById(doctorId).orElse(null);
             if (doctor == null) continue;
-
             User user = userRepo.findById(doctor.getUserId()).orElse(null);
-
             Map<String, Object> map = new HashMap<>();
             map.put("doctor", doctor);
             map.put("user", user);
-
-            // ✅ THIS FIX MAKES SLOTS APPEAR
             map.put("slots", doctor.getSlots());
-
             result.add(map);
         }
         return result;
     }
-
-    /* ======================================================
-       COMPLETE APPOINTMENT
-    ====================================================== */
+    @Transactional
     public void completeAppointment(String appointmentId) {
-
-        Appointment appt = appointmentRepo.findById(appointmentId)
-                .orElseThrow(() -> new RuntimeException("Appointment not found"));
-
+        Appointment appt = appointmentRepo.findById(appointmentId).orElseThrow(() -> new RuntimeException("Appointment not found"));
         appt.setStatus("COMPLETED");
         appointmentRepo.save(appt);
     }
-
-    /* ======================================================
-       AI DOCTOR SELECTION
-    ====================================================== */
     private Doctor chooseDoctorByAI(String specialization) {
-
-        return doctorRepo.findAll().stream()
-                .filter(d ->
-                        d.getSpecialization()
-                                .equalsIgnoreCase(specialization))
+        return doctorRepo.findAll().stream().filter(d ->d.getSpecialization().equalsIgnoreCase(specialization))
                 .min(Comparator.comparing(d ->
                         appointmentRepo
                                 .findByDoctorId(d.getDoctorId())
@@ -219,49 +125,25 @@ public Appointment updateAppointment(String appointmentId, Appointment updated) 
                         new RuntimeException(
                                 "No doctor found for specialization"));
     }
-/* ======================================================
-   PATIENT DASHBOARD – GET APPOINTMENTS
-====================================================== */
+    @Transactional
 public List<Map<String, Object>> getPatientAppointments(String patientId) {
-
     List<Map<String, Object>> result = new ArrayList<>();
-
-    // 1. Collect all patientIds (self + family members)
     Set<String> patientIds = new HashSet<>();
     patientIds.add(patientId);
-
     Family family = familyRepo.findByOwnerPatientId(patientId).orElse(null);
-
-    if (family != null && family.getMembers() != null) {
-        for (FamilyMember member : family.getMembers()) {
+    if (family != null && family.getMembers() != null) 
+        for (FamilyMember member : family.getMembers()) 
             patientIds.add(member.getPatientId());
-        }
-    }
-
-    // 2. Fetch appointments for all patientIds
-    List<Appointment> appointments =
-            appointmentRepo.findByPatientIdIn(new ArrayList<>(patientIds));
-
-    // 3. Build response
+    List<Appointment> appointments =appointmentRepo.findByPatientIdIn(new ArrayList<>(patientIds));
     for (Appointment appt : appointments) {
-
-        Doctor doctor = doctorRepo
-                .findById(appt.getDoctorId())
-                .orElse(null);
-
-        User user = (doctor != null)
-                ? userRepo.findById(doctor.getUserId()).orElse(null)
-                : null;
-
+        Doctor doctor = doctorRepo.findById(appt.getDoctorId()).orElse(null);
+        User user = (doctor != null) ? userRepo.findById(doctor.getUserId()).orElse(null): null;
         Map<String, Object> map = new HashMap<>();
         map.put("appointment", appt);
         map.put("doctor", doctor);
         map.put("user", user);
-
-        // ownership metadata
         boolean isSelf = appt.getPatientId().equals(patientId);
         map.put("isPrimaryPatient", isSelf);
-
         if (!isSelf && family != null) {
             family.getMembers().stream()
                     .filter(m -> m.getPatientId().equals(appt.getPatientId()))
@@ -272,22 +154,12 @@ public List<Map<String, Object>> getPatientAppointments(String patientId) {
                         map.put("familyPatientUser", userRepo.findById(member.getPatientId()).orElse(null));
                     });
         }
-
         result.add(map);
     }
-
     return result;
 }
-
-    /* ======================================================
-       EMAIL NOTIFICATION
-    ====================================================== */
     public void notifyDoctor(Doctor doctor, Appointment appt) {
-
-        User user = userRepo
-                .findById(doctor.getUserId())
-                .orElseThrow();
-
+        User user = userRepo.findById(doctor.getUserId()).orElseThrow();
         SimpleMailMessage msg = new SimpleMailMessage();
         msg.setTo(user.getEmail());
         msg.setSubject("New Appointment Confirmed");
@@ -295,7 +167,6 @@ public List<Map<String, Object>> getPatientAppointments(String patientId) {
                 "Appointment on " + appt.getDay() +
                 " at " + appt.getStartTime()
         );
-
         mailSender.send(msg);
     }
 }

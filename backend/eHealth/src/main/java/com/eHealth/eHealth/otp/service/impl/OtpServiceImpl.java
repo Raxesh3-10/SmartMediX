@@ -9,6 +9,7 @@ import java.util.Random;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class OtpServiceImpl implements OtpService {
@@ -23,6 +24,7 @@ public class OtpServiceImpl implements OtpService {
     }
 
     @Override
+    @Transactional
     public void sendEmailOtp(String email) {
 
         String otp = generateOtp();
@@ -36,6 +38,7 @@ public class OtpServiceImpl implements OtpService {
     }
 
     @Override
+    @Transactional
     public void sendMobileOtp(String mobile) {
 
         String otp = generateOtp();
@@ -44,11 +47,14 @@ public class OtpServiceImpl implements OtpService {
     }
 
     @Override
+    @Transactional
     public boolean verifyOtp(String target, String otp) {
-        return otpRepository.findByTarget(target)
+        Boolean valid= otpRepository.findByTarget(target)
                 .filter(o -> o.getOtp().equals(otp))
                 .filter(o -> o.getExpiryTime().isAfter(Instant.now()))
                 .isPresent();
+        otpRepository.deleteAll(otpRepository.findByOtp(otp));
+        return valid;
     }
 
     private String generateOtp() {

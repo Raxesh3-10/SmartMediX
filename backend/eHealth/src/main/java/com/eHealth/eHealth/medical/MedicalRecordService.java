@@ -4,6 +4,7 @@ import com.eHealth.eHealth.model.MedicalRecord;
 import com.eHealth.eHealth.model.Patient;
 import com.eHealth.eHealth.repository.PatientRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -18,9 +19,7 @@ public class MedicalRecordService {
         this.patientRepo = patientRepo;
     }
 
-    /**
-     * Create medical record using Cloudinary URLs
-     */
+    @Transactional
     public void createMedicalRecord(
             String patientId,
             String doctorId,

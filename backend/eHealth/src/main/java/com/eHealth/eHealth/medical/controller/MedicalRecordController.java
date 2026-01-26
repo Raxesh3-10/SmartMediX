@@ -1,11 +1,8 @@
 package com.eHealth.eHealth.medical.controller;
-
 import com.eHealth.eHealth.medical.MedicalRecordService;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
-@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/api/medical-records")
 public class MedicalRecordController {

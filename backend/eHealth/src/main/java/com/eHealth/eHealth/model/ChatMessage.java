@@ -1,53 +1,28 @@
 package com.eHealth.eHealth.model;
-
 import java.time.Instant;
 import java.util.List;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 @Document(collection = "chats")
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
 public class ChatMessage {
-
     @Id
     private String messageId;
-
     private String doctorId;
     private String patientId;
-
     private String senderRole; // "DOCTOR" or "PATIENT"
     private String senderId;
-
     private String message;
     private List<String> fileUrls;
-
     private boolean read = false; // ✅ read status
-
     private Instant sentAt;
-
-    public String getMessageId() { return messageId; }
-    public void setMessageId(String messageId) { this.messageId = messageId; }
-
-    public String getDoctorId() { return doctorId; }
-    public void setDoctorId(String doctorId) { this.doctorId = doctorId; }
-
-    public String getPatientId() { return patientId; }
-    public void setPatientId(String patientId) { this.patientId = patientId; }
-
-    public String getSenderRole() { return senderRole; }
-    public void setSenderRole(String senderRole) { this.senderRole = senderRole; }
-
-    public String getSenderId() { return senderId; }
-    public void setSenderId(String senderId) { this.senderId = senderId; }
-
-    public String getMessage() { return message; }
-    public void setMessage(String message) { this.message = message; }
-
-    public List<String> getFileUrls() { return fileUrls; }
-    public void setFileUrls(List<String> fileUrls) { this.fileUrls = fileUrls; }
-
-    public boolean isRead() { return read; }
-    public void setRead(boolean read) { this.read = read; }
-
-    public Instant getSentAt() { return sentAt; }
-    public void setSentAt(Instant sentAt) { this.sentAt = sentAt; }
 }

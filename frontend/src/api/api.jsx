@@ -22,7 +22,7 @@ api.interceptors.request.use(
     const jwt = localStorage.getItem("JWT");
     if (jwt) {
       config.headers["JWT"] = jwt;
-      config.headers["Authorization"] = jwt;
+      config.headers["Authorization"] = `Bearer ${jwt}`;
     }
     return config;
   },

@@ -1,11 +1,14 @@
 package com.eHealth.eHealth.doctor.controller;
 
+import java.util.List;
+
 import org.springframework.web.bind.annotation.*;
 
 import com.eHealth.eHealth.doctor.service.DoctorService;
+import com.eHealth.eHealth.dto.DoctorWithUserDTO;
 import com.eHealth.eHealth.model.Doctor;
 
-@CrossOrigin(origins = "http://localhost:5173")
+
 @RestController
 @RequestMapping("/api/doctors")
 public class DoctorController {
@@ -16,7 +19,11 @@ public class DoctorController {
         this.doctorService = doctorService;
     }
 
-    // ================= CREATE =================
+    @GetMapping
+    public List<DoctorWithUserDTO> getAllDoctors() {
+        return doctorService.getAllDoctors();
+    }
+    
     @PostMapping
     public Doctor createDoctor(@RequestBody Doctor doctor,
                                @RequestHeader("JWT") String jwt) {
@@ -28,18 +35,9 @@ public class DoctorController {
         return doctorService.getDoctorByUser(jwt);
     }
 
-    // ================= UPDATE =================
     @PutMapping("/{id}")
     public Doctor updateDoctor(@PathVariable String id,
-                               @RequestBody Doctor doctor,
-                               @RequestHeader("JWT") String jwt) {
-        return doctorService.updateDoctor(id, doctor, jwt);
-    }
-
-    // ================= DELETE =================
-    @DeleteMapping("/{id}")
-    public String deleteDoctor(@PathVariable String id,
-                               @RequestHeader("JWT") String jwt) {
-        return doctorService.deleteDoctor(id, jwt);
+                               @RequestBody Doctor doctor) {
+        return doctorService.updateDoctor(id, doctor);
     }
 }
