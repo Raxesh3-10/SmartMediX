@@ -42,6 +42,7 @@ public class TransactionService {
         this.jwtRepo = jwtRepo;
         this.patientRepo = patientRepo;
     }
+
     @Transactional
     public Transaction processTransaction(String appointmentId) {
         Appointment appt = appointmentRepo.findById(appointmentId)
@@ -81,18 +82,20 @@ public class TransactionService {
         return saved;
     }
 
-    public List<TransactionHistoryResponse> getMyTransactions(String jwt,HttpServletRequest request) {
-
+    public List<TransactionHistoryResponse> getMyTransactions(HttpServletRequest request) {
+        String jwt = JwtUtil.extractToken(request);
+        String requestIp = request.getRemoteAddr();
+        
         List<Transaction> transactions;
 
-        if (JwtUtil.isPatient(jwt, userRepo, jwtRepo,request.getRemoteAddr())) {
+        if (JwtUtil.isPatient(jwt, userRepo, jwtRepo, requestIp)) {
             String userId = JwtUtil.getUserId(jwt, userRepo, jwtRepo);
             Patient patient = patientRepo.findByUserId(userId)
                     .orElseThrow(() -> new RuntimeException("Patient profile not found"));
 
             transactions = transactionRepo.findByPatientId(patient.getPatientId());
 
-        } else if (JwtUtil.isDoctor(jwt, userRepo, jwtRepo,request.getRemoteAddr())) {
+        } else if (JwtUtil.isDoctor(jwt, userRepo, jwtRepo, requestIp)) {
             String userId = JwtUtil.getUserId(jwt, userRepo, jwtRepo);
             Doctor doctor = doctorRepo.findByUserId(userId)
                     .orElseThrow(() -> new RuntimeException("Doctor profile not found"));
@@ -102,18 +105,21 @@ public class TransactionService {
         } else {
             throw new RuntimeException("Unauthorized access");
         }
+        
         return transactions.stream().map(tx -> {
             User doctorUser = userRepo.findById(
                     doctorRepo.findById(tx.getDoctorId())
                             .orElseThrow(() -> new RuntimeException("Doctor not found"))
                             .getUserId()
             ).orElseThrow(() -> new RuntimeException("User not found"));
+            
             User patientUser = userRepo.findById(
                     patientRepo.findById(tx.getPatientId())
                             .orElseThrow(() -> new RuntimeException("Patient not found"))
                             .getUserId()
             ).orElseThrow(() -> new RuntimeException("User not found"));
-            return new TransactionHistoryResponse(tx, doctorUser,patientUser);
+            
+            return new TransactionHistoryResponse(tx, doctorUser, patientUser);
         }).collect(Collectors.toList());
     }
 }

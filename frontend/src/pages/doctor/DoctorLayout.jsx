@@ -20,11 +20,7 @@ export default function DoctorLayout() {
     otp: "",
   });
 
-  useEffect(() => {
-    if (!localStorage.getItem("JWT")) {
-      navigate("/login");
-      return;
-    }
+useEffect(() => {
     const load = async () => {
       try {
         const u = await AuthAPI.getUser();
@@ -32,7 +28,8 @@ export default function DoctorLayout() {
         setUser(u.data);
         setDoctor(d.data);
       } catch (err) {
-        console.error(err);
+        console.error("Not authenticated:", err);
+        navigate("/login");
       }
     };
     load();
@@ -40,9 +37,15 @@ export default function DoctorLayout() {
 
   const handleLogout = async () => {
     if (!window.confirm("Logout?")) return;
-    await AuthAPI.logout();
-    localStorage.clear();
-    navigate("/login");
+    
+    try {
+      await AuthAPI.logout();
+    } catch (error) {
+      console.error("Logout failed", error);
+    } finally {
+      localStorage.clear();
+      navigate("/login");
+    }
   };
 
   const handleChange = (e) => {

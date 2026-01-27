@@ -1,6 +1,7 @@
 package com.eHealth.eHealth.patient.controller;
 
 import java.util.List;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.*;
 
 import com.eHealth.eHealth.dto.PatientWithUserDTO;
@@ -24,20 +25,21 @@ public class PatientController {
 
     // ================= CREATE =================
     @PostMapping
-    public Patient createPatient(@RequestBody Patient patient,
-                                 @RequestHeader("JWT") String jwt) {
-        return patientService.createPatientProfile(patient, jwt);
+    public Patient createPatient(@RequestBody Patient patient, HttpServletRequest request) {
+        return patientService.createPatientProfile(patient, request);
     }
 
     // ================= READ =================
     @GetMapping("/me")
-    public Patient getMyProfile(@RequestHeader("JWT") String jwt) {
-        return patientService.getMyPatientProfile(jwt);
+    public Patient getMyProfile(HttpServletRequest request) {
+        return patientService.getMyPatientProfile(request);
     }
 
     // ================= UPDATE =================
     @PutMapping("/{id}")
-    public Patient updatePatient(@PathVariable String id,@RequestBody Patient patient) {
-        return patientService.updatePatient(id, patient);
+    public Patient updatePatient(@PathVariable String id, 
+                                 @RequestBody Patient patient, 
+                                 HttpServletRequest request) {
+        return patientService.updatePatient(id, patient, request);
     }
 }

@@ -12,24 +12,32 @@ export default function PatientLayout() {
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ newName: "", newEmail: "", newPassword: "", otp: "" });
-
-  useEffect(() => {
-    if (!localStorage.getItem("JWT")) { navigate("/login"); return; }
+useEffect(() => {
     const load = async () => {
       try {
         const u = await AuthAPI.getUser();
         const p = await PatientAPI.getMyProfile();
         setUser(u.data);
         setPatient(p.data);
-      } catch { navigate("/login"); }
+      } catch (err) {
+        console.error("Not authenticated:", err);
+        navigate("/login");
+      }
     };
     load();
   }, [navigate]);
 
   const handleLogout = async () => {
     if (!window.confirm("Logout?")) return;
-    localStorage.clear();
-    navigate("/login");
+    
+    try {
+      await AuthAPI.logout();
+    } catch (error) {
+      console.error("Logout failed", error);
+    } finally {
+      localStorage.clear();
+      navigate("/login");
+    }
   };
 
   const handleUpdateProfile = async () => {

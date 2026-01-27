@@ -8,6 +8,13 @@ public class FamilyMemberResponse {
     private String relation;
     private boolean primary;
 
+    public FamilyMemberResponse(Patient patient, User user, String relation, boolean primary) {
+        this.patient = patient;
+        this.user = user;
+        this.relation = relation;
+        this.primary = primary;
+    }
+
     public Patient getPatient() {
         return this.patient;
     }

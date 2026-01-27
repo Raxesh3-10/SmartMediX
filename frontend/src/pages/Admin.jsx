@@ -25,11 +25,6 @@ const [familySearch, setFamilySearch] = useState("");
   const [patientSearch, setPatientSearch] = useState("");
   const [doctorSearch, setDoctorSearch] = useState("");
 
-  /* ================= AUTH ================= */
-  useEffect(() => {
-    if (!localStorage.getItem("JWT")) navigate("/login");
-  }, [navigate]);
-
   /* ================= LOAD DATA ================= */
   useEffect(() => {
     const load = async () => {

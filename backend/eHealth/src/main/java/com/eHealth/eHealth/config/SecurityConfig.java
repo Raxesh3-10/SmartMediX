@@ -18,14 +18,19 @@ import java.util.List;
 
 @Configuration
 public class SecurityConfig {
+
     private final JwtAuthenticationFilter jwtFilter;
+
     public SecurityConfig(JwtAuthenticationFilter jwtFilter) {
         this.jwtFilter = jwtFilter;
     }
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            // CSRF is disabled because we use SameSite=Strict Cookies.
+            // This effectively prevents cross-site POSTs without the complexity of CSRF tokens.
             .csrf(csrf -> csrf.disable())
             
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -35,21 +40,26 @@ public class SecurityConfig {
                     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     response.setContentType("application/json");
                     PrintWriter out = response.getWriter();
-                    out.write("{\"error\": \"Unauthorized\", \"message\": \"Invalid or missing token\"}");
+                    out.write("{\"error\": \"Unauthorized\", \"message\": \"Invalid Token or Session Terminated\"}");
                     out.flush();
                 })
                 .accessDeniedHandler((request, response, accessDeniedException) -> {
                     response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                     response.setContentType("application/json");
                     PrintWriter out = response.getWriter();
-                    out.write("{\"error\": \"Forbidden\", \"message\": \"You do not have permission\"}");
+                    out.write("{\"error\": \"Forbidden\", \"message\": \"Access Denied\"}");
                     out.flush();
                 })
             )
 
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/api/auth/**").permitAll() 
+                .requestMatchers("/api/auth/signup").permitAll()
+                .requestMatchers("/api/auth/verify-otp").permitAll()
+                .requestMatchers("/api/auth/login").permitAll()
+                .requestMatchers("/api/auth/logout").hasAnyRole("DOCTOR","PATIENT","ADMIN")
+                .requestMatchers("/api/auth/profile").hasAnyRole("DOCTOR","PATIENT","ADMIN")
+                .requestMatchers("/api/auth/update-profile").hasAnyRole("DOCTOR","PATIENT","ADMIN")
 
                 .requestMatchers("/api/doctors/**").hasAnyRole("DOCTOR")
                 .requestMatchers("/api/admin/**").hasAnyRole("ADMIN")
@@ -59,8 +69,6 @@ public class SecurityConfig {
                 .requestMatchers("/api/patients/**").hasAnyRole("PATIENT")
                 .requestMatchers("/api/payments/history").hasAnyRole("PATIENT","DOCTOR")
                 .requestMatchers("/api/payments/pay").hasAnyRole("PATIENT")
-
-
                 .anyRequest().authenticated()
             )
 
@@ -77,10 +85,12 @@ public class SecurityConfig {
     @Bean
     public UrlBasedCorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+        // Ensure this matches your frontend URL exactly
+        configuration.setAllowedOrigins(List.of("http://localhost:5173")); 
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE","PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
+        // IMPORTANT: Allow Credentials is required for Cookies to be sent!
+        configuration.setAllowCredentials(true); 
         
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

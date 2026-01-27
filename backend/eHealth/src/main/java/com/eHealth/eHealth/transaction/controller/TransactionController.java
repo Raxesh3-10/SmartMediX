@@ -25,9 +25,7 @@ public class TransactionController {
     }
 
     @GetMapping("/history")
-    public List<TransactionHistoryResponse> myTransactions(
-            @RequestHeader("JWT") String jwt,HttpServletRequest request) {
-
-        return service.getMyTransactions(jwt,request);
+    public List<TransactionHistoryResponse> myTransactions(HttpServletRequest request) {
+        return service.getMyTransactions(request);
     }
 }

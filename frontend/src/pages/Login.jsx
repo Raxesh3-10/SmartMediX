@@ -20,9 +20,8 @@ function Login() {
 
     try {
       const res = await AuthAPI.login(form);
-      const { token, role } = res.data;
+      const {  role } = res.data;
 
-      localStorage.setItem("JWT", token);
       localStorage.setItem("ROLE", role);
 
       // Secure Redirection

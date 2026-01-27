@@ -31,10 +31,6 @@ function Doctor() {
     upi: "",
   });
 
-  /* ================= AUTH CHECK ================= */
-  useEffect(() => {
-    if (!localStorage.getItem("JWT")) navigate("/login");
-  }, [navigate]);
 
   /* ================= FETCH DATA ================= */
   useEffect(() => {

@@ -10,23 +10,20 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true,
 });
 
-/**
- * ======================================================
- * JWT INTERCEPTOR
- * ======================================================
- */
-api.interceptors.request.use(
-  (config) => {
-    const jwt = localStorage.getItem("JWT");
-    if (jwt) {
-      config.headers["JWT"] = jwt;
-      config.headers["Authorization"] = `Bearer ${jwt}`;
+// Response Interceptor to handle 401/403 (Logout on hack attempt)
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+      // If server rejects token (due to IP change or fingerprint)
+      alert("Session expired or security alert. Please login again.");
+      window.location.href = "/login";
     }
-    return config;
-  },
-  (error) => Promise.reject(error)
+    return Promise.reject(error);
+  }
 );
 
 /* ======================================================

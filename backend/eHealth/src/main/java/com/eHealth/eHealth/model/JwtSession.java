@@ -10,9 +10,28 @@ public class JwtSession {
     private String id;
     private String email;
     private String jwt;
+    private int ipChanges;
     private Instant loginTime;
+    private String ipAddress;
     @Indexed(expireAfter = "0")
     private Instant expiryTime;
+
+
+    public String getIpAddress() {
+        return this.ipAddress;
+    }
+
+    public void setIpAddress(String ipAddress) {
+        this.ipAddress = ipAddress;
+    }
+
+    public int getIpChanges() {
+        return this.ipChanges;
+    }
+
+    public void setIpChanges(int ipChanges) {
+        this.ipChanges = ipChanges;
+    }
 
     public String getId() {
         return this.id;

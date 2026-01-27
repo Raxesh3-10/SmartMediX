@@ -77,6 +77,19 @@
             <artifactId>cloudinary-http5</artifactId>
             <version>2.0.0</version>
         </dependency>
+<!-- Jakarta JAXB API -->
+<dependency>
+    <groupId>jakarta.xml.bind</groupId>
+    <artifactId>jakarta.xml.bind-api</artifactId>
+    <version>4.0.0</version>
+</dependency>
+
+<!-- JAXB Runtime (implementation) -->
+<dependency>
+    <groupId>org.glassfish.jaxb</groupId>
+    <artifactId>jaxb-runtime</artifactId>
+    <version>4.0.4</version>
+</dependency>
 
         <!-- Test -->
         <dependency>
