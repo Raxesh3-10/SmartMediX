@@ -13,19 +13,6 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// Response Interceptor to handle 401/403 (Logout on hack attempt)
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-      // If server rejects token (due to IP change or fingerprint)
-      alert("Session expired or security alert. Please login again.");
-      window.location.href = "/login";
-    }
-    return Promise.reject(error);
-  }
-);
-
 /* ======================================================
    CHAT API
    Maps to: /api/chat/**

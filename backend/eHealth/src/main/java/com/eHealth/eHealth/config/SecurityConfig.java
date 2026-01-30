@@ -57,7 +57,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/signup").permitAll()
                 .requestMatchers("/api/auth/verify-otp").permitAll()
                 .requestMatchers("/api/auth/login").permitAll()
-                .requestMatchers("/api/auth/logout").hasAnyRole("DOCTOR","PATIENT","ADMIN")
+                .requestMatchers("/api/auth/logout").permitAll()
                 .requestMatchers("/api/auth/profile").hasAnyRole("DOCTOR","PATIENT","ADMIN")
                 .requestMatchers("/api/auth/update-profile").hasAnyRole("DOCTOR","PATIENT","ADMIN")
 

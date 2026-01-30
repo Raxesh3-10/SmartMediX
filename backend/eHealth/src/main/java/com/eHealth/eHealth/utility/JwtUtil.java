@@ -31,13 +31,14 @@ public class JwtUtil {
             Keys.hmacShaKeyFor(SECRET.getBytes());
 
     // UPDATED: Now requires UserAgent to create the security fingerprint
-    public static String generateToken(String email, Role role, String ipAddress, String userAgent) {
+    public static String generateToken(String email, Role role, String ipAddress, String userAgent,String deviceId) {
         String uaHash = generateUserAgentHash(userAgent); // Generate Fingerprint
-
+        String diHash = generateUserAgentHash(deviceId);
         return Jwts.builder()
                 .setSubject(email)
                 .claim("role", role)
                 .claim("ip", ipAddress)
+                .claim("diHash",diHash)
                 .claim("uaHash", uaHash) // Storing the browser fingerprint
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
@@ -45,7 +46,7 @@ public class JwtUtil {
                 .compact();
     }
 
-    private static Claims getClaims(String token) {
+    public static Claims getClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(SECRET_KEY)
                 .build()
@@ -73,17 +74,20 @@ public class JwtUtil {
     }
 
     // Helper: Create SHA-256 Hash of the User-Agent
-    public static String generateUserAgentHash(String userAgent) {
+    public static String generateUserAgentHash(String componet ) {
         try {
-            if(userAgent == null) userAgent = "UNKNOWN";
+            if(componet == null) componet = "UNKNOWN";
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(userAgent.getBytes(StandardCharsets.UTF_8));
+            byte[] hash = digest.digest(componet.getBytes(StandardCharsets.UTF_8));
             return DatatypeConverter.printHexBinary(hash).toUpperCase();
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("SHA-256 algorithm not found", e);
         }
     }
-
+    public static Role getRoleFromClaims(Claims claims) {
+        String roleStr = claims.get("role", String.class);
+        return Role.valueOf(roleStr);
+    }
     //Helper for take token
     public static String extractToken(HttpServletRequest request) {
         if (request.getCookies() != null) {
@@ -93,7 +97,7 @@ public class JwtUtil {
                 }
             }
         }
-        throw new RuntimeException("Unauthorized: No session found");
+        return null;
     }
     // --- YOUR EXISTING METHODS (UNCHANGED) ---
 

@@ -83,7 +83,7 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("Invalid credentials");
         }
         String userAgent = httpRequest.getHeader("User-Agent");
-        String jwt = JwtUtil.generateToken(user.getEmail(), user.getRole(), httpRequest.getRemoteAddr(), userAgent);
+        String jwt = JwtUtil.generateToken(user.getEmail(), user.getRole(), httpRequest.getRemoteAddr(), userAgent,request.getDeviceId());
 
         JwtSession session = new JwtSession();
         session.setEmail(user.getEmail());
@@ -102,7 +102,14 @@ public class AuthServiceImpl implements AuthService {
                 .sameSite("Strict")
                 .build();
 
-        return new LoginResponse(null, user.getRole().name(), cookie.toString());
+        ResponseCookie deviceCookie = ResponseCookie.from("deviceId", request.getDeviceId())
+                .httpOnly(true)
+                .secure(isProduction)
+                .path("/")
+                .maxAge(-1)
+                .sameSite("Strict")
+                .build();
+        return new LoginResponse(deviceCookie.toString(), user.getRole().name(), cookie.toString());
     }
 
     @Override

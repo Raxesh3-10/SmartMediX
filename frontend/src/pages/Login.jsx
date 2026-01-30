@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { AuthAPI } from "../api/api";
+import FingerprintJS from "@fingerprintjs/fingerprintjs";
 import "../styles/Login.css"; // Link the professional CSS
 
 function Login() {
@@ -9,6 +10,15 @@ function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  useEffect(()=>{
+      try {
+       AuthAPI.logout();
+    } catch (error) {
+      console.error("Logout failed", error);
+    } finally {
+      localStorage.clear();
+    }
+  },[]);
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -19,7 +29,15 @@ function Login() {
     setLoading(true);
 
     try {
-      const res = await AuthAPI.login(form);
+      const fpPromise = await FingerprintJS.load();
+      const result = await fpPromise.get();
+      const deviceId = result.visitorId;
+
+      const res = await AuthAPI.login({ 
+          email: form.email, 
+          password: form.password, 
+          deviceId: deviceId 
+      });
       const {  role } = res.data;
 
       localStorage.setItem("ROLE", role);

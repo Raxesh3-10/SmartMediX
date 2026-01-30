@@ -45,6 +45,7 @@ public class AuthController {
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, response.getCookieHeader())
+                .header(HttpHeaders.SET_COOKIE, response.getdeviceCookie())
                 .body(response);
     }
 
@@ -55,7 +56,15 @@ public class AuthController {
             authService.logout(token);
         }
 
-        ResponseCookie cookie = ResponseCookie.from("accessToken", "")
+        ResponseCookie cookie = ResponseCookie.from("accessToken", null)
+                .httpOnly(true)
+                .secure(isProduction)
+                .path("/")
+                .maxAge(0) 
+                .sameSite("Strict")
+                .build();
+
+        ResponseCookie cookie2 = ResponseCookie.from("deviceId", null)
                 .httpOnly(true)
                 .secure(isProduction)
                 .path("/")
@@ -65,6 +74,7 @@ public class AuthController {
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .header(HttpHeaders.SET_COOKIE, cookie2.toString())
                 .body("Logout successful");
     }
 
