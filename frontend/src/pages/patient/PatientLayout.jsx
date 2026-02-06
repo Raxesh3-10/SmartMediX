@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Outlet, useNavigate, Link, useLocation } from "react-router-dom";
 import { AuthAPI, PatientAPI } from "../../api/api";
+import ChatbotAssistant  from "../../components/ChatbotAssistant";
 import "../../styles/Patient.css";
 
 export default function PatientLayout() {
@@ -99,6 +100,7 @@ useEffect(() => {
       )}
 
       <Outlet context={{ user, patient }} />
+      <ChatbotAssistant />
     </div>
   );
 }
