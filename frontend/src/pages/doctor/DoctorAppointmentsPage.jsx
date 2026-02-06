@@ -6,6 +6,7 @@ import "../../styles/Doctor.css"; // We will use the same classes here
 
 /* ================= CONSTANTS ================= */
 const CALL_BUFFER_SECONDS = 10 * 60;
+const CACHE_DOCTOR_APPOINTMENTS = "cache_doctor_appointments";
 
 /* ================= HELPERS ================= */
 const formatDate = (dateValue) => {
@@ -47,10 +48,28 @@ export default function DoctorAppointmentsPage() {
     loadAppointments();
   }, [doctor]);
 
-  const loadAppointments = async () => {
-    const res = await AppointmentAPI.getDoctorAppointments(doctor.doctorId);
+const loadAppointments = async () => {
+  try {
+    const cached = localStorage.getItem(CACHE_DOCTOR_APPOINTMENTS);
+
+    if (cached) {
+      setAppointments(JSON.parse(cached));
+      return;
+    }
+
+    const res = await AppointmentAPI.getDoctorAppointments(
+      doctor.doctorId
+    );
+
     setAppointments(res.data);
-  };
+    localStorage.setItem(
+      CACHE_DOCTOR_APPOINTMENTS,
+      JSON.stringify(res.data)
+    );
+  } catch (err) {
+    console.error("Failed to load appointments", err);
+  }
+};
 
   /* ================= SEARCH ================= */
   const filtered = useMemo(() => {
@@ -175,15 +194,35 @@ export default function DoctorAppointmentsPage() {
                   let roomId = selectedAppt.appointment.roomId;
                   if (!roomId) {
                     roomId = "ROOM_" + crypto.randomUUID();
-                    await AppointmentAPI.updateAppointment(
-                      selectedAppt.appointment.appointmentId,
-                      { roomId }
-                    );
-                    await loadAppointments();
-                    setSelectedAppt((prev) => ({
-                      ...prev,
-                      appointment: { ...prev.appointment, roomId },
-                    }));
+await AppointmentAPI.updateAppointment(
+  selectedAppt.appointment.appointmentId,
+  { roomId }
+);
+
+// update local state
+setAppointments(prev => {
+  const updated = prev.map(a =>
+    a.appointment.appointmentId === selectedAppt.appointment.appointmentId
+      ? {
+          ...a,
+          appointment: { ...a.appointment, roomId },
+        }
+      : a
+  );
+
+  localStorage.setItem(
+    CACHE_DOCTOR_APPOINTMENTS,
+    JSON.stringify(updated)
+  );
+
+  return updated;
+});
+
+setSelectedAppt(prev => ({
+  ...prev,
+  appointment: { ...prev.appointment, roomId },
+}));
+
                   }
                   setCallStarted(true);
                 }}
@@ -200,11 +239,33 @@ export default function DoctorAppointmentsPage() {
                 onClick={async () => {
                   setCallStarted(false);
                   await new Promise((r) => setTimeout(r, 300));
-                  await AppointmentAPI.completeAppointment(
-                    selectedAppt.appointment.appointmentId
-                  );
-                  setSelectedAppt(null);
-                  loadAppointments();
+await AppointmentAPI.completeAppointment(
+  selectedAppt.appointment.appointmentId
+);
+
+setAppointments(prev => {
+  const updated = prev.map(a =>
+    a.appointment.appointmentId === selectedAppt.appointment.appointmentId
+      ? {
+          ...a,
+          appointment: {
+            ...a.appointment,
+            status: "COMPLETED",
+          },
+        }
+      : a
+  );
+
+  localStorage.setItem(
+    CACHE_DOCTOR_APPOINTMENTS,
+    JSON.stringify(updated)
+  );
+
+  return updated;
+});
+
+setSelectedAppt(null);
+
                 }}
               >
                 End Call & Mark as Completed

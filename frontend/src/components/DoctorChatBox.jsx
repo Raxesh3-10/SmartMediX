@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ChatAPI, ChatFileAPI } from "../api/api";
 import { encryptMessage, decryptMessage } from "../utils/chatCrypto";
-import "../styles/Doctor.css"; // We will use the same classes here
+import "../styles/Doctor.css";
 
 /* ================= DATE FORMATTER ================= */
 const formatDateTime = (iso) => {
@@ -18,6 +18,19 @@ const formatDateTime = (iso) => {
   return `${date} • ${time}`;
 };
 
+const openPdfFromRawUrl = async (url) => {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const pdfBlob = new Blob([blob], { type: "application/pdf" });
+    const blobUrl = URL.createObjectURL(pdfBlob);
+    window.open(blobUrl, "_blank", "noopener,noreferrer");
+  } catch (err) {
+    console.error("Failed to open PDF:", err);
+    alert("Unable to open document");
+  }
+};
+
 export default function DoctorChatBox({
   user,
   patientUser,
@@ -28,6 +41,8 @@ export default function DoctorChatBox({
   const [text, setText] = useState("");
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
+
+  const [activeMessageId, setActiveMessageId] = useState(null);
 
   const chatEndRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -74,6 +89,15 @@ export default function DoctorChatBox({
         patient.patientId
       );
     }
+  };
+
+  /* ================= DELETE MESSAGE ================= */
+  const deleteMessage = async (messageId) => {
+    if (!window.confirm("Delete this message?")) return;
+
+    await ChatAPI.deleteMessage(messageId);
+    setActiveMessageId(null);
+    await loadChat();
   };
 
   /* ================= SEND MESSAGE ================= */
@@ -125,30 +149,50 @@ export default function DoctorChatBox({
       {/* HEADER */}
       <div className="chat-header-bar">
         <div className="patient-info">
-          <div className="avatar-circle">{patientUser?.name?.charAt(0)}</div>
+          <div className="avatar-circle">
+            {patientUser?.name?.charAt(0)}
+          </div>
           <div>
-            <div className="chat-name">{patientUser?.name || "Patient"}</div>
+            <div className="chat-name">
+              {patientUser?.name || "Patient"}
+            </div>
             <div className="chat-sub">{patientUser?.email}</div>
           </div>
         </div>
         <div className="doctor-info-tag">
-          <div className="chat-name text-right">Dr. {user?.name}</div>
+          <div className="chat-name text-right">
+            Dr. {user?.name}
+          </div>
           <div className="chat-sub text-right">Connected</div>
         </div>
       </div>
 
-      {/* CHAT MESSAGES AREA */}
+      {/* CHAT MESSAGES */}
       <div className="chat-messages-scroll">
         {messages.map((m) => {
           const isDoctor = m.senderRole === "DOCTOR";
-          const isUnreadPatient = !m.read && m.senderRole === "PATIENT";
+          const isUnreadPatient =
+            !m.read && m.senderRole === "PATIENT";
 
           return (
             <div
               key={m.messageId}
-              className={`message-bubble ${isDoctor ? "doctor-msg" : "patient-msg"} ${isUnreadPatient ? "unread-glow" : ""}`}
+              className={`message-bubble ${
+                isDoctor ? "doctor-msg" : "patient-msg"
+              } ${isUnreadPatient ? "unread-glow" : ""}`}
+              onClick={() =>
+                isDoctor
+                  ? setActiveMessageId(
+                      activeMessageId === m.messageId
+                        ? null
+                        : m.messageId
+                    )
+                  : null
+              }
             >
-              {m.message && <div className="message-text">{m.message}</div>}
+              {m.message && (
+                <div className="message-text">{m.message}</div>
+              )}
 
               {m.fileUrls?.map((url, i) => (
                 <div key={i} className="file-attachment">
@@ -157,27 +201,59 @@ export default function DoctorChatBox({
                       src={url}
                       alt="attachment"
                       className="chat-img-preview"
-                      onClick={() => window.open(url, "_blank", "noopener,noreferrer")}
+                      onClick={() =>
+                        window.open(
+                          url,
+                          "_blank",
+                          "noopener,noreferrer"
+                        )
+                      }
                     />
                   ) : (
-                    <a href={url} target="_blank" rel="noopener noreferrer" className="pdf-link">
+                    <button
+                      className="pdf-link"
+                      onClick={() =>
+                        openPdfFromRawUrl(url)
+                      }
+                    >
                       📄 Medical Document (PDF)
-                    </a>
+                    </button>
                   )}
                 </div>
               ))}
-              <div className="message-time">{formatDateTime(m.sentAt)}</div>
+
+              <div className="message-time">
+                {formatDateTime(m.sentAt)}
+              </div>
+
+              {/* DELETE OPTION */}
+              {isDoctor &&
+                activeMessageId === m.messageId && (
+                  <div
+                    className="delete-message-btn"
+                    onClick={() =>
+                      deleteMessage(m.messageId)
+                    }
+                  >
+                    Delete
+                  </div>
+                )}
             </div>
           );
         })}
         <div ref={chatEndRef} />
       </div>
 
-      {/* INPUT AREA */}
+      {/* INPUT */}
       <div className="chat-input-wrapper">
         <div className="file-preview-area">
-           {selectedFiles.length > 0 && <span>📎 {selectedFiles.length} file(s) selected</span>}
+          {selectedFiles.length > 0 && (
+            <span>
+              📎 {selectedFiles.length} file(s) selected
+            </span>
+          )}
         </div>
+
         <div className="input-row">
           <label className="file-upload-label">
             <input
@@ -185,17 +261,23 @@ export default function DoctorChatBox({
               multiple
               hidden
               ref={fileInputRef}
-              onChange={(e) => setSelectedFiles([...e.target.files])}
+              onChange={(e) =>
+                setSelectedFiles([...e.target.files])
+              }
             />
-            📎
+            Click to Upload
           </label>
+
           <input
             className="chat-input-field"
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="Type your medical advice..."
-            onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+            onKeyup={(e) =>
+              e.key === "Enter" && sendMessage()
+            }
           />
+
           <button
             className="chat-send-btn"
             onClick={sendMessage}

@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useOutletContext } from "react-router-dom";
+import { useOutletContext } from "react-router-dom";
 import { PatientAPI, FamilyAPI } from "../../api/api";
 import "../../styles/Patient.css";
+const CACHE_PATIENT_PROFILE = "cache_patient_profile";
+const CACHE_FAMILY_MEMBERS = "cache_family_members";
+const CACHE_ALL_PATIENTS = "cache_all_patients";
 
 function Patient() {
-  const navigate = useNavigate();
   // Getting user and initial patient data from the Layout's Outlet context
   const { user, patient: initialPatient } = useOutletContext();
 
@@ -24,77 +26,114 @@ function Patient() {
   const [newMember, setNewMember] = useState({ relation: "" });
   const [form, setForm] = useState({ mobile: "", gender: "", age: "" });
 
-  useEffect(() => {
-    const loadFamily = async () => {
-      try {
-        const famRes = await FamilyAPI.getMembers();
-        setFamilyMembers(famRes.data || []);
-      } catch (err) {
-        console.error("Error loading family:", err);
-      }
-    };
-    if (patient) loadFamily();
-  }, [patient]);
+useEffect(() => {
+  const loadFamily = async () => {
+    try {
+      const cached = localStorage.getItem(CACHE_FAMILY_MEMBERS);
 
-  const refreshFamily = async () => {
-    const res = await FamilyAPI.getMembers();
-    setFamilyMembers(res.data || []);
+      if (cached) {
+        setFamilyMembers(JSON.parse(cached));
+        return;
+      }
+
+      const famRes = await FamilyAPI.getMembers();
+      const data = famRes.data || [];
+
+      setFamilyMembers(data);
+      localStorage.setItem(
+        CACHE_FAMILY_MEMBERS,
+        JSON.stringify(data)
+      );
+    } catch (err) {
+      console.error("Error loading family:", err);
+    }
   };
+
+  if (patient) loadFamily();
+}, [patient]);
+
+const refreshFamily = async () => {
+  const res = await FamilyAPI.getMembers();
+  const data = res.data || [];
+
+  setFamilyMembers(data);
+  localStorage.setItem(
+    CACHE_FAMILY_MEMBERS,
+    JSON.stringify(data)
+  );
+};
 
   const selfMember = familyMembers.find((m) => m.patient.patientId === patient?.patientId);
   const isPrimarySelf = selfMember?.relation === "SELF" && selfMember?.primary === true;
 
-  const handleCreateProfile = async () => {
-    try {
-      const res = await PatientAPI.createProfile({ ...form, age: Number(form.age) });
-      setPatient(res.data);
-    } catch (err) {
-      alert("Error creating profile");
-    }
-  };
+const handleCreateProfile = async () => {
+  try {
+    const res = await PatientAPI.createProfile({
+      ...form,
+      age: Number(form.age),
+    });
 
-  const handleUpdateProfile = async () => {
-    try {
-      const res = await PatientAPI.updateProfile(patient.patientId, { 
-        ...editForm, 
-        age: Number(editForm.age) 
-      });
-      setPatient(res.data);
-      setEditingProfile(false);
-    } catch { 
-      alert("Failed to update profile"); 
-    }
-  };
+    setPatient(res.data);
+    localStorage.setItem(
+      CACHE_PATIENT_PROFILE,
+      JSON.stringify(res.data)
+    );
+  } catch {
+    alert("Error creating profile");
+  }
+};
+
+const handleUpdateProfile = async () => {
+  try {
+    const res = await PatientAPI.updateProfile(
+      patient.patientId,
+      { ...editForm, age: Number(editForm.age) }
+    );
+
+    setPatient(res.data);
+    localStorage.setItem(
+      CACHE_PATIENT_PROFILE,
+      JSON.stringify(res.data)
+    );
+
+    setEditingProfile(false);
+  } catch {
+    alert("Failed to update profile");
+  }
+};
 
   const handleCreateFamily = async () => {
     await FamilyAPI.createFamily();
     await refreshFamily();
   };
 
-  const handleAddMember = async () => {
-    if (!isPrimarySelf) return;
-    if (!selectedPatient || !newMember.relation) {
-      alert("Please select a patient and enter a relation");
-      return;
-    }
-    try {
-      await FamilyAPI.addMember({ 
-        patientId: selectedPatient.patient.patientId, 
-        relation: newMember.relation 
-      });
-      resetAddMemberState();
-      await refreshFamily();
-    } catch (err) {
-      alert("Error adding member");
-    }
-  };
+const handleAddMember = async () => {
+  if (!isPrimarySelf) return;
+  if (!selectedPatient || !newMember.relation) {
+    alert("Please select a patient and enter a relation");
+    return;
+  }
 
-  const handleRemoveMember = async (patientId) => {
-    if (!isPrimarySelf) return;
-    if (!window.confirm("Remove this member from your family group?")) return;
-    await FamilyAPI.removeMember(patientId);
+  try {
+    await FamilyAPI.addMember({
+      patientId: selectedPatient.patient.patientId,
+      relation: newMember.relation,
+    });
+
+    resetAddMemberState();
     await refreshFamily();
-  };
+  } catch {
+    alert("Error adding member");
+  }
+};
+
+const handleRemoveMember = async (patientId) => {
+  if (!isPrimarySelf) return;
+  if (!window.confirm("Remove this member from your family group?")) return;
+
+  await FamilyAPI.removeMember(patientId);
+  await refreshFamily();
+};
 
   const resetAddMemberState = () => {
     setAddingMember(false);
@@ -103,11 +142,22 @@ function Patient() {
     setNewMember({ relation: "" });
   };
 
-  const loadAllPatients = async () => {
-    if (allPatients.length > 0) return;
-    const res = await PatientAPI.getAllPatients();
-    setAllPatients(res.data);
-  };
+const loadAllPatients = async () => {
+  const cached = localStorage.getItem(CACHE_ALL_PATIENTS);
+
+  if (cached) {
+    setAllPatients(JSON.parse(cached));
+    return;
+  }
+
+  const res = await PatientAPI.getAllPatients();
+  setAllPatients(res.data);
+
+  localStorage.setItem(
+    CACHE_ALL_PATIENTS,
+    JSON.stringify(res.data)
+  );
+};
 
   const hasFamily = patient?.familyId || familyMembers.length > 0;
   const familyPatientIds = new Set(familyMembers.map((m) => m.patient.patientId));

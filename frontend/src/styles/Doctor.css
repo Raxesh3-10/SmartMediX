@@ -110,6 +110,14 @@
   font-weight: 800;
 }
 
+.delete-message-btn {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #ff4d4f;
+  cursor: pointer;
+  text-align: right;
+}
+
 /* Empty State Styling */
 .chat-main-window {
   flex: 1;

@@ -7,6 +7,8 @@ import "../../styles/Patient.css";
 
 /* ================= CONSTANTS ================= */
 const DAYS = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"];
+const CACHE_PATIENT_APPOINTMENTS = "cache_patient_appointments";
+const CACHE_PATIENT_DOCTORS = "cache_patient_doctors";
 
 const formatDate = (dateValue) => {
   const date = new Date(dateValue);
@@ -46,16 +48,55 @@ export default function PatientAppointmentsPage() {
     loadDoctors();
   }, [patient]);
 
-  const loadAppointments = async () => {
-    const res = await AppointmentAPI.getPatientAppointments(patient.patientId);
+const loadAppointments = async () => {
+  try {
+    const cached = localStorage.getItem(CACHE_PATIENT_APPOINTMENTS);
+
+    if (cached) {
+      const data = JSON.parse(cached);
+      setAppointments(data.filter(a => a.isPrimaryPatient));
+      setFamilyAppointments(data.filter(a => !a.isPrimaryPatient));
+      return;
+    }
+
+    const res = await AppointmentAPI.getPatientAppointments(
+      patient.patientId
+    );
+
+    localStorage.setItem(
+      CACHE_PATIENT_APPOINTMENTS,
+      JSON.stringify(res.data)
+    );
+
     setAppointments(res.data.filter(a => a.isPrimaryPatient));
     setFamilyAppointments(res.data.filter(a => !a.isPrimaryPatient));
-  };
+  } catch (err) {
+    console.error("Failed to load appointments", err);
+  }
+};
+const loadDoctors = async () => {
+  try {
+    const cached = localStorage.getItem(CACHE_PATIENT_DOCTORS);
 
-  const loadDoctors = async () => {
-    const res = await AppointmentAPI.getPatientDoctors(patient.patientId);
+    if (cached) {
+      setDoctors(JSON.parse(cached));
+      return;
+    }
+
+    const res = await AppointmentAPI.getPatientDoctors(
+      patient.patientId
+    );
+
     setDoctors(res.data);
-  };
+    localStorage.setItem(
+      CACHE_PATIENT_DOCTORS,
+      JSON.stringify(res.data)
+    );
+  } catch (err) {
+    console.error("Failed to load doctors", err);
+  }
+};
+
 
   const filteredAppointments = useMemo(() => {
     return appointments.filter((a) =>
@@ -91,28 +132,78 @@ export default function PatientAppointmentsPage() {
     return () => clearInterval(interval);
   }, [callStarted, selectedAppt, appointments]);
 
-  const saveAppointment = async (isUpdate) => {
-    if (!selectedDoctor || !selectedSlotKey) { alert("Select a slot first"); return; }
-    const slot = selectedDoctor.slots.find(s => slotKey(s) === selectedSlotKey);
-    if (!slot) return;
-    try {
-      if (!isUpdate) {
-        const res = await AppointmentAPI.createAppointment({
-          patientId: patient.patientId, doctorId: selectedDoctor.doctor.doctorId,
-          day: slot.day, startTime: slot.startTime, endTime: slot.endTime,
-          appointmentDate: new Date().toISOString(), conferenceType: "VIDEO",
-        });
-        await PaymentAPI.payForAppointment(res.data._id);
-        alert("Appointment booked");
-      } else {
-        await AppointmentAPI.updateAppointment(selectedAppt.appointment.appointmentId, slot);
-        alert("Appointment updated");
-      }
-      setSelectedSlotKey(null);
-      loadAppointments();
-      loadDoctors();
-    } catch (err) { alert("Action failed"); }
-  };
+const saveAppointment = async (isUpdate) => {
+  if (!selectedDoctor || !selectedSlotKey) {
+    alert("Select a slot first");
+    return;
+  }
+
+  const slot = selectedDoctor.slots.find(
+    s => slotKey(s) === selectedSlotKey
+  );
+  if (!slot) return;
+
+  try {
+    let updatedAppointments;
+
+    if (!isUpdate) {
+      const res = await AppointmentAPI.createAppointment({
+        patientId: patient.patientId,
+        doctorId: selectedDoctor.doctor.doctorId,
+        day: slot.day,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        appointmentDate: new Date().toISOString(),
+        conferenceType: "VIDEO",
+      });
+
+      await PaymentAPI.payForAppointment(res.data._id);
+
+      updatedAppointments = [
+        ...(appointments || []),
+        res.data,
+      ];
+
+      alert("Appointment booked");
+    } else {
+      await AppointmentAPI.updateAppointment(
+        selectedAppt.appointment.appointmentId,
+        slot
+      );
+
+      updatedAppointments = appointments.map(a =>
+        a.appointment.appointmentId ===
+        selectedAppt.appointment.appointmentId
+          ? {
+              ...a,
+              appointment: {
+                ...a.appointment,
+                ...slot,
+              },
+            }
+          : a
+      );
+
+      alert("Appointment updated");
+    }
+
+    localStorage.setItem(
+      CACHE_PATIENT_APPOINTMENTS,
+      JSON.stringify(updatedAppointments)
+    );
+
+    setAppointments(
+      updatedAppointments.filter(a => a.isPrimaryPatient)
+    );
+    setFamilyAppointments(
+      updatedAppointments.filter(a => !a.isPrimaryPatient)
+    );
+
+    setSelectedSlotKey(null);
+  } catch {
+    alert("Action failed");
+  }
+};
 
   return (
     <main className="main-content">

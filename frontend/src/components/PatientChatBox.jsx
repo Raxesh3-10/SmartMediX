@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ChatAPI, ChatFileAPI } from "../api/api";
 import { encryptMessage, decryptMessage } from "../utils/chatCrypto";
-import "../styles/Doctor.css"; // We will use the same classes here
+import "../styles/Doctor.css";
 
 /* ================= DATE FORMATTER ================= */
 const formatDateTime = (iso) => {
@@ -18,6 +18,19 @@ const formatDateTime = (iso) => {
   return `${date} • ${time}`;
 };
 
+const openPdfFromRawUrl = async (url) => {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const pdfBlob = new Blob([blob], { type: "application/pdf" });
+    const blobUrl = URL.createObjectURL(pdfBlob);
+    window.open(blobUrl, "_blank", "noopener,noreferrer");
+  } catch (err) {
+    console.error("Failed to open PDF:", err);
+    alert("Unable to open document");
+  }
+};
+
 export default function PatientChatBox({
   user,
   doctorUser,
@@ -28,6 +41,8 @@ export default function PatientChatBox({
   const [text, setText] = useState("");
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
+
+  const [activeMessageId, setActiveMessageId] = useState(null);
 
   const chatEndRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -50,7 +65,11 @@ export default function PatientChatBox({
     const decrypted = res.data.map((m) => ({
       ...m,
       message: m.message
-        ? decryptMessage(m.message, doctor.doctorId, patient.patientId)
+        ? decryptMessage(
+            m.message,
+            doctor.doctorId,
+            patient.patientId
+          )
         : "",
     }));
 
@@ -65,8 +84,20 @@ export default function PatientChatBox({
     setMessages([...readMessages, ...unreadMessages]);
 
     if (unreadMessages.length > 0) {
-      await ChatAPI.markChatAsRead(doctor.doctorId, patient.patientId);
+      await ChatAPI.markChatAsRead(
+        doctor.doctorId,
+        patient.patientId
+      );
     }
+  };
+
+  /* ================= DELETE MESSAGE ================= */
+  const deleteMessage = async (messageId) => {
+    if (!window.confirm("Delete this message?")) return;
+
+    await ChatAPI.deleteMessage(messageId);
+    setActiveMessageId(null);
+    await loadChat();
   };
 
   /* ================= SEND MESSAGE ================= */
@@ -79,9 +110,15 @@ export default function PatientChatBox({
       for (const file of selectedFiles) {
         let res;
         if (file.type.startsWith("image/")) {
-          res = await ChatFileAPI.uploadImage(file, patient.patientId);
+          res = await ChatFileAPI.uploadImage(
+            file,
+            patient.patientId
+          );
         } else if (file.type === "application/pdf") {
-          res = await ChatFileAPI.uploadDocument(file, patient.patientId);
+          res = await ChatFileAPI.uploadDocument(
+            file,
+            patient.patientId
+          );
         } else {
           alert("Only images and PDF files are allowed");
           continue;
@@ -89,7 +126,11 @@ export default function PatientChatBox({
         fileUrls.push(res.data);
       }
 
-      const encrypted = encryptMessage(text, doctor.doctorId, patient.patientId);
+      const encrypted = encryptMessage(
+        text,
+        doctor.doctorId,
+        patient.patientId
+      );
 
       await ChatAPI.sendMessage({
         doctorId: doctor.doctorId,
@@ -118,28 +159,48 @@ export default function PatientChatBox({
             {doctorUser?.name?.charAt(0)}
           </div>
           <div>
-            <div className="chat-name">Dr. {doctorUser?.name || "Doctor"}</div>
+            <div className="chat-name">
+              Dr. {doctorUser?.name || "Doctor"}
+            </div>
             <div className="chat-sub">{doctorUser?.email}</div>
           </div>
         </div>
         <div className="doctor-info-tag">
-          <div className="chat-name text-right">{user?.name}</div>
-          <div className="chat-sub text-right">Patient Portal</div>
+          <div className="chat-name text-right">
+            {user?.name}
+          </div>
+          <div className="chat-sub text-right">
+            Patient Portal
+          </div>
         </div>
       </div>
 
-      {/* CHAT MESSAGES AREA */}
+      {/* CHAT MESSAGES */}
       <div className="chat-messages-scroll">
         {messages.map((m) => {
           const isPatient = m.senderRole === "PATIENT";
-          const isUnreadDoctor = !m.read && m.senderRole === "DOCTOR";
+          const isUnreadDoctor =
+            !m.read && m.senderRole === "DOCTOR";
 
           return (
             <div
               key={m.messageId}
-              className={`message-bubble ${isPatient ? "doctor-msg" : "patient-msg"} ${isUnreadDoctor ? "unread-glow" : ""}`}
+              className={`message-bubble ${
+                isPatient ? "doctor-msg" : "patient-msg"
+              } ${isUnreadDoctor ? "unread-glow" : ""}`}
+              onClick={() =>
+                isPatient
+                  ? setActiveMessageId(
+                      activeMessageId === m.messageId
+                        ? null
+                        : m.messageId
+                    )
+                  : null
+              }
             >
-              {m.message && <div className="message-text">{m.message}</div>}
+              {m.message && (
+                <div className="message-text">{m.message}</div>
+              )}
 
               {m.fileUrls?.map((url, i) => (
                 <div key={i} className="file-attachment">
@@ -148,29 +209,59 @@ export default function PatientChatBox({
                       src={url}
                       alt="attachment"
                       className="chat-img-preview"
-                      onClick={() => window.open(url, "_blank", "noopener,noreferrer")}
+                      onClick={() =>
+                        window.open(
+                          url,
+                          "_blank",
+                          "noopener,noreferrer"
+                        )
+                      }
                     />
                   ) : (
-                    <a href={url} target="_blank" rel="noopener noreferrer" className="pdf-link">
+                    <button
+                      className="pdf-link"
+                      onClick={() =>
+                        openPdfFromRawUrl(url)
+                      }
+                    >
                       📄 Medical Document (PDF)
-                    </a>
+                    </button>
                   )}
                 </div>
               ))}
-              <div className="message-time">{formatDateTime(m.sentAt)}</div>
+
+              <div className="message-time">
+                {formatDateTime(m.sentAt)}
+              </div>
+
+              {/* DELETE OPTION */}
+              {isPatient &&
+                activeMessageId === m.messageId && (
+                  <div
+                    className="delete-message-btn"
+                    onClick={() =>
+                      deleteMessage(m.messageId)
+                    }
+                  >
+                    Delete
+                  </div>
+                )}
             </div>
           );
         })}
         <div ref={chatEndRef} />
       </div>
 
-      {/* INPUT AREA */}
+      {/* INPUT */}
       <div className="chat-input-wrapper">
         <div className="file-preview-area">
           {selectedFiles.length > 0 && (
-            <span className="file-counter">📎 {selectedFiles.length} file(s) ready</span>
+            <span className="file-counter">
+              📎 {selectedFiles.length} file(s) ready
+            </span>
           )}
         </div>
+
         <div className="input-row">
           <label className="file-upload-label">
             <input
@@ -178,17 +269,23 @@ export default function PatientChatBox({
               multiple
               hidden
               ref={fileInputRef}
-              onChange={(e) => setSelectedFiles([...e.target.files])}
+              onChange={(e) =>
+                setSelectedFiles([...e.target.files])
+              }
             />
-            📎
+            Click to Upload
           </label>
+
           <input
             className="chat-input-field"
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="Type your message to the doctor..."
-            onKeyPress={(e) => e.key === "Enter" && sendMessage()}
+            onKeyPress={(e) =>
+              e.key === "Enter" && sendMessage()
+            }
           />
+
           <button
             className="chat-send-btn"
             onClick={sendMessage}

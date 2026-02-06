@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { AuthAPI, DoctorAPI } from "../../api/api";
 import "../../styles/Doctor.css"; // We will use the same classes here
-
+import DoctorPdfReport from "../../components/DoctorPdfReport";
 const DAYS = [
   "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY",
 ];
+const CACHE_USER_KEY = "cache_doctor_user";
+const CACHE_DOCTOR_KEY = "cache_doctor_profile";
 
 function Doctor() {
-  const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
   const [doctor, setDoctor] = useState(null);
@@ -33,14 +33,42 @@ function Doctor() {
 
 
   /* ================= FETCH DATA ================= */
-  useEffect(() => {
-    const load = async () => {
-      try {
+useEffect(() => {
+  const load = async () => {
+    try {
+      /* ===== USER CACHE ===== */
+      const cachedUser = localStorage.getItem(CACHE_USER_KEY);
+      if (cachedUser) {
+        setUser(JSON.parse(cachedUser));
+      } else {
         const userRes = await AuthAPI.getUser();
         setUser(userRes.data);
+        localStorage.setItem(
+          CACHE_USER_KEY,
+          JSON.stringify(userRes.data)
+        );
+      }
 
+      /* ===== DOCTOR CACHE ===== */
+      const cachedDoctor = localStorage.getItem(CACHE_DOCTOR_KEY);
+      if (cachedDoctor) {
+        const doctorData = JSON.parse(cachedDoctor);
+        setDoctor(doctorData);
+
+        setForm({
+          specialization: doctorData.specialization || "",
+          experienceYears: doctorData.experienceYears || "",
+          consultationFee: doctorData.consultationFee || "",
+          premium: doctorData.premium || false,
+          upi: doctorData.upi || "",
+        });
+      } else {
         const doctorRes = await DoctorAPI.getMyProfile();
         setDoctor(doctorRes.data);
+        localStorage.setItem(
+          CACHE_DOCTOR_KEY,
+          JSON.stringify(doctorRes.data)
+        );
 
         setForm({
           specialization: doctorRes.data.specialization || "",
@@ -49,36 +77,49 @@ function Doctor() {
           premium: doctorRes.data.premium || false,
           upi: doctorRes.data.upi || "",
         });
-      } catch {
-        console.warn("Doctor profile not found");
-      } finally {
-        setLoading(false);
       }
-    };
-    load();
-  }, []);
+    } catch {
+      console.warn("Doctor profile not found");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  load();
+}, []);
 
   /* ================= CREATE PROFILE ================= */
-  const handleCreateProfile = async () => {
-    const res = await DoctorAPI.createProfile({
-      ...form,
-      experienceYears: Number(form.experienceYears),
-      consultationFee: Number(form.consultationFee),
-    });
-    setDoctor(res.data);
-  };
+const handleCreateProfile = async () => {
+  const res = await DoctorAPI.createProfile({
+    ...form,
+    experienceYears: Number(form.experienceYears),
+    consultationFee: Number(form.consultationFee),
+  });
+
+  setDoctor(res.data);
+  localStorage.setItem(
+    CACHE_DOCTOR_KEY,
+    JSON.stringify(res.data)
+  );
+};
 
   /* ================= UPDATE PROFILE (NO SLOTS) ================= */
-  const handleUpdateProfile = async () => {
-    const res = await DoctorAPI.updateProfile(doctor.doctorId, {
-      ...doctor,
-      ...form,
-      experienceYears: Number(form.experienceYears),
-      consultationFee: Number(form.consultationFee),
-    });
-    setDoctor(res.data);
-    setShowEditForm(false);
-  };
+const handleUpdateProfile = async () => {
+  const res = await DoctorAPI.updateProfile(doctor.doctorId, {
+    ...doctor,
+    ...form,
+    experienceYears: Number(form.experienceYears),
+    consultationFee: Number(form.consultationFee),
+  });
+
+  setDoctor(res.data);
+  localStorage.setItem(
+    CACHE_DOCTOR_KEY,
+    JSON.stringify(res.data)
+  );
+
+  setShowEditForm(false);
+};
 
   /* ===== HELPER: HH:MM → minutes ===== */
   const parseTime = (timeStr) => {
@@ -87,55 +128,63 @@ function Doctor() {
   };
 
   /* ================= ADD SLOT WITH OVERLAP CHECK ================= */
-  const handleAddSlot = async () => {
-    if (!newSlot.startTime || !newSlot.endTime) return;
+const handleAddSlot = async () => {
+  if (!newSlot.startTime || !newSlot.endTime) return;
 
-    const newStart = parseTime(newSlot.startTime);
-    const newEnd = parseTime(newSlot.endTime);
+  const newStart = parseTime(newSlot.startTime);
+  const newEnd = parseTime(newSlot.endTime);
 
-    const overlapping = (doctor.slots || []).some((s) => {
-      if (s.day !== newSlot.day) return false;
-      return (
-        newStart < parseTime(s.endTime) &&
-        newEnd > parseTime(s.startTime)
-      );
-    });
+  const overlapping = (doctor.slots || []).some((s) => {
+    if (s.day !== newSlot.day) return false;
+    return newStart < parseTime(s.endTime) &&
+           newEnd > parseTime(s.startTime);
+  });
 
-    if (overlapping) {
-      alert("This slot overlaps with an existing slot ❌");
-      return;
-    }
+  if (overlapping) {
+    alert("This slot overlaps with an existing slot ❌");
+    return;
+  }
 
-    const updatedSlots = [
-      ...(doctor.slots || []),
-      { ...newSlot, booked: false },
-    ];
+  const updatedSlots = [
+    ...(doctor.slots || []),
+    { ...newSlot, booked: false },
+  ];
 
-    const res = await DoctorAPI.updateProfile(doctor.doctorId, {
-      ...doctor,
-      slots: updatedSlots,
-    });
+  const res = await DoctorAPI.updateProfile(doctor.doctorId, {
+    ...doctor,
+    slots: updatedSlots,
+  });
 
-    setDoctor(res.data);
-    setNewSlot({ day: "MONDAY", startTime: "", endTime: "" });
-  };
+  setDoctor(res.data);
+  localStorage.setItem(
+    CACHE_DOCTOR_KEY,
+    JSON.stringify(res.data)
+  );
+
+  setNewSlot({ day: "MONDAY", startTime: "", endTime: "" });
+};
 
   /* ================= DELETE SLOT ================= */
   const slotKey = (s) => `${s.day}-${s.startTime}-${s.endTime}`;
 
-  const handleDeleteSlots = async () => {
-    const remaining = doctor.slots.filter(
-      (s) => !selectedSlots.includes(slotKey(s))
-    );
+const handleDeleteSlots = async () => {
+  const remaining = doctor.slots.filter(
+    (s) => !selectedSlots.includes(slotKey(s))
+  );
 
-    const res = await DoctorAPI.updateProfile(doctor.doctorId, {
-      ...doctor,
-      slots: remaining,
-    });
+  const res = await DoctorAPI.updateProfile(doctor.doctorId, {
+    ...doctor,
+    slots: remaining,
+  });
 
-    setDoctor(res.data);
-    setSelectedSlots([]);
-  };
+  setDoctor(res.data);
+  localStorage.setItem(
+    CACHE_DOCTOR_KEY,
+    JSON.stringify(res.data)
+  );
+
+  setSelectedSlots([]);
+};
 
   if (loading) return <div className="loading-state">Loading Profile...</div>;
 
@@ -190,7 +239,9 @@ function Doctor() {
               </button>
             </div>
           )}
-
+          <div className="profile-box">
+            <DoctorPdfReport doctor={doctor} user={user} />
+          </div>
           {/* ADD SLOT SECTION */}
           <div className="profile-box">
             <h3>Manage Availability</h3>

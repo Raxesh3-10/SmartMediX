@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { PaymentAPI } from "../../api/api";
 import "../../styles/Patient.css";
 
+const CACHE_PATIENT_TRANSACTIONS = "cache_patient_transactions";
+
 const formatIST = (isoDate) =>
   new Date(isoDate).toLocaleString("en-IN", {
     timeZone: "Asia/Kolkata",
@@ -14,11 +16,31 @@ export default function PatientBillsPage() {
   const [expanded, setExpanded] = useState(null);
   const [search, setSearch] = useState("");
 
-  useEffect(() => {
-    PaymentAPI.getMyTransactions()
-      .then(res => setRows(res.data || []))
-      .catch(err => console.error("Transaction history error:", err));
-  }, []);
+useEffect(() => {
+  const loadTransactions = async () => {
+    try {
+      const cached = localStorage.getItem(CACHE_PATIENT_TRANSACTIONS);
+
+      if (cached) {
+        setRows(JSON.parse(cached));
+        return;
+      }
+
+      const res = await PaymentAPI.getMyTransactions();
+      const data = res.data || [];
+
+      setRows(data);
+      localStorage.setItem(
+        CACHE_PATIENT_TRANSACTIONS,
+        JSON.stringify(data)
+      );
+    } catch (err) {
+      console.error("Transaction history error:", err);
+    }
+  };
+
+  loadTransactions();
+}, []);
 
   /* ================= NORMALIZE ================= */
   const normalized = useMemo(() => {
