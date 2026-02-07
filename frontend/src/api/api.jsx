@@ -189,6 +189,9 @@ export const AppointmentAPI = {
     api.post("/appointments", appointmentData, {
       params: specialization ? { specialization } : {},
     }),
+  /* ========== PATIENT → CREATE APPOINTMENT BY CHAT → DOCTOR and USER (ADDED) ========== */
+  getDoctorForAIBot: () =>
+    api.get(`/appointments/aibot}`),
   /* ========== PATIENT → APPOINTMENTS (ADDED) ========== */
   getPatientAppointments: (patientId) =>
     api.get(`/appointments/patient/${patientId}`),

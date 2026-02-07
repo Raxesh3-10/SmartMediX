@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { GoogleGenAI } from "@google/genai"; // Using your specific library
+import { AppointmentAPI } from "../api/api"; // use getDoctorForAIBot
 import "../styles/components/Chatbot.css";
 
 // Initialize with your API Key

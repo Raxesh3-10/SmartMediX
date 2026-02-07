@@ -3,7 +3,6 @@ package com.eHealth.eHealth.config;
 import com.eHealth.eHealth.enumRole.Role;
 import com.eHealth.eHealth.model.JwtSession;
 import com.eHealth.eHealth.repository.JwtSessionRepository;
-import com.eHealth.eHealth.repository.UserRepository;
 import com.eHealth.eHealth.utility.JwtUtil;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -26,12 +25,10 @@ import java.util.Collections;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private final UserRepository userRepo;
     private final JwtSessionRepository jwtRepo;
     private final JavaMailSender mailSender;
 
-    public JwtAuthenticationFilter(UserRepository userRepo, JwtSessionRepository jwtRepo, JavaMailSender mailSender) {
-        this.userRepo = userRepo;
+    public JwtAuthenticationFilter( JwtSessionRepository jwtRepo, JavaMailSender mailSender) {
         this.jwtRepo = jwtRepo;
         this.mailSender = mailSender;
     }

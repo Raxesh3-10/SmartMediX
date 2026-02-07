@@ -1,5 +1,6 @@
 package com.eHealth.eHealth.appointment.service;
 
+import com.eHealth.eHealth.dto.DoctorWithUserDTO;
 import com.eHealth.eHealth.model.*;
 import com.eHealth.eHealth.repository.*;
 import org.springframework.mail.SimpleMailMessage;
@@ -158,6 +159,13 @@ public List<Map<String, Object>> getPatientAppointments(String patientId) {
     }
     return result;
 }
+
+    @Transactional
+    public List<DoctorWithUserDTO> getDoctorForAIBot()
+    {
+        return doctorRepo.findAll().stream().map( doctor ->  new DoctorWithUserDTO(doctor,userRepo.findById(doctor.getUserId()).orElse(null))).toList();
+    }
+    
     public void notifyDoctor(Doctor doctor, Appointment appt) {
         User user = userRepo.findById(doctor.getUserId()).orElseThrow();
         SimpleMailMessage msg = new SimpleMailMessage();

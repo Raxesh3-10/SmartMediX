@@ -1,11 +1,15 @@
 package com.eHealth.eHealth.appointment.controller;
 
 import com.eHealth.eHealth.appointment.service.AppointmentService;
+import com.eHealth.eHealth.dto.DoctorWithUserDTO;
 import com.eHealth.eHealth.model.Appointment;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
 
 @RestController
 @RequestMapping("/api/appointments")
@@ -21,6 +25,11 @@ public class AppointmentController {
     public Appointment create(@RequestBody Appointment appointment,
                               @RequestParam(required = false) String specialization) {
         return service.createAppointment(appointment, specialization);
+    }
+
+    @GetMapping("/aibot")
+    public List<DoctorWithUserDTO> getDoctorForAIBot() {
+        return service.getDoctorForAIBot();
     }
 
     @GetMapping("/patient/{patientId}")
