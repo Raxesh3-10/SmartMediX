@@ -202,3 +202,21 @@
   0%, 80%, 100% { transform: scale(0); }
   40% { transform: scale(1); }
 }
+
+/* Clean styles: No thinking/reasoning indicators */
+.message.bot .bubble {
+  background: #f0f0f0;
+  color: #333;
+  border-radius: 15px 15px 15px 2px;
+  padding: 10px 15px;
+  max-width: 80%;
+  word-wrap: break-word;
+}
+
+.message.user .bubble {
+  background: #007bff;
+  color: white;
+  border-radius: 15px 15px 2px 15px;
+  padding: 10px 15px;
+  align-self: flex-end;
+}

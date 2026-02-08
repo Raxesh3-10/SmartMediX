@@ -1,60 +1,91 @@
 import { useState, useRef, useEffect } from "react";
-import { GoogleGenAI } from "@google/genai"; // Using your specific library
-import { AppointmentAPI } from "../api/api"; // use getDoctorForAIBot
+import { AppointmentAPI } from "../api/api";
 import "../styles/components/Chatbot.css";
 
-// Initialize with your API Key
-const ai = new GoogleGenAI({ apiKey: "AIzaSyB13GYgF-wu40dEyTu07NgUg7JzFKhhuKs" });
+const OPENROUTER_API_KEY = "YOUR_API_KEY";
 
 const ChatbotAssistant = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { id: 1, text: "Hi! I'm mediX, your Health AI Assistant. How can I help you today?", sender: "bot" }
+    { id: 1, text: "Hi! I'm mediX. How can I help you today?", sender: "bot" }
   ]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [doctors, setDoctors] = useState([]);
   const messagesEndRef = useRef(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  useEffect(() => {
+    const fetchDoctors = async () => {
+      try {
+        const response = await AppointmentAPI.getDoctorForAIBot();
+        setDoctors(response.data || []);
+      } catch (error) {
+        console.error("Failed to fetch doctors:", error);
+      }
+    };
+    fetchDoctors();
+  }, []);
 
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isOpen]);
-
-  // ... (keep your imports the same)
 
   const handleSend = async () => {
     if (!input.trim()) return;
 
     const userMessage = { id: Date.now(), text: input, sender: "user" };
-    setMessages((prev) => [...prev, userMessage]);
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
     setInput("");
     setIsTyping(true);
 
     try {
-      // STRICT SYSTEM PROMPT
-      const systemPrompt = "You are mediX. Instructions: 1. Give very short, necessary answers only. 2. No long paragraphs. 3. Use plain text only. 4. Do NOT use markdown like **bold**, ## headers, or bullet symbols like *. 5. For advice, use simple numbers (1. 2. 3.). 6. Use friendly emojis. 7. If urgent, say: Please see a doctor immediately.";
+      const doctorContext = doctors.length > 0 
+        ? doctors.map(d => `${d.user.name} (${d.doctor.specialization})`).join(", ")
+        : "No doctors currently available";
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: `${systemPrompt} \n\n Patient: ${input}`,
+      const apiMessages = updatedMessages.map(msg => ({
+        role: msg.sender === "user" ? "user" : "assistant",
+        content: msg.text,
+        // We keep this here so the AI remains smart in the next turn
+        ...(msg.reasoning_details && { reasoning_details: msg.reasoning_details })
+      }));
+
+      const systemMsg = {
+        role: "system",
+        content: `You are mediX. Instructions: 1. Plain text only. 2. Suggest doctors from: [${doctorContext}]. 3. No markdown.`
+      };
+
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "stepfun/step-3.5-flash:free",
+          messages: [systemMsg, ...apiMessages],
+          reasoning: { enabled: true }
+        })
       });
 
-      // Clean the text to ensure no Markdown symbols (* or #) sneak in
-      let botText = response.text.replace(/[*#_~]/g, '');
+      if (!response.ok) throw new Error(`API Error: ${response.status}`);
 
-      setMessages((prev) => [...prev, { 
+      const result = await response.json();
+      const botMessage = result.choices[0].message;
+
+      setMessages(prev => [...prev, { 
         id: Date.now() + 1, 
-        text: botText, 
-        sender: "bot" 
+        text: botMessage.content.replace(/[*#_~]/g, ''), 
+        sender: "bot",
+        reasoning_details: botMessage.reasoning_details 
       }]);
+
     } catch (error) {
       console.error("mediX Error:", error);
-      setMessages((prev) => [...prev, { 
+      setMessages(prev => [...prev, { 
         id: Date.now() + 1, 
-        text: "I'm a bit dizzy 😵. Can you ask that again?", 
+        text: "I'm having a moment. Could you try that again?", 
         sender: "bot" 
       }]);
     } finally {
@@ -62,18 +93,11 @@ const ChatbotAssistant = () => {
     }
   };
 
-
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter") handleSend();
-  };
-
   return (
     <div className="chatbot-container">
       <div className={`chat-window ${isOpen ? "open" : ""}`}>
         <div className="chat-header">
-          <div className="header-title">
-            <span>⚡</span> mediX AI
-          </div>
+          <div className="header-title"><span>⚡</span> mediX AI</div>
           <button className="close-btn" onClick={() => setIsOpen(false)}>×</button>
         </div>
 
@@ -85,9 +109,7 @@ const ChatbotAssistant = () => {
           ))}
           {isTyping && (
             <div className="message bot">
-              <div className="bubble typing">
-                <span></span><span></span><span></span>
-              </div>
+              <div className="bubble typing"><span></span><span></span><span></span></div>
             </div>
           )}
           <div ref={messagesEndRef} />
@@ -96,28 +118,17 @@ const ChatbotAssistant = () => {
         <div className="chat-footer">
           <input
             type="text"
-            placeholder="Ask mediX about health..."
+            placeholder="Ask mediX..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyPress}
+            onKeyDown={(e) => e.key === "Enter" && handleSend()}
           />
-          <button onClick={handleSend} disabled={!input.trim() || isTyping}>
-            ➤
-          </button>
+          <button onClick={handleSend} disabled={!input.trim() || isTyping}>➤</button>
         </div>
       </div>
 
-      <button 
-        className={`chatbot-toggle ${isOpen ? "active" : ""}`} 
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        {isOpen ? (
-          <span className="icon-close">▼</span>
-        ) : (
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="icon-lightning">
-            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-          </svg>
-        )}
+      <button className={`chatbot-toggle ${isOpen ? "active" : ""}`} onClick={() => setIsOpen(!isOpen)}>
+        {isOpen ? "▼" : "⚡"}
       </button>
     </div>
   );

@@ -191,7 +191,7 @@ export const AppointmentAPI = {
     }),
   /* ========== PATIENT → CREATE APPOINTMENT BY CHAT → DOCTOR and USER (ADDED) ========== */
   getDoctorForAIBot: () =>
-    api.get(`/appointments/aibot}`),
+    api.get(`/appointments/aibot`),
   /* ========== PATIENT → APPOINTMENTS (ADDED) ========== */
   getPatientAppointments: (patientId) =>
     api.get(`/appointments/patient/${patientId}`),
