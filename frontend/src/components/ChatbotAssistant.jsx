@@ -3,8 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { AppointmentAPI } from "../api/api";
 import "../styles/components/Chatbot.css";
 
-// ⚠️ SECURITY NOTE: In production, API keys should be hidden via backend proxies (.env).
-const OPENROUTER_API_KEY = "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";
+const OPENROUTER_API_KEY = YOUR_API_KEY;
 
 const ChatbotAssistant = () => {
   const navigate = useNavigate();
