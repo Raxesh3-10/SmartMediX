@@ -36,6 +36,30 @@
   margin-top: 10px;
   cursor: pointer;
 }
+/* Medical Image Grid */
+
+.medical-image-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.medical-thumb {
+  width: 90px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.medical-thumb:hover {
+  transform: scale(1.05);
+  border-color: #2563eb;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
 
 .dashboard-container {
   min-height: 100vh;

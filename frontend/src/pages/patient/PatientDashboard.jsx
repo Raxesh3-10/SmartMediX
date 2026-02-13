@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import ChatbotAssistant  from "../../components/ChatbotAssistant";
 import { PatientAPI, FamilyAPI } from "../../api/api";
+import PatientMedicalRecords from "../../components/PatientMedicalRecords";
 import "../../styles/Patient.css";
 const CACHE_PATIENT_PROFILE = "cache_patient_profile";
 const CACHE_FAMILY_MEMBERS = "cache_family_members";
@@ -200,109 +201,176 @@ const loadAllPatients = async () => {
     return `${p.user.name} ${p.user.email}`.toLowerCase().includes(search.toLowerCase());
   });
 
-  return (
-    <main className="main-content">
-      {!patient ? (
+return (
+  <main className="main-content">
+    {!patient ? (
+      <div className="profile-box">
+        <h2>Complete Your Profile</h2>
+        <input className="input-field" placeholder="Mobile Number" onChange={(e) => setForm({ ...form, mobile: e.target.value })} />
+        <select className="input-field" onChange={(e) => setForm({ ...form, gender: e.target.value })}>
+          <option value="">Select Gender</option>
+          <option value="MALE">Male</option>
+          <option value="FEMALE">Female</option>
+          <option value="OTHER">Other</option>
+        </select>
+        <input className="input-field" type="number" placeholder="Age" onChange={(e) => setForm({ ...form, age: e.target.value })} />
+        <button className="primary-btn" onClick={handleCreateProfile}>Create My Profile</button>
+      </div>
+    ) : (
+      <>
+        {/* PROFILE CARD */}
         <div className="profile-box">
-          <h2>Complete Your Profile</h2>
-          <input className="input-field" placeholder="Mobile Number" onChange={(e) => setForm({ ...form, mobile: e.target.value })} />
-          <select className="input-field" onChange={(e) => setForm({ ...form, gender: e.target.value })}>
-            <option value="">Select Gender</option>
-            <option value="MALE">Male</option>
-            <option value="FEMALE">Female</option>
-            <option value="OTHER">Other</option>
-          </select>
-          <input className="input-field" type="number" placeholder="Age" onChange={(e) => setForm({ ...form, age: e.target.value })} />
-          <button className="primary-btn" onClick={handleCreateProfile}>Create My Profile</button>
-        </div>
-      ) : (
-        <>
-          {/* PROFILE CARD */}
-          <div className="profile-box">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-  <h2>My Health Profile</h2>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h2>My Health Profile</h2>
 
-  <button
-    className="refresh-btn"
-    disabled={refreshing}
-    onClick={reloadPatientData}
-  >
-    {refreshing ? "Refreshing..." : "Refresh"}
-  </button>
-</div>
-
-            {!editingProfile ? (
-              <div className="profile-details">
-                <p><strong>Full Name:</strong> {user?.name}</p>
-                <p><strong>Email Address:</strong> {user?.email}</p>
-                <p><strong>Mobile:</strong> {patient.mobile}</p>
-                <p><strong>Age:</strong> {patient.age}</p>
-                <p><strong>Gender:</strong> {patient.gender}</p>
-                <button className="secondary-btn" onClick={() => setEditingProfile(true)}>Update Details</button>
-              </div>
-            ) : (
-              <>
-                <input className="input-field" value={editForm.mobile} onChange={(e) => setEditForm({ ...editForm, mobile: e.target.value })} />
-                <select className="input-field" value={editForm.gender} onChange={(e) => setEditForm({ ...editForm, gender: e.target.value })}>
-                  <option value="MALE">Male</option>
-                  <option value="FEMALE">Female</option>
-                  <option value="OTHER">Other</option>
-                </select>
-                <input className="input-field" type="number" value={editForm.age} onChange={(e) => setEditForm({ ...editForm, age: e.target.value })} />
-                <button className="primary-btn" onClick={handleUpdateProfile}>Save Changes</button>
-                <button className="secondary-btn" onClick={() => setEditingProfile(false)}>Cancel</button>
-              </>
-            )}
-            {!hasFamily && (
-              <button className="primary-btn" style={{marginTop: '15px'}} onClick={handleCreateFamily}>
-                Create Family Group
-              </button>
-            )}
+            <button
+              className="refresh-btn"
+              disabled={refreshing}
+              onClick={reloadPatientData}
+            >
+              {refreshing ? "Refreshing..." : "Refresh"}
+            </button>
           </div>
 
-          {/* FAMILY CARD */}
-          {hasFamily && (
-            <div className="profile-box">
-              <h3>Family Health Group</h3>
-              {familyMembers.map((m) => (
-                <div key={m.patient.patientId} className="record-card">
-                  <div>
-                    <strong>{m.user.name}</strong> ({m.relation}) {m.primary && "⭐"}
-                    <div style={{fontSize: '0.85rem', color: '#64748b'}}>{m.user.email}</div>
-                  </div>
-                  {isPrimarySelf && m.patient.patientId !== patient.patientId && (
-                    <button className="danger-btn" onClick={() => handleRemoveMember(m.patient.patientId)}>Remove</button>
-                  )}
-                </div>
-              ))}
-              
-              {isPrimarySelf && !addingMember && (
-                <button className="secondary-btn" onClick={() => { setAddingMember(true); loadAllPatients(); }}>+ Add Member</button>
-              )}
-
-              {addingMember && (
-                <div style={{marginTop: '20px', padding: '15px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0'}}>
-                  <input className="input-field" placeholder="Search by name or email..." value={search} onChange={(e) => setSearch(e.target.value)} />
-                  <div style={{maxHeight: '150px', overflowY: 'auto', marginBottom: '10px'}}>
-                    {filteredPatients.map((p) => (
-                      <div key={p.patient.patientId} className="search-item" style={{padding: '10px', cursor: 'pointer', borderBottom: '1px solid #eee'}} onClick={() => { setSelectedPatient(p); setSearch(""); }}>
-                        {p.user.name} ({p.user.email})
-                      </div>
-                    ))}
-                  </div>
-                  {selectedPatient && <div style={{margin: '10px 0', fontWeight: 'bold', color: '#2563eb'}}>Selected: {selectedPatient.user.name}</div>}
-                  <input className="input-field" placeholder="Relationship (e.g. Father, Spouse)" value={newMember.relation} onChange={(e) => setNewMember({ relation: e.target.value })} />
-                  <button className="primary-btn" onClick={handleAddMember}>Confirm Addition</button>
-                  <button className="secondary-btn" onClick={resetAddMemberState}>Cancel</button>
-                </div>
-              )}
+          {!editingProfile ? (
+            <div className="profile-details">
+              <p><strong>Full Name:</strong> {user?.name}</p>
+              <p><strong>Email Address:</strong> {user?.email}</p>
+              <p><strong>Mobile:</strong> {patient.mobile}</p>
+              <p><strong>Age:</strong> {patient.age}</p>
+              <p><strong>Gender:</strong> {patient.gender}</p>
+              <button className="secondary-btn" onClick={() => setEditingProfile(true)}>Update Details</button>
             </div>
+          ) : (
+            <>
+              <input className="input-field" value={editForm.mobile} onChange={(e) => setEditForm({ ...editForm, mobile: e.target.value })} />
+              <select className="input-field" value={editForm.gender} onChange={(e) => setEditForm({ ...editForm, gender: e.target.value })}>
+                <option value="MALE">Male</option>
+                <option value="FEMALE">Female</option>
+                <option value="OTHER">Other</option>
+              </select>
+              <input className="input-field" type="number" value={editForm.age} onChange={(e) => setEditForm({ ...editForm, age: e.target.value })} />
+              <button className="primary-btn" onClick={handleUpdateProfile}>Save Changes</button>
+              <button className="secondary-btn" onClick={() => setEditingProfile(false)}>Cancel</button>
+            </>
           )}
-        </>
-      )}
-      <ChatbotAssistant />
-    </main>
-  );
+
+          {!hasFamily && (
+            <button className="primary-btn" style={{marginTop: '15px'}} onClick={handleCreateFamily}>
+              Create Family Group
+            </button>
+          )}
+        </div>
+
+        {/* 🟢 MY MEDICAL RECORDS */}
+        <PatientMedicalRecords
+          user={user}
+          patient={patient}
+        />
+
+        {/* FAMILY CARD */}
+        {hasFamily && (
+          <div className="profile-box">
+            <h3>Family Health Group</h3>
+
+            {familyMembers.map((m) => (
+              <div key={m.patient.patientId} className="record-card">
+                <div>
+                  <strong>{m.user.name}</strong> ({m.relation}) {m.primary && "⭐"}
+                  <div style={{fontSize: '0.85rem', color: '#64748b'}}>
+                    {m.user.email}
+                  </div>
+                </div>
+
+                {isPrimarySelf && m.patient.patientId !== patient.patientId && (
+                  <button
+                    className="danger-btn"
+                    onClick={() => handleRemoveMember(m.patient.patientId)}
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            ))}
+
+            {/* 🟢 FAMILY MEMBER MEDICAL RECORDS */}
+            {familyMembers.map((m) => (
+              m.patient?.medicalHistory?.length > 0 && (
+                <PatientMedicalRecords
+                  key={`records-${m.patient.patientId}`}
+                  user={m.user}
+                  patient={m.patient}
+                />
+              )
+            ))}
+
+            {isPrimarySelf && !addingMember && (
+              <button
+                className="secondary-btn"
+                onClick={() => {
+                  setAddingMember(true);
+                  loadAllPatients();
+                }}
+              >
+                + Add Member
+              </button>
+            )}
+
+            {addingMember && (
+              <div style={{marginTop: '20px', padding: '15px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0'}}>
+                <input
+                  className="input-field"
+                  placeholder="Search by name or email..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+
+                <div style={{maxHeight: '150px', overflowY: 'auto', marginBottom: '10px'}}>
+                  {filteredPatients.map((p) => (
+                    <div
+                      key={p.patient.patientId}
+                      className="search-item"
+                      style={{padding: '10px', cursor: 'pointer', borderBottom: '1px solid #eee'}}
+                      onClick={() => {
+                        setSelectedPatient(p);
+                        setSearch("");
+                      }}
+                    >
+                      {p.user.name} ({p.user.email})
+                    </div>
+                  ))}
+                </div>
+
+                {selectedPatient && (
+                  <div style={{margin: '10px 0', fontWeight: 'bold', color: '#2563eb'}}>
+                    Selected: {selectedPatient.user.name}
+                  </div>
+                )}
+
+                <input
+                  className="input-field"
+                  placeholder="Relationship (e.g. Father, Spouse)"
+                  value={newMember.relation}
+                  onChange={(e) => setNewMember({ relation: e.target.value })}
+                />
+
+                <button className="primary-btn" onClick={handleAddMember}>
+                  Confirm Addition
+                </button>
+
+                <button className="secondary-btn" onClick={resetAddMemberState}>
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </>
+    )}
+
+    <ChatbotAssistant />
+  </main>
+);
 }
 
 export default Patient;

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { AppointmentAPI } from "../../api/api";
 import JitsiMeeting from "../../components/JitsiMeeting";
+import PatientMedicalRecords from "../../components/PatientMedicalRecords";
 import "../../styles/Doctor.css"; // We will use the same classes here
 
 /* ================= CONSTANTS ================= */
@@ -131,80 +132,108 @@ const loadAppointments = async (force = false) => {
   }, [selectedAppt]);
 
   return (
-    <div className="main-content">
-      <div className="profile-box">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-  <h3>Doctor Appointments</h3>
-  <button
-    className="refresh-btn"
-    onClick={() => {
-      localStorage.removeItem(CACHE_DOCTOR_APPOINTMENTS);
-      loadAppointments(true);
-    }}
-    disabled={refreshing}
-  >
-    {refreshing ? "Refreshing..." : "Refresh"}
-  </button>
-</div>
-
-        
-        {/* Unified Search Input */}
-        <input
-          className="input-field"
-          placeholder="Search patient by name or email..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ width: "100%", marginBottom: "20px" }}
-        />
-
-        {/* Appointment List */}
-        <div className="appointments-list-container">
-          {filtered.length > 0 ? (
-            filtered.map((a) => {
-              const isSelected = selectedAppt?.appointment?.appointmentId === a.appointment.appointmentId;
-              return (
-                <div
-                  key={a.appointment.appointmentId}
-                  className={`record-card appointment-item ${isSelected ? "active" : ""}`}
-                  onClick={() => {
-                    setSelectedAppt(a);
-                    setCallStarted(false);
-                  }}
-                  style={{ cursor: "pointer", marginBottom: "10px" }}
-                >
-                  <div className="record-details">
-                    <strong style={{ fontSize: "1.1rem", color: "#1e293b" }}>{a.user.name}</strong>
-                    <div className="record-meta" style={{ color: "#64748b", margin: "4px 0" }}>{a.user.email}</div>
-                    <div className="record-meta">
-                      📅 {formatDate(a.appointment.appointmentDate)} | 🕒 {a.appointment.startTime} – {a.appointment.endTime}
-                    </div>
-                  </div>
-                  <div className="status-badge-container">
-                    <span className={`status-badge ${a.appointment.status.toLowerCase()}`}>
-                      {a.appointment.status}
-                    </span>
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <p className="empty-msg">No appointments found matching your search.</p>
-          )}
-        </div>
+  <div className="main-content">
+    <div className="profile-box">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h3>Doctor Appointments</h3>
+        <button
+          className="refresh-btn"
+          onClick={() => {
+            localStorage.removeItem(CACHE_DOCTOR_APPOINTMENTS);
+            loadAppointments(true);
+          }}
+          disabled={refreshing}
+        >
+          {refreshing ? "Refreshing..." : "Refresh"}
+        </button>
       </div>
 
-      {/* CALL SECTION */}
-      {selectedAppt && selectedAppt.appointment.status === "CREATED" && (
-        <div className="profile-box animate-fade-in" style={{ borderTop: "4px solid #2563eb" }}>
+      <input
+        className="input-field"
+        placeholder="Search patient by name or email..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        style={{ width: "100%", marginBottom: "20px" }}
+      />
+
+      <div className="appointments-list-container">
+        {filtered.length > 0 ? (
+          filtered.map((a) => {
+            const isSelected =
+              selectedAppt?.appointment?.appointmentId ===
+              a.appointment.appointmentId;
+
+            return (
+              <div
+                key={a.appointment.appointmentId}
+                className={`record-card appointment-item ${
+                  isSelected ? "active" : ""
+                }`}
+                onClick={() => {
+                  setSelectedAppt(a);
+                  setCallStarted(false);
+                }}
+                style={{ cursor: "pointer", marginBottom: "10px" }}
+              >
+                <div className="record-details">
+                  <strong style={{ fontSize: "1.1rem", color: "#1e293b" }}>
+                    {a.user.name}
+                  </strong>
+                  <div className="record-meta" style={{ color: "#64748b", margin: "4px 0" }}>
+                    {a.user.email}
+                  </div>
+                  <div className="record-meta">
+                    📅 {formatDate(a.appointment.appointmentDate)} | 🕒{" "}
+                    {a.appointment.startTime} – {a.appointment.endTime}
+                  </div>
+                </div>
+
+                <div className="status-badge-container">
+                  <span
+                    className={`status-badge ${a.appointment.status.toLowerCase()}`}
+                  >
+                    {a.appointment.status}
+                  </span>
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <p className="empty-msg">
+            No appointments found matching your search.
+          </p>
+        )}
+      </div>
+    </div>
+
+    {/* 🟢 SHOW MEDICAL RECORDS WHEN APPOINTMENT SELECTED */}
+    {selectedAppt && selectedAppt.patient && (
+      <PatientMedicalRecords
+        user={selectedAppt.user}
+        patient={selectedAppt.patient}
+      />
+    )}
+
+    {/* CALL SECTION (UNCHANGED) */}
+    {selectedAppt &&
+      selectedAppt.appointment.status === "CREATED" && (
+        <div
+          className="profile-box animate-fade-in"
+          style={{ borderTop: "4px solid #2563eb" }}
+        >
           <div className="call-header">
-            <h3>Consultation with {selectedAppt.user.name}</h3>
+            <h3>
+              Consultation with {selectedAppt.user.name}
+            </h3>
             <div className="timer-box">
-              Starts in: <span className="timer-countdown">{formatCountdown(timeLeft)}</span>
+              Starts in:{" "}
+              <span className="timer-countdown">
+                {formatCountdown(timeLeft)}
+              </span>
             </div>
           </div>
 
           {!callStarted &&
-            selectedAppt.appointment.status === "CREATED" &&
             timeLeft > 0 &&
             timeLeft <= CALL_BUFFER_SECONDS && (
               <button
@@ -214,36 +243,43 @@ const loadAppointments = async (force = false) => {
                   let roomId = selectedAppt.appointment.roomId;
                   if (!roomId) {
                     roomId = "ROOM_" + crypto.randomUUID();
-await AppointmentAPI.updateAppointment(
-  selectedAppt.appointment.appointmentId,
-  { roomId }
-);
 
-// update local state
-setAppointments(prev => {
-  const updated = prev.map(a =>
-    a.appointment.appointmentId === selectedAppt.appointment.appointmentId
-      ? {
-          ...a,
-          appointment: { ...a.appointment, roomId },
-        }
-      : a
-  );
+                    await AppointmentAPI.updateAppointment(
+                      selectedAppt.appointment.appointmentId,
+                      { roomId }
+                    );
 
-  localStorage.setItem(
-    CACHE_DOCTOR_APPOINTMENTS,
-    JSON.stringify(updated)
-  );
+                    setAppointments((prev) => {
+                      const updated = prev.map((a) =>
+                        a.appointment.appointmentId ===
+                        selectedAppt.appointment.appointmentId
+                          ? {
+                              ...a,
+                              appointment: {
+                                ...a.appointment,
+                                roomId,
+                              },
+                            }
+                          : a
+                      );
 
-  return updated;
-});
+                      localStorage.setItem(
+                        CACHE_DOCTOR_APPOINTMENTS,
+                        JSON.stringify(updated)
+                      );
 
-setSelectedAppt(prev => ({
-  ...prev,
-  appointment: { ...prev.appointment, roomId },
-}));
+                      return updated;
+                    });
 
+                    setSelectedAppt((prev) => ({
+                      ...prev,
+                      appointment: {
+                        ...prev.appointment,
+                        roomId,
+                      },
+                    }));
                   }
+
                   setCallStarted(true);
                 }}
               >
@@ -252,46 +288,57 @@ setSelectedAppt(prev => ({
             )}
 
           {callStarted && (
-            <div className="jitsi-wrapper animate-fade-in" style={{ marginTop: "20px" }}>
+            <div
+              className="jitsi-wrapper animate-fade-in"
+              style={{ marginTop: "20px" }}
+            >
               <button
                 className="logout-btn"
                 style={{ marginBottom: "15px", width: "100%" }}
                 onClick={async () => {
                   setCallStarted(false);
                   await new Promise((r) => setTimeout(r, 300));
-await AppointmentAPI.completeAppointment(
-  selectedAppt.appointment.appointmentId
-);
 
-setAppointments(prev => {
-  const updated = prev.map(a =>
-    a.appointment.appointmentId === selectedAppt.appointment.appointmentId
-      ? {
-          ...a,
-          appointment: {
-            ...a.appointment,
-            status: "COMPLETED",
-          },
-        }
-      : a
-  );
+                  await AppointmentAPI.completeAppointment(
+                    selectedAppt.appointment.appointmentId
+                  );
 
-  localStorage.setItem(
-    CACHE_DOCTOR_APPOINTMENTS,
-    JSON.stringify(updated)
-  );
+                  setAppointments((prev) => {
+                    const updated = prev.map((a) =>
+                      a.appointment.appointmentId ===
+                      selectedAppt.appointment.appointmentId
+                        ? {
+                            ...a,
+                            appointment: {
+                              ...a.appointment,
+                              status: "COMPLETED",
+                            },
+                          }
+                        : a
+                    );
 
-  return updated;
-});
+                    localStorage.setItem(
+                      CACHE_DOCTOR_APPOINTMENTS,
+                      JSON.stringify(updated)
+                    );
 
-setSelectedAppt(null);
+                    return updated;
+                  });
 
+                  setSelectedAppt(null);
                 }}
               >
                 End Call & Mark as Completed
               </button>
-              
-              <div className="video-container" style={{ height: "500px", borderRadius: "12px", overflow: "hidden" }}>
+
+              <div
+                className="video-container"
+                style={{
+                  height: "500px",
+                  borderRadius: "12px",
+                  overflow: "hidden",
+                }}
+              >
                 <JitsiMeeting
                   roomId={selectedAppt.appointment.roomId}
                   displayName={`Dr. ${doctor.name}`}
@@ -304,6 +351,6 @@ setSelectedAppt(null);
           )}
         </div>
       )}
-    </div>
-  );
+  </div>
+);
 }
