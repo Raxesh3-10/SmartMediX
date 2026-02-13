@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
+import ChatbotAssistant  from "../../components/ChatbotAssistant";
 import { PatientAPI, FamilyAPI } from "../../api/api";
 import "../../styles/Patient.css";
 const CACHE_PATIENT_PROFILE = "cache_patient_profile";
@@ -299,6 +300,7 @@ const loadAllPatients = async () => {
           )}
         </>
       )}
+      <ChatbotAssistant />
     </main>
   );
 }

@@ -17,6 +17,7 @@ import PatientDashboard from "./pages/patient/PatientDashboard";
 import PatientChatPage from "./pages/patient/PatientChatPage";
 import PatientAppointmentsPage from "./pages/patient/PatientAppointmentsPage";
 import PatientBillsPage from "./pages/patient/PatientBillsPage";
+import PatientBookingPage from "./pages/patient/PatientBookingPage";
 
 export default function App() {
   return (
@@ -40,6 +41,7 @@ export default function App() {
           <Route path="chat" element={<PatientChatPage />} />
           <Route path="appointments" element={<PatientAppointmentsPage />} />
           <Route path="bills" element={<PatientBillsPage />} />
+          <Route path="booking" element={<PatientBookingPage />} />
         </Route>
 
         <Route path="/admin" element={<Admin />} />
