@@ -16,6 +16,7 @@ function Doctor() {
 
   const [selectedSlots, setSelectedSlots] = useState([]);
   const [showEditForm, setShowEditForm] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [newSlot, setNewSlot] = useState({
     day: "MONDAY",
@@ -87,6 +88,34 @@ useEffect(() => {
 
   load();
 }, []);
+
+const reloadProfile = async () => {
+  try {
+    setRefreshing(true);
+
+    localStorage.removeItem(CACHE_USER_KEY);
+    localStorage.removeItem(CACHE_DOCTOR_KEY);
+
+    const userRes = await AuthAPI.getUser();
+    const doctorRes = await DoctorAPI.getMyProfile();
+
+    setUser(userRes.data);
+    setDoctor(doctorRes.data);
+
+    localStorage.setItem(
+      CACHE_USER_KEY,
+      JSON.stringify(userRes.data)
+    );
+    localStorage.setItem(
+      CACHE_DOCTOR_KEY,
+      JSON.stringify(doctorRes.data)
+    );
+  } catch (err) {
+    console.error("Refresh failed", err);
+  } finally {
+    setRefreshing(false);
+  }
+};
 
   /* ================= CREATE PROFILE ================= */
 const handleCreateProfile = async () => {
@@ -209,7 +238,17 @@ const handleDeleteSlots = async () => {
         <>
           {/* PROFILE SUMMARY */}
           <div className="profile-box">
-            <h2>Doctor Dashboard</h2>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+  <h2>Doctor Dashboard</h2>
+  <button
+    className="refresh-btn"
+    onClick={reloadProfile}
+    disabled={refreshing}
+  >
+    {refreshing ? "Refreshing..." : "Refresh"}
+  </button>
+</div>
+
             <div className="record-card">
               <div>
                 <p><strong>Name:</strong> Dr. {user?.name}</p>

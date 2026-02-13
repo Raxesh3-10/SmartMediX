@@ -13,6 +13,7 @@ function Patient() {
   const [patient, setPatient] = useState(initialPatient);
   const [familyMembers, setFamilyMembers] = useState([]);
   const [addingMember, setAddingMember] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [editingProfile, setEditingProfile] = useState(false);
   const [editForm, setEditForm] = useState({ 
     mobile: initialPatient?.mobile || "", 
@@ -61,6 +62,35 @@ const refreshFamily = async () => {
     CACHE_FAMILY_MEMBERS,
     JSON.stringify(data)
   );
+};
+const reloadPatientData = async () => {
+  try {
+    setRefreshing(true);
+
+    localStorage.removeItem(CACHE_PATIENT_PROFILE);
+    localStorage.removeItem(CACHE_FAMILY_MEMBERS);
+    localStorage.removeItem(CACHE_ALL_PATIENTS);
+
+    const profileRes = await PatientAPI.getMyProfile();
+    const familyRes = await FamilyAPI.getMembers();
+
+    setPatient(profileRes.data);
+    setFamilyMembers(familyRes.data || []);
+
+    localStorage.setItem(
+      CACHE_PATIENT_PROFILE,
+      JSON.stringify(profileRes.data)
+    );
+
+    localStorage.setItem(
+      CACHE_FAMILY_MEMBERS,
+      JSON.stringify(familyRes.data || [])
+    );
+  } catch (err) {
+    console.error("Refresh failed", err);
+  } finally {
+    setRefreshing(false);
+  }
 };
 
   const selfMember = familyMembers.find((m) => m.patient.patientId === patient?.patientId);
@@ -188,7 +218,18 @@ const loadAllPatients = async () => {
         <>
           {/* PROFILE CARD */}
           <div className="profile-box">
-            <h2>My Health Profile</h2>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+  <h2>My Health Profile</h2>
+
+  <button
+    className="refresh-btn"
+    disabled={refreshing}
+    onClick={reloadPatientData}
+  >
+    {refreshing ? "Refreshing..." : "Refresh"}
+  </button>
+</div>
+
             {!editingProfile ? (
               <div className="profile-details">
                 <p><strong>Full Name:</strong> {user?.name}</p>

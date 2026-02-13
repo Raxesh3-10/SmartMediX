@@ -41,6 +41,7 @@ export default function DoctorAppointmentsPage() {
   const [search, setSearch] = useState("");
   const [timeLeft, setTimeLeft] = useState(0);
   const [callStarted, setCallStarted] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   /* ================= LOAD ================= */
   useEffect(() => {
@@ -48,13 +49,17 @@ export default function DoctorAppointmentsPage() {
     loadAppointments();
   }, [doctor]);
 
-const loadAppointments = async () => {
+const loadAppointments = async (force = false) => {
   try {
-    const cached = localStorage.getItem(CACHE_DOCTOR_APPOINTMENTS);
+    setRefreshing(true);
 
-    if (cached) {
-      setAppointments(JSON.parse(cached));
-      return;
+    if (!force) {
+      const cached = localStorage.getItem(CACHE_DOCTOR_APPOINTMENTS);
+      if (cached) {
+        setAppointments(JSON.parse(cached));
+        setRefreshing(false);
+        return;
+      }
     }
 
     const res = await AppointmentAPI.getDoctorAppointments(
@@ -68,6 +73,8 @@ const loadAppointments = async () => {
     );
   } catch (err) {
     console.error("Failed to load appointments", err);
+  } finally {
+    setRefreshing(false);
   }
 };
 
@@ -126,7 +133,20 @@ const loadAppointments = async () => {
   return (
     <div className="main-content">
       <div className="profile-box">
-        <h3>Doctor Appointments</h3>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+  <h3>Doctor Appointments</h3>
+  <button
+    className="refresh-btn"
+    onClick={() => {
+      localStorage.removeItem(CACHE_DOCTOR_APPOINTMENTS);
+      loadAppointments(true);
+    }}
+    disabled={refreshing}
+  >
+    {refreshing ? "Refreshing..." : "Refresh"}
+  </button>
+</div>
+
         
         {/* Unified Search Input */}
         <input

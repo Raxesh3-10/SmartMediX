@@ -15,30 +15,37 @@ export default function PatientBillsPage() {
   const [rows, setRows] = useState([]);
   const [expanded, setExpanded] = useState(null);
   const [search, setSearch] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
 
-useEffect(() => {
-  const loadTransactions = async () => {
-    try {
+const loadTransactions = async (force = false) => {
+  try {
+    setRefreshing(true);
+
+    if (!force) {
       const cached = localStorage.getItem(CACHE_PATIENT_TRANSACTIONS);
-
       if (cached) {
         setRows(JSON.parse(cached));
+        setRefreshing(false);
         return;
       }
-
-      const res = await PaymentAPI.getMyTransactions();
-      const data = res.data || [];
-
-      setRows(data);
-      localStorage.setItem(
-        CACHE_PATIENT_TRANSACTIONS,
-        JSON.stringify(data)
-      );
-    } catch (err) {
-      console.error("Transaction history error:", err);
     }
-  };
 
+    const res = await PaymentAPI.getMyTransactions();
+    const data = res.data || [];
+
+    setRows(data);
+    localStorage.setItem(
+      CACHE_PATIENT_TRANSACTIONS,
+      JSON.stringify(data)
+    );
+  } catch (err) {
+    console.error("Transaction history error:", err);
+  } finally {
+    setRefreshing(false);
+  }
+};
+
+useEffect(() => {
   loadTransactions();
 }, []);
 
@@ -98,7 +105,26 @@ useEffect(() => {
       {/* SUMMARY STAT CARD */}
       <div className="profile-box bill-summary-card">
         <div className="summary-content">
-          <span className="summary-label">Total Expenditure</span>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+  <div>
+    <span className="summary-label">Total Expenditure</span>
+    <h2 className="summary-amount money-highlight">
+      ₹{totalBills.toLocaleString("en-IN")}
+    </h2>
+  </div>
+
+  <button
+    className="refresh-btn"
+    disabled={refreshing}
+    onClick={() => {
+      localStorage.removeItem(CACHE_PATIENT_TRANSACTIONS);
+      loadTransactions(true);
+    }}
+  >
+    {refreshing ? "Refreshing..." : "Refresh"}
+  </button>
+</div>
+
           {/* Added "money-highlight" class here */}
           <h2 className="summary-amount money-highlight">
             ₹{totalBills.toLocaleString("en-IN")}

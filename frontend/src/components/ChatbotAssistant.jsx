@@ -4,7 +4,6 @@ import "../styles/components/Chatbot.css";
 
 const OPENROUTER_API_KEY = "YOUR_API_KEY";
 
-
 const ChatbotAssistant = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([

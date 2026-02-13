@@ -1,4 +1,41 @@
 /* PatientDashboard.css */
+.refresh-btn {
+  display: inline-block;
+  padding: 10px 40px;          /* small size */
+  font-size: 12px;            /* compact text */
+  font-weight: 500;
+  border-radius: 4px;
+  border: 1px solid #6c757d;  /* neutral gray border */
+  background-color: transparent;
+  color: #6c757d;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.refresh-btn:hover {
+  background-color: #6c757d;
+  color: #ffffff;
+}
+
+.refresh-btn:active {
+  transform: scale(0.97);
+}
+
+.refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.secondary-btn {
+  width: 100%;
+  padding: 12px;
+  background: #f1f5f9;
+  color: #475569;
+  border: none;
+  border-radius: 8px;
+  margin-top: 10px;
+  cursor: pointer;
+}
 
 .dashboard-container {
   min-height: 100vh;
@@ -106,17 +143,6 @@
   border: none;
   border-radius: 8px;
   font-weight: 600;
-  cursor: pointer;
-}
-
-.secondary-btn {
-  width: 100%;
-  padding: 12px;
-  background: #f1f5f9;
-  color: #475569;
-  border: none;
-  border-radius: 8px;
-  margin-top: 10px;
   cursor: pointer;
 }
 

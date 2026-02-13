@@ -41,6 +41,7 @@ export default function PatientAppointmentsPage() {
   const [search, setSearch] = useState("");
   const [timeLeft, setTimeLeft] = useState(0);
   const [callStarted, setCallStarted] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (!patient) return;
@@ -48,15 +49,19 @@ export default function PatientAppointmentsPage() {
     loadDoctors();
   }, [patient]);
 
-const loadAppointments = async () => {
+const loadAppointments = async (force = false) => {
   try {
-    const cached = localStorage.getItem(CACHE_PATIENT_APPOINTMENTS);
+    setRefreshing(true);
 
-    if (cached) {
-      const data = JSON.parse(cached);
-      setAppointments(data.filter(a => a.isPrimaryPatient));
-      setFamilyAppointments(data.filter(a => !a.isPrimaryPatient));
-      return;
+    if (!force) {
+      const cached = localStorage.getItem(CACHE_PATIENT_APPOINTMENTS);
+      if (cached) {
+        const data = JSON.parse(cached);
+        setAppointments(data.filter(a => a.isPrimaryPatient));
+        setFamilyAppointments(data.filter(a => !a.isPrimaryPatient));
+        setRefreshing(false);
+        return;
+      }
     }
 
     const res = await AppointmentAPI.getPatientAppointments(
@@ -72,15 +77,19 @@ const loadAppointments = async () => {
     setFamilyAppointments(res.data.filter(a => !a.isPrimaryPatient));
   } catch (err) {
     console.error("Failed to load appointments", err);
+  } finally {
+    setRefreshing(false);
   }
 };
-const loadDoctors = async () => {
-  try {
-    const cached = localStorage.getItem(CACHE_PATIENT_DOCTORS);
 
-    if (cached) {
-      setDoctors(JSON.parse(cached));
-      return;
+const loadDoctors = async (force = false) => {
+  try {
+    if (!force) {
+      const cached = localStorage.getItem(CACHE_PATIENT_DOCTORS);
+      if (cached) {
+        setDoctors(JSON.parse(cached));
+        return;
+      }
     }
 
     const res = await AppointmentAPI.getPatientDoctors(
@@ -214,7 +223,24 @@ const saveAppointment = async (isUpdate) => {
 
       {/* MY APPOINTMENTS SECTION */}
       <div className="profile-box">
-        <h3>My Scheduled Consultations</h3>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+  <h3>My Scheduled Consultations</h3>
+
+  <button
+    className="refresh-btn"
+    disabled={refreshing}
+    onClick={async () => {
+      localStorage.removeItem(CACHE_PATIENT_APPOINTMENTS);
+      localStorage.removeItem(CACHE_PATIENT_DOCTORS);
+
+      await loadAppointments(true);
+      await loadDoctors(true);
+    }}
+  >
+    {refreshing ? "Refreshing..." : "Refresh"}
+  </button>
+</div>
+
         <input
           className="input-field"
           placeholder="Search by doctor name..."

@@ -15,30 +15,37 @@ export default function DoctorBillsPage() {
   const [rows, setRows] = useState([]);
   const [expanded, setExpanded] = useState(null);
   const [search, setSearch] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
 
-useEffect(() => {
-  const loadTransactions = async () => {
-    try {
+const loadTransactions = async (force = false) => {
+  try {
+    setRefreshing(true);
+
+    if (!force) {
       const cached = localStorage.getItem(CACHE_DOCTOR_TRANSACTIONS);
-
       if (cached) {
         setRows(JSON.parse(cached));
+        setRefreshing(false);
         return;
       }
-
-      const res = await PaymentAPI.getMyTransactions();
-      const data = res.data || [];
-
-      setRows(data);
-      localStorage.setItem(
-        CACHE_DOCTOR_TRANSACTIONS,
-        JSON.stringify(data)
-      );
-    } catch (err) {
-      console.error("Transaction history error:", err);
     }
-  };
 
+    const res = await PaymentAPI.getMyTransactions();
+    const data = res.data || [];
+
+    setRows(data);
+    localStorage.setItem(
+      CACHE_DOCTOR_TRANSACTIONS,
+      JSON.stringify(data)
+    );
+  } catch (err) {
+    console.error("Transaction history error:", err);
+  } finally {
+    setRefreshing(false);
+  }
+};
+
+useEffect(() => {
   loadTransactions();
 }, []);
 
@@ -105,13 +112,26 @@ useEffect(() => {
     <div className="main-content">
       {/* EARNINGS SUMMARY CARD */}
       <div className="profile-box earnings-summary animate-fade-in">
-        <div className="earnings-header">
-          <div>
-            <span className="summary-label">Total Professional Earnings</span>
-            <h2 className="total-amount">₹{totalEarnings.toLocaleString("en-IN")}</h2>
-          </div>
-          <div className="earnings-icon">💰</div>
-        </div>
+<div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+  <div>
+    <span className="summary-label">Total Professional Earnings</span>
+    <h2 className="total-amount">
+      ₹{totalEarnings.toLocaleString("en-IN")}
+    </h2>
+  </div>
+
+  <button
+    className="refresh-btn"
+    onClick={() => {
+      localStorage.removeItem(CACHE_DOCTOR_TRANSACTIONS);
+      loadTransactions(true);
+    }}
+    disabled={refreshing}
+  >
+    {refreshing ? "Refreshing..." : "Refresh"}
+  </button>
+</div>
+
         
         <input
           className="input-field"
