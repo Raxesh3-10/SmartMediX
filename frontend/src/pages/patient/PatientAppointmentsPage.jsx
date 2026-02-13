@@ -373,7 +373,7 @@ function renderSlotGrid(doctor, selectedSlotKey, setSelectedSlotKey) {
                   className={`slot-pill ${isBooked ? "booked" : ""} ${isSelected ? "selected" : ""}`}
                   onClick={() => !isBooked && setSelectedSlotKey(key)}
                 >
-                  {s.startTime}
+                  {s.startTime} - {s.endTime}
                 </div>
               );
             })}

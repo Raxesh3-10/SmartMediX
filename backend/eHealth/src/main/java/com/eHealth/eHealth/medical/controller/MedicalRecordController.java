@@ -15,16 +15,14 @@ public class MedicalRecordController {
 
     @PostMapping
     public String addRecord(
-            @RequestParam String patientId,
-            @RequestParam String doctorId,
-            @RequestParam String appointmentId,
-            @RequestParam String diagnosis,
-            @RequestParam String prescription,
+            @RequestBody String patientId,
+            @RequestBody(required = false) String appointmentId,
+            @RequestBody String diagnosis,
+            @RequestBody String prescription,
             @RequestBody(required = false) List<String> fileUrls
     ) {
         service.createMedicalRecord(
                 patientId,
-                doctorId,
                 appointmentId,
                 diagnosis,
                 prescription,

@@ -22,7 +22,6 @@ public class MedicalRecordService {
     @Transactional
     public void createMedicalRecord(
             String patientId,
-            String doctorId,
             String appointmentId,
             String diagnosis,
             String prescription,
@@ -36,8 +35,7 @@ public class MedicalRecordService {
             patient.setMedicalHistory(new ArrayList<>());
         }
 
-        MedicalRecord record = new MedicalRecord();
-        record.setDoctorId(doctorId);        // doctorId or "AI"
+        MedicalRecord record = new MedicalRecord();   
         record.setAppointmentId(appointmentId);
         record.setDiagnosis(diagnosis);
         record.setPrescription(prescription);

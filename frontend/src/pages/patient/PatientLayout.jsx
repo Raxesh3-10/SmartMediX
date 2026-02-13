@@ -41,6 +41,10 @@ useEffect(() => {
     }
   };
 
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+  
   const handleUpdateProfile = async () => {
     setLoading(true);
     try {
@@ -57,6 +61,7 @@ useEffect(() => {
       if (message === "OTP sent") setOtpSent(true);
       if (message === "Profile updated successfully") {
         setShowForm(false); setOtpSent(false);
+        setForm({ newName: "", newEmail: "", newPassword: "", otp: "" });
         const refreshed = await AuthAPI.getUser();
         setUser(refreshed.data);
       }
@@ -79,28 +84,37 @@ useEffect(() => {
           <div className="user-meta">
             <span className="user-name">{user.name}</span>
             <span className="user-email">{user.email}</span>
-            <span onClick={() => setShowForm(!showForm)} style={{color: '#3b82f6', fontSize: '0.8rem', cursor: 'pointer'}}>Settings</span>
-          </div>
+            <button className="edit-profile-mini-btn" onClick={() => setShowForm(!showForm)}>
+              {showForm ? "Cancel" : "Edit Profile"}
+            </button>         
+             </div>
           <button className="logout-btn" onClick={handleLogout}>Logout</button>
         </div>
       </header>
 
-      {showForm && (
-        <div className="main-content">
-          <div className="profile-box">
-            <h3>Update Account Settings</h3>
-            <input className="input-field" name="newName" placeholder="New Name" onChange={(e) => setForm({...form, newName: e.target.value})} />
-            <input className="input-field" name="newEmail" placeholder="New Email" onChange={(e) => setForm({...form, newEmail: e.target.value})} />
-            {otpSent && <input className="input-field" name="otp" placeholder="Enter OTP" onChange={(e) => setForm({...form, otp: e.target.value})} />}
-            <button className="primary-btn" onClick={handleUpdateProfile} disabled={loading}>
-              {otpSent ? "Verify & Update" : "Send OTP"}
-            </button>
+        <main className="main-content">
+          {showForm && (
+          <div className="profile-box animate-fade-in">
+            <h3>Update Patient Profile</h3>
+            <div className="form-container">
+              <input className="input-field" name="newName" placeholder="New Name" value={form.newName} onChange={handleChange} />
+              <input className="input-field" name="newEmail" placeholder="New Email" value={form.newEmail} onChange={handleChange} />
+              <input className="input-field" name="newPassword" type="password" placeholder="New Password" value={form.newPassword} onChange={handleChange} />
+              
+              {otpSent && (
+                <input className="input-field" name="otp" placeholder="Enter OTP" value={form.otp} onChange={handleChange} style={{border: '2px solid #3b82f6'}} />
+              )}
+
+              <button className="primary-btn" onClick={handleUpdateProfile} disabled={loading}>
+                {otpSent ? "Verify OTP & Update" : "Send OTP to Update"}
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       <Outlet context={{ user, patient }} />
       <ChatbotAssistant />
+      </main>
     </div>
   );
 }

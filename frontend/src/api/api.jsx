@@ -253,4 +253,14 @@ export const FamilyAPI = {
     api.get("/family/members"),
 };
 
+/* ======================================================
+   AI Medical Reports API
+   Maps to: /api/medical-records
+====================================================== */
+export const MedicalRecordsAPI = {
+  /* ========== GENERATE AI REPORT TO STORE ========== */
+  generateReport: (data) =>
+    api.post("/medical-records", data),
+};
+
 export default api;

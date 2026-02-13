@@ -2,20 +2,11 @@ package com.eHealth.eHealth.model;
 import java.time.Instant;
 import java.util.List;
 public class MedicalRecord {
-    private String doctorId;
     private String appointmentId;
     private String diagnosis;
     private String prescription;
     private List<String> fileUrls;
     private Instant createdAt;
-
-    public String getDoctorId() {
-        return this.doctorId;
-    }
-
-    public void setDoctorId(String doctorId) {
-        this.doctorId = doctorId;
-    }
 
     public String getAppointmentId() {
         return this.appointmentId;
