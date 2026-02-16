@@ -1,26 +1,39 @@
 import { useEffect, useState, useMemo } from "react";
 import { useOutletContext, useLocation, useNavigate } from "react-router-dom";
-// ADDED: MedicalRecordsAPI to the import
 import { AppointmentAPI, PaymentAPI, MedicalRecordsAPI } from "../../api/api";
-import "../../styles/Patient.css"; 
+import "../../styles/Patient.css";
+
 
 const DAYS = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"];
 const slotKey = (s) => `${s.day}-${s.startTime}-${s.endTime}`;
+
 
 export default function PatientBookingPage() {
   const { patient } = useOutletContext();
   const location = useLocation();
   const navigate = useNavigate();
 
+
   const [doctors, setDoctors] = useState([]);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [selectedSlotKey, setSelectedSlotKey] = useState(null);
   const [search, setSearch] = useState("");
 
-  // === NEW: Capture AI Diagnosis from Chatbot ===
+
+  // === EXISTING AI Diagnosis Capture ===
   const [aiDiagnosis, setAiDiagnosis] = useState("Self-booked consultation");
 
-  // 1. Load Doctors
+
+  // === NEW: AI Prescription + Files (for advice-only mode) ===
+  const [aiPrescription, setAiPrescription] = useState("");
+  const [aiFileUrls, setAiFileUrls] = useState([]);
+
+
+  // === NEW: Detect Advice-Only Mode ===
+  const [isAdviceOnly, setIsAdviceOnly] = useState(false);
+
+
+  // 1️⃣ Load Doctors
   useEffect(() => {
     const loadDoctors = async () => {
       try {
@@ -33,36 +46,83 @@ export default function PatientBookingPage() {
     if (patient) loadDoctors();
   }, [patient]);
 
-  // 2. Handle Auto-Fill from Chatbot
+
+  // 2️⃣ Handle Auto-Fill from Chatbot
   useEffect(() => {
     if (location.state) {
-        // Filter by specialty if provided
+
+
         if (location.state.filterSpecialty) {
             setSearch(location.state.filterSpecialty);
         }
-        // Capture the AI diagnosis if provided
+
+
         if (location.state.aiDiagnosis) {
             setAiDiagnosis(location.state.aiDiagnosis);
+        }
+
+
+        // NEW: Capture AI Prescription
+        if (location.state.aiPrescription) {
+            setAiPrescription(location.state.aiPrescription);
+        }
+
+
+        // NEW: Capture uploaded images
+        if (location.state.fileUrls) {
+            setAiFileUrls(location.state.fileUrls);
+        }
+
+
+        // NEW: If chatbot sent advice-only flag
+        if (location.state.adviceOnly) {
+            setIsAdviceOnly(true);
         }
     }
   }, [location.state]);
 
-  // 3. Filter Logic
+
+  // 3️⃣ Filter Logic
   const filteredDoctors = useMemo(() => {
     if (!search) return doctors;
     const term = search.toLowerCase();
-    return doctors.filter(d => 
-        d.user.name.toLowerCase().includes(term) || 
+    return doctors.filter(d =>
+        d.user.name.toLowerCase().includes(term) ||
         d.doctor.specialization.toLowerCase().includes(term)
     );
   }, [doctors, search]);
 
-  // 4. Booking Logic (UPDATED)
+
+  // 4️⃣ NEW — SAVE AI ADVICE ONLY (No Appointment)
+  const handleSaveAdviceOnly = async () => {
+    try {
+      await MedicalRecordsAPI.generateReport({
+        patientId: patient.patientId,
+        diagnosis: `AI DIAGNOSIS: ${aiDiagnosis}`,
+        prescription: aiPrescription || "AI suggested general care",
+        fileUrls: aiFileUrls || []
+      });
+
+
+      alert("AI Advice saved successfully in medical history!");
+      navigate("/patient/appointments");
+
+
+    } catch (error) {
+      console.error("Failed to save AI advice", error);
+      alert("Failed to save AI advice.");
+    }
+  };
+
+
+  // 5️⃣ Booking Logic (UNCHANGED + Medical Record Creation)
   const handleBooking = async () => {
     if (!selectedDoctor || !selectedSlotKey) return;
 
+
     const slot = selectedDoctor.slots.find(s => slotKey(s) === selectedSlotKey);
     if (!slot) return;
+
 
     try {
       // A. Create Appointment
@@ -76,23 +136,27 @@ export default function PatientBookingPage() {
         conferenceType: "VIDEO",
       });
 
-      const appointmentId = res.data._id; // Assuming API returns the created object with _id
+
+      const appointmentId = res.data._id;
+
 
       // B. Process Payment
       await PaymentAPI.payForAppointment(appointmentId);
 
-      // C. (NEW) Generate Medical History from AI Diagnosis
-      // This saves the chatbot's finding as the initial medical record
+
+      // C. Save Medical Record
       await MedicalRecordsAPI.generateReport({
           patientId: patient.patientId,
           appointmentId: appointmentId,
-          diagnosis: `AI BOT PRELIMINARY DIAGNOSIS: ${aiDiagnosis}`, 
-          prescription: "Pending Doctor Review", // Default placeholder
-          fileUrls: [] 
+          diagnosis: `AI BOT PRELIMINARY DIAGNOSIS: ${aiDiagnosis}`,
+          prescription: "Pending Doctor Review",
+          fileUrls: aiFileUrls || []
       });
 
+
       alert("Appointment booked & AI Diagnosis saved successfully!");
-      navigate("/patient/appointments"); 
+      navigate("/patient/appointments");
+
 
     } catch (error) {
       console.error("Booking workflow failed", error);
@@ -100,18 +164,21 @@ export default function PatientBookingPage() {
     }
   };
 
+
   return (
     <main className="main-content">
       <div className="profile-box">
-        {/* Header with Back Button */}
+
+
+        {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
           <h3>
-             {location.state?.filterSpecialty 
-                ? `Recommended: ${location.state.filterSpecialty}` 
+             {location.state?.filterSpecialty
+                ? `Recommended: ${location.state.filterSpecialty}`
                 : "Book New Consultation"}
           </h3>
-          <button 
-            className="secondary-btn" 
+          <button
+            className="secondary-btn"
             onClick={() => navigate("/patient/appointments")}
             style={{ fontSize: "0.9rem", padding: "5px 15px" }}
           >
@@ -119,16 +186,28 @@ export default function PatientBookingPage() {
           </button>
         </div>
 
-        {/* Display AI Note if available */}
-        {aiDiagnosis && aiDiagnosis !== "Self-booked consultation" && (
+
+        {/* AI NOTE DISPLAY */}
+        {aiDiagnosis && (
             <div style={{backgroundColor: '#e0f2fe', padding: '10px', borderRadius: '8px', marginBottom: '15px', border: '1px solid #bae6fd'}}>
                 <small style={{color: '#0369a1', fontWeight: 'bold'}}>AI NOTE:</small>
                 <p style={{margin: '5px 0', fontSize: '0.9rem', color: '#0c4a6e'}}>"{aiDiagnosis}"</p>
-                <small style={{color: '#64748b'}}>This will be sent to the doctor automatically.</small>
+                <small style={{color: '#64748b'}}>This will be stored in your medical history.</small>
             </div>
         )}
 
-        {/* Search Bar */}
+
+        {/* 🔥 ADVICE ONLY BUTTON */}
+        {isAdviceOnly && (
+          <div style={{marginBottom: "20px"}}>
+            <button className="primary-btn" onClick={handleSaveAdviceOnly}>
+              Save AI Advice Without Booking
+            </button>
+          </div>
+        )}
+
+
+        {/* Search */}
         <input
           className="input-field"
           placeholder="Search Doctor or Specialization..."
@@ -137,10 +216,11 @@ export default function PatientBookingPage() {
           style={{ marginBottom: "20px" }}
         />
 
-        {/* === STEP 1: DOCTOR SELECTION === */}
+
+        {/* STEP 1: DOCTOR SELECTION */}
         {!selectedDoctor ? (
           <div className="booking-wizard animate-fade-in">
-             <p className="helper-text">Step 1: Choose your Specialist</p>
+            <p className="helper-text">Step 1: Choose your Specialist</p>
             <div className="doctor-selection-grid">
               {filteredDoctors.length > 0 ? filteredDoctors.map((d) => (
                 <div key={d.doctor.doctorId} className="doctor-card">
@@ -150,7 +230,7 @@ export default function PatientBookingPage() {
                   <div className="doctor-card-info">
                     <h4>Dr. {d.user?.name}</h4>
                     <p style={{ color: '#64748b', fontSize: '0.9em' }}>{d.doctor.specialization}</p>
-                    <button 
+                    <button
                       className="select-doc-btn"
                       onClick={() => {
                         setSelectedDoctor(d);
@@ -170,7 +250,6 @@ export default function PatientBookingPage() {
             </div>
           </div>
         ) : (
-          /* === STEP 2: SLOT SELECTION === */
           <div className="slot-booking-area animate-fade-in">
             <div className="selection-header-card">
               <div className="selected-doc-profile">
@@ -182,8 +261,8 @@ export default function PatientBookingPage() {
                   </p>
                 </div>
               </div>
-              <button 
-                className="unselect-btn" 
+              <button
+                className="unselect-btn"
                 onClick={() => {
                   setSelectedDoctor(null);
                   setSelectedSlotKey(null);
@@ -193,13 +272,14 @@ export default function PatientBookingPage() {
               </button>
             </div>
 
+
             <p className="helper-text" style={{ marginTop: '20px' }}>Step 2: Pick an available time slot</p>
-            
+           
             {renderSlotGrid(selectedDoctor, selectedSlotKey, setSelectedSlotKey)}
-            
+           
             <div className="booking-actions">
-              <button 
-                className="primary-btn confirm-booking-btn" 
+              <button
+                className="primary-btn confirm-booking-btn"
                 disabled={!selectedSlotKey}
                 onClick={handleBooking}
               >
@@ -213,7 +293,8 @@ export default function PatientBookingPage() {
   );
 }
 
-// Helper function to render the days and slots
+
+// SLOT GRID HELPER (UNCHANGED)
 function renderSlotGrid(doctor, selectedSlotKey, setSelectedSlotKey) {
   return (
     <div className="slot-grid-container">

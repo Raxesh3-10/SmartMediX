@@ -62,6 +62,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/update-profile").hasAnyRole("DOCTOR","PATIENT","ADMIN")
 
                 .requestMatchers("/api/doctors/**").hasAnyRole("DOCTOR")
+                .requestMatchers("/api/medical-records").hasAnyRole("PATIENT")
                 .requestMatchers("/api/admin/**").hasAnyRole("ADMIN")
                 .requestMatchers("/api/appointments/**").hasAnyRole("PATIENT","DOCTOR")
                 .requestMatchers("/api/chat/**").hasAnyRole("PATIENT","DOCTOR")

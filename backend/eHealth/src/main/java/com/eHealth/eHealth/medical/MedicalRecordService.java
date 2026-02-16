@@ -1,15 +1,12 @@
 package com.eHealth.eHealth.medical;
-
 import com.eHealth.eHealth.model.MedicalRecord;
 import com.eHealth.eHealth.model.Patient;
 import com.eHealth.eHealth.repository.PatientRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-
 @Service
 public class MedicalRecordService {
 
@@ -22,7 +19,7 @@ public class MedicalRecordService {
     @Transactional
     public void createMedicalRecord(
             String patientId,
-            String appointmentId,
+            String appointmentId, // nullable
             String diagnosis,
             String prescription,
             List<String> fileUrls
@@ -31,18 +28,21 @@ public class MedicalRecordService {
         Patient patient = patientRepo.findById(patientId)
                 .orElseThrow(() -> new RuntimeException("Patient not found"));
 
+
         if (patient.getMedicalHistory() == null) {
             patient.setMedicalHistory(new ArrayList<>());
         }
 
-        MedicalRecord record = new MedicalRecord();   
-        record.setAppointmentId(appointmentId);
+        MedicalRecord record = new MedicalRecord();
+
+        record.setAppointmentId(appointmentId); // null if AI advice
         record.setDiagnosis(diagnosis);
         record.setPrescription(prescription);
         record.setFileUrls(fileUrls != null ? fileUrls : new ArrayList<>());
         record.setCreatedAt(Instant.now());
 
         patient.getMedicalHistory().add(record);
+
         patientRepo.save(patient);
     }
 }
