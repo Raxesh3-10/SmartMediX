@@ -1,0 +1,31 @@
+services:
+  app: # Just one clean template!
+    build: ./app
+    # Notice: container_name is removed so Docker can auto-generate names
+    environment:
+      - SERVER_PORT=8080
+      - MONGO_URI=${MONGO_URI}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - CLOUD_NAME=${CLOUD_NAME}
+      - CLOUD_API_KEY=${CLOUD_API_KEY}
+      - CLOUD_API_SECRET=${CLOUD_API_SECRET}
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8080/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  haproxy:
+    image: haproxy:latest
+    container_name: smartmedix-lb
+    ports:
+      - "80:80"
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
+    depends_on:
+      app: # Wait for the 'app' instances to be healthy
+        condition: service_healthy
+    restart: always

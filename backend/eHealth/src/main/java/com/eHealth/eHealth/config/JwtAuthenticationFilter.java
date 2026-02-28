@@ -33,13 +33,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         this.mailSender = mailSender;
     }
 
-    @Override
-protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-    // Tells the filter to SKIP execution for these public endpoints
+@Override
+protected boolean shouldNotFilter(HttpServletRequest request) {
     String path = request.getRequestURI();
-    return path.equals("/api/auth/login") || 
-           path.equals("/api/auth/signup") || 
-           path.equals("/api/auth/verify-otp") || path.equals("/api/auth/logout");
+
+    return path.startsWith("/api/auth/login") ||
+           path.startsWith("/api/auth/signup") ||
+           path.startsWith("/api/auth/verify-otp") ||
+           path.startsWith("/api/auth/logout") ||
+           path.startsWith("/api/health");
 }
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
