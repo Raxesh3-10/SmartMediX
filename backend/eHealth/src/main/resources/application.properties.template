@@ -22,3 +22,6 @@ cloudinary.api-secret=
 
 # WebRTC (signaling only)
 webrtc.stun.server=stun:stun.l.google.com:19302
+
+# Render
+server.port=${PORT:8080}
