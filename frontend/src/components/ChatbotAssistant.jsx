@@ -6,7 +6,7 @@ import { ChatFileAPI } from "../api/api";
 import { MedicalRecordsAPI } from "../api/api";
 import "../styles/components/Chatbot.css";
 
-const OPENROUTER_API_KEY = "";
+const WORKER_URL = "https://smartmedix.robin241205.workers.dev/";
 
 const ChatbotAssistant = () => {
   const { user, patient: initialPatient } = useOutletContext();
@@ -73,9 +73,11 @@ const ChatbotAssistant = () => {
     setIsTyping(true);
 
     try {
+
       const specialties = [...new Set(doctors.map(d => d.doctor.specialization))].join(", ");
 
       const apiMessages = updatedMessages.map(msg => {
+
         if (msg.sender === "user" && msg.image) {
           return {
             role: "user",
@@ -85,86 +87,23 @@ const ChatbotAssistant = () => {
             ]
           };
         }
+
         return {
           role: msg.sender === "user" ? "user" : "assistant",
-          content: msg.text,
+          content: msg.text
         };
+
       });
 
-      /* ================= ORIGINAL SYSTEM PROMPT (UNCHANGED) ================= */
-
-      const systemMsg = {
-        role: "system",
-        content: `
-You are mediX, a professional and empathetic medical doctor assistant.
-
-Behavior:
-- Act like a real licensed physician.
-- Be calm, professional, and medically responsible.
-- Do not use markdown formatting.
-
-CRITICAL RULES:
-
-1) You must FIRST ask:
-   "Would you like medical advice or book an appointment?"
-
-   Do NOT provide diagnosis, prescription, or redirect before the user clearly answers.
-
-2) Only generate a medical record block if ALL of the following are true:
-   - The user explicitly selects medical advice.
-   - The user provides actual symptom details.
-   - There is enough clinical information to form a reasonable preliminary assessment.
-
-3) NEVER generate a medical record block for:
-   - Greetings
-   - General health questions without symptoms
-   - Lifestyle tips
-   - Preventive advice without complaint
-   - Vague messages
-   - Missing clinical details
-   - If patientId is null or unavailable
-   - If diagnosis would be generic
-
-4) If symptoms are insufficient:
-   - Ask follow-up clinical questions.
-   - Do NOT generate MEDICAL_RECORD block.
-
-5) If sufficient clinical data exists:
-   - Provide clear medical advice.
-   - At the END append EXACTLY:
-
-###MEDICAL_RECORD###
-DIAGNOSIS: <specific short clinical summary>
-PRESCRIPTION: <clear practical treatment plan>
-###END###
-
-6) If user selects appointment:
-   - Match best Specialization from: [${specialties}]
-   - Generate 1 sentence clinical summary.
-   - Response MUST start with EXACTLY:
-###REDIRECT###
-SPECIALIZATION: <SPECIALIZATION>
-DIAGNOSIS: <short clinical summary>
-PRESCRIPTION: <clear practical treatment plan>
-###END###
-
-`
-      };
-
-      /* ================= STREAMING CALL ================= */
-
-      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      const response = await fetch(WORKER_URL, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-          "HTTP-Referer": window.location.origin,
-          "X-Title": "mediX AI",
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
           model: "qwen/qwen3-vl-235b-a22b-thinking",
-          stream: true,
-          messages: [systemMsg, ...apiMessages],
+          specialties: specialties,
+          messages: apiMessages
         })
       });
 
@@ -183,6 +122,7 @@ PRESCRIPTION: <clear practical treatment plan>
       ]);
 
       while (true) {
+
         const { done, value } = await reader.read();
         if (done) break;
 
@@ -191,13 +131,18 @@ PRESCRIPTION: <clear practical treatment plan>
         const lines = chunk.split("\n").filter(l => l.startsWith("data:"));
 
         for (let line of lines) {
+
           const jsonStr = line.replace("data: ", "").trim();
+
           if (jsonStr === "[DONE]") continue;
 
           try {
+
             const parsed = JSON.parse(jsonStr);
             const content = parsed.choices?.[0]?.delta?.content;
+
             if (content) {
+
               botContent += content;
 
               setMessages(prev =>
@@ -207,53 +152,86 @@ PRESCRIPTION: <clear practical treatment plan>
                     : msg
                 )
               );
+
             }
+
           } catch (err) {
             console.error("Streaming parse error:", err);
           }
+
         }
+
       }
 
-      /* ================= ORIGINAL REDIRECT + RECORD LOGIC ================= */
+      if (botContent.includes("###REDIRECT###")) {
 
-      if (botContent.includes("###REDIRECT:")) {
+        const blockMatch = botContent.match(/###REDIRECT###([\s\S]*?)###END###/);
 
-        const match = botContent.match(/###REDIRECT:\s*(.*?)###/);
-        let specialty = "";
-        let diagnosis = "Self-booked via AI";
+        if (blockMatch) {
 
-        if (match) {
-          const parts = match[1].split("|");
-          specialty = parts[0].trim();
-          if (parts.length > 1) diagnosis = parts[1].trim();
-        }
+          const block = blockMatch[1];
 
-        const cleanText = botContent.replace(/###REDIRECT:.*?###/, "").trim();
+          const specialtyMatch = block.match(/SPECIALIZATION:\s*(.*)/);
+          const diagnosisMatch = block.match(/DIAGNOSIS:\s*(.*)/);
+          const prescriptionMatch = block.match(/PRESCRIPTION:\s*([\s\S]*?)(?=###|$)/);
 
-        setMessages(prev =>
-          prev.map(msg =>
-            msg.id === streamedMessageId
-              ? { ...msg, text: cleanText }
-              : msg
-          )
-        );
+          const specialty = specialtyMatch?.[1]?.trim();
+          const diagnosis = diagnosisMatch?.[1]?.trim() || "AI Booking";
+          const prescription = prescriptionMatch?.[1]?.trim() || "";
 
-        setTimeout(() => {
-          setIsOpen(false);
-          navigate("/patient/booking", {
-            state: {
-              filterSpecialty: specialty,
-              aiDiagnosis: diagnosis
+          const cleanText = botContent.replace(/###REDIRECT###[\s\S]*?###END###/, "").trim();
+
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === streamedMessageId
+                ? { ...msg, text: cleanText }
+                : msg
+            )
+          );
+
+          if (diagnosis && patient?.patientId) {
+
+            try {
+
+              await MedicalRecordsAPI.generateReport({
+                patientId: patient.patientId,
+                diagnosis: `AI PRELIMINARY: ${diagnosis}`,
+                prescription: prescription || "Pending doctor consultation",
+                fileUrls: selectedImage ? [selectedImage] : []
+              });
+
+            } catch (err) {
+              console.error("Failed to save pre-booking medical record:", err);
             }
-          });
-        }, 2000);
+
+          }
+
+          setTimeout(() => {
+
+            setIsOpen(false);
+
+            navigate("/patient/booking", {
+              state: {
+                filterSpecialty: specialty,
+                aiDiagnosis: diagnosis,
+                aiPrescription: prescription,
+                fileUrls: selectedImage ? [selectedImage] : [],
+                adviceOnly: false
+              }
+            });
+
+          }, 2000);
+
+        }
 
       } else {
 
         try {
+
           const recordMatch = botContent.match(/###MEDICAL_RECORD###([\s\S]*?)###END###/);
 
           if (recordMatch) {
+
             const block = recordMatch[1];
 
             const diagnosisMatch = block.match(/DIAGNOSIS:\s*(.*)/);
@@ -262,25 +240,31 @@ PRESCRIPTION: <clear practical treatment plan>
             const diagnosis = diagnosisMatch?.[1]?.trim();
             const prescription = prescriptionMatch?.[1]?.trim();
 
-            if (diagnosis && prescription) {
+            if (diagnosis && prescription && patient?.patientId) {
+
               await MedicalRecordsAPI.generateReport({
-                patientId: patient?.patientId,
+                patientId: patient.patientId,
                 diagnosis,
                 prescription,
                 fileUrls: selectedImage ? [selectedImage] : []
               });
+
             }
+
           }
 
         } catch (err) {
           console.error("Failed to save AI advice record:", err);
         }
+
       }
 
     } catch (error) {
+
       console.error("mediX Error:", error);
 
       let errorMessage = "I'm having trouble connecting to the server. Please try again.";
+
       if (error.message === "RATE_LIMIT") {
         errorMessage = "Too many requests right now. Please wait a moment and try again.";
       }
@@ -298,17 +282,22 @@ PRESCRIPTION: <clear practical treatment plan>
 
   return (
     <div className="chatbot-container">
+
       <div className={`chat-window ${isOpen ? "open" : ""}`}>
+
         <div className="chat-header">
           <div className="header-title"><span>⚡</span> mediX AI</div>
           <button className="close-btn" onClick={() => setIsOpen(false)}>×</button>
         </div>
 
         <div className="chat-body">
+
           {messages.map((msg) => (
             <div key={msg.id} className={`message ${msg.sender}`}>
               <div className="bubble">
+
                 {msg.text}
+
                 {msg.image && (
                   <img
                     src={msg.image}
@@ -316,13 +305,17 @@ PRESCRIPTION: <clear practical treatment plan>
                     style={{ maxWidth: "150px", marginTop: "8px", borderRadius: "8px" }}
                   />
                 )}
+
               </div>
             </div>
           ))}
+
           <div ref={messagesEndRef} />
+
         </div>
 
         <div className="chat-footer">
+
           <label style={{ cursor: "pointer", marginRight: "8px" }}>
             📷
             <input type="file" accept="image/*" onChange={handleImageUpload} hidden />
@@ -335,13 +328,16 @@ PRESCRIPTION: <clear practical treatment plan>
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
           />
+
           <button
             onClick={handleSend}
             disabled={(!input.trim() && !selectedImage) || isTyping}
           >
             ➤
           </button>
+
         </div>
+
       </div>
 
       <button
@@ -350,6 +346,7 @@ PRESCRIPTION: <clear practical treatment plan>
       >
         {isOpen ? "▼" : "⚡"}
       </button>
+
     </div>
   );
 };
