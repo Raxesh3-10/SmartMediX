@@ -15,7 +15,7 @@ const ChatbotAssistant = () => {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { id: 1, text: "Hi! I'm mediX. Would you like medical advice or book an appointment?", sender: "bot" }
+    { id: 1, text: "Hi! I'm mediX. How i help you ?", sender: "bot" }
   ]);
   const [input, setInput] = useState("");
   const [selectedImage, setSelectedImage] = useState(null);
@@ -38,6 +38,19 @@ const ChatbotAssistant = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isOpen]);
+
+  const resetChat = () => {
+    setMessages([
+      {
+        id: Date.now(),
+        text: "Hi! I'm mediX. How i help you ?",
+        sender: "bot"
+      }
+    ]);
+
+    setInput("");
+    setSelectedImage(null);
+  };
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
@@ -103,6 +116,7 @@ const ChatbotAssistant = () => {
         body: JSON.stringify({
           model: "qwen/qwen3-vl-235b-a22b-thinking",
           specialties: specialties,
+          patientId: patient?.patientId || null,
           messages: apiMessages
         })
       });
@@ -209,6 +223,7 @@ const ChatbotAssistant = () => {
           setTimeout(() => {
 
             setIsOpen(false);
+            resetChat();
 
             navigate("/patient/booking", {
               state: {
@@ -278,6 +293,7 @@ const ChatbotAssistant = () => {
       setSelectedImage(null);
       setIsTyping(false);
     }
+
   };
 
   return (
@@ -287,7 +303,15 @@ const ChatbotAssistant = () => {
 
         <div className="chat-header">
           <div className="header-title"><span>⚡</span> mediX AI</div>
-          <button className="close-btn" onClick={() => setIsOpen(false)}>×</button>
+          <button 
+            className="close-btn" 
+            onClick={() => {
+              setIsOpen(false);
+              resetChat();
+            }}
+          >
+            ×
+          </button>
         </div>
 
         <div className="chat-body">

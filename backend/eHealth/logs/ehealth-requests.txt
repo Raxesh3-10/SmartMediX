@@ -1,0 +1,234 @@
+2026-03-08 21:26:25 [main] INFO  c.eHealth.eHealth.EHealthApplication - Starting EHealthApplication using Java 25.0.1 with PID 1480 (D:\SmartMediX\backend\eHealth\target\classes started by hp in D:\SmartMediX\backend\eHealth)
+2026-03-08 21:26:25 [main] INFO  c.eHealth.eHealth.EHealthApplication - No active profile set, falling back to 1 default profile: "default"
+2026-03-08 21:26:38 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data MongoDB repositories in DEFAULT mode.
+2026-03-08 21:26:40 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 1783 ms. Found 9 MongoDB repository interfaces.
+2026-03-08 21:26:47 [main] INFO  o.s.boot.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-03-08 21:26:47 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-03-08 21:26:47 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/11.0.15]
+2026-03-08 21:26:49 [main] INFO  o.s.b.w.c.s.WebApplicationContextInitializer - Root WebApplicationContext: initialization completed in 21927 ms
+2026-03-08 21:26:54 [cluster-ClusterId{value='69ad9c454b28c477ba4dfff8', description='null'}-srv-cluster0.yaylidp.mongodb.net] INFO  org.mongodb.driver.cluster - Adding discovered server ac-pqhkhyz-shard-00-01.yaylidp.mongodb.net:27017 to client view of cluster
+2026-03-08 21:26:54 [main] INFO  org.mongodb.driver.client - MongoClient with metadata {"driver": {"name": "mongo-java-driver|spring-boot|sync", "version": "5.6.2"}, "os": {"type": "Windows", "name": "Windows 11", "architecture": "amd64", "version": "10.0"}, "platform": "Java/Oracle Corporation/25.0.1+8-LTS-27"} created with settings MongoClientSettings{readPreference=primary, writeConcern=WriteConcern{w=majority, wTimeout=null ms, journal=null}, retryWrites=true, retryReads=true, readConcern=ReadConcern{level=null}, credential=MongoCredential{mechanism=null, userName='raku2508', source='admin', password=<hidden>, mechanismProperties=<hidden>}, transportSettings=null, commandListeners=[io.micrometer.core.instrument.binder.mongodb.MongoMetricsCommandListener@77ce88c4], codecRegistry=ProvidersCodecRegistry{codecProviders=[ValueCodecProvider{}, BsonValueCodecProvider{}, DBRefCodecProvider{}, DBObjectCodecProvider{}, DocumentCodecProvider{}, CollectionCodecProvider{}, IterableCodecProvider{}, MapCodecProvider{}, GeoJsonCodecProvider{}, GridFSFileCodecProvider{}, Jsr310CodecProvider{}, JsonObjectCodecProvider{}, BsonCodecProvider{}, com.mongodb.client.model.mql.ExpressionCodecProvider@11abd6c, com.mongodb.Jep395RecordCodecProvider@29b5533, com.mongodb.KotlinCodecProvider@7608a838, EnumCodecProvider{}]}, loggerSettings=LoggerSettings{maxDocumentLength=1000}, clusterSettings={hosts=[127.0.0.1:27017], srvHost=cluster0.yaylidp.mongodb.net, srvServiceName=mongodb, mode=MULTIPLE, requiredClusterType=REPLICA_SET, requiredReplicaSetName='atlas-kxi7tp-shard-0', serverSelector='null', clusterListeners='[]', serverSelectionTimeout='30000 ms', localThreshold='15 ms'}, socketSettings=SocketSettings{connectTimeoutMS=10000, readTimeoutMS=0, receiveBufferSize=0, proxySettings=ProxySettings{host=null, port=null, username=null, password=null}}, heartbeatSocketSettings=SocketSettings{connectTimeoutMS=10000, readTimeoutMS=10000, receiveBufferSize=0, proxySettings=ProxySettings{host=null, port=null, username=null, password=null}}, connectionPoolSettings=ConnectionPoolSettings{maxSize=100, minSize=0, maxWaitTimeMS=120000, maxConnectionLifeTimeMS=0, maxConnectionIdleTimeMS=0, maintenanceInitialDelayMS=0, maintenanceFrequencyMS=60000, connectionPoolListeners=[io.micrometer.core.instrument.binder.mongodb.MongoMetricsConnectionPoolListener@75839695], maxConnecting=2}, serverSettings=ServerSettings{heartbeatFrequencyMS=10000, minHeartbeatFrequencyMS=500, serverMonitoringMode=AUTO, serverListeners='[]', serverMonitorListeners='[]'}, sslSettings=SslSettings{enabled=true, invalidHostNameAllowed=false, context=null}, applicationName='null', compressorList=[], uuidRepresentation=UNSPECIFIED, serverApi=null, autoEncryptionSettings=null, dnsClient=null, inetAddressResolver=null, contextProvider=null, timeoutMS=null}
+2026-03-08 21:26:54 [cluster-ClusterId{value='69ad9c454b28c477ba4dfff8', description='null'}-srv-cluster0.yaylidp.mongodb.net] INFO  org.mongodb.driver.cluster - Adding discovered server ac-pqhkhyz-shard-00-02.yaylidp.mongodb.net:27017 to client view of cluster
+2026-03-08 21:26:54 [cluster-ClusterId{value='69ad9c454b28c477ba4dfff8', description='null'}-srv-cluster0.yaylidp.mongodb.net] INFO  org.mongodb.driver.cluster - Adding discovered server ac-pqhkhyz-shard-00-00.yaylidp.mongodb.net:27017 to client view of cluster
+2026-03-08 21:26:59 [main] INFO  org.mongodb.driver.cluster - Waiting for server to become available for operation createIndexes with ID 5. Remaining time: 29898 ms. Selector: WritableServerSelector, topology description: {type=REPLICA_SET, servers=[{address=ac-pqhkhyz-shard-00-00.yaylidp.mongodb.net:27017, type=UNKNOWN, state=CONNECTING}, {address=ac-pqhkhyz-shard-00-02.yaylidp.mongodb.net:27017, type=UNKNOWN, state=CONNECTING}, {address=ac-pqhkhyz-shard-00-01.yaylidp.mongodb.net:27017, type=UNKNOWN, state=CONNECTING}].
+2026-03-08 21:27:00 [cluster-ClusterId{value='69ad9c454b28c477ba4dfff8', description='null'}-ac-pqhkhyz-shard-00-02.yaylidp.mongodb.net:27017] INFO  org.mongodb.driver.cluster - Monitor thread successfully connected to server with description ServerDescription{address=ac-pqhkhyz-shard-00-02.yaylidp.mongodb.net:27017, type=REPLICA_SET_PRIMARY, cryptd=false, state=CONNECTED, ok=true, minWireVersion=0, maxWireVersion=25, maxDocumentSize=16777216, logicalSessionTimeoutMinutes=30, roundTripTimeNanos=3327821700, minRoundTripTimeNanos=0, setName='atlas-kxi7tp-shard-0', canonicalAddress=ac-pqhkhyz-shard-00-02.yaylidp.mongodb.net:27017, hosts=[ac-pqhkhyz-shard-00-00.yaylidp.mongodb.net:27017, ac-pqhkhyz-shard-00-01.yaylidp.mongodb.net:27017, ac-pqhkhyz-shard-00-02.yaylidp.mongodb.net:27017], passives=[], arbiters=[], primary='ac-pqhkhyz-shard-00-02.yaylidp.mongodb.net:27017', tagSet=TagSet{[Tag{name='availabilityZone', value='aps1-az2'}, Tag{name='diskState', value='READY'}, Tag{name='nodeType', value='ELECTABLE'}, Tag{name='provider', value='AWS'}, Tag{name='region', value='AP_SOUTH_1'}, Tag{name='workloadType', value='OPERATIONAL'}]}, electionId=7fffffff0000000000000103, setVersion=245, topologyVersion=TopologyVersion{processId=699f2f767234e9b6a7645e5c, counter=6}, lastWriteDate=Sun Mar 08 21:27:01 IST 2026, lastUpdateTimeNanos=17144960579600}
+2026-03-08 21:27:00 [cluster-ClusterId{value='69ad9c454b28c477ba4dfff8', description='null'}-ac-pqhkhyz-shard-00-00.yaylidp.mongodb.net:27017] INFO  org.mongodb.driver.cluster - Monitor thread successfully connected to server with description ServerDescription{address=ac-pqhkhyz-shard-00-00.yaylidp.mongodb.net:27017, type=REPLICA_SET_SECONDARY, cryptd=false, state=CONNECTED, ok=true, minWireVersion=0, maxWireVersion=25, maxDocumentSize=16777216, logicalSessionTimeoutMinutes=30, roundTripTimeNanos=3327853200, minRoundTripTimeNanos=0, setName='atlas-kxi7tp-shard-0', canonicalAddress=ac-pqhkhyz-shard-00-00.yaylidp.mongodb.net:27017, hosts=[ac-pqhkhyz-shard-00-00.yaylidp.mongodb.net:27017, ac-pqhkhyz-shard-00-01.yaylidp.mongodb.net:27017, ac-pqhkhyz-shard-00-02.yaylidp.mongodb.net:27017], passives=[], arbiters=[], primary='ac-pqhkhyz-shard-00-02.yaylidp.mongodb.net:27017', tagSet=TagSet{[Tag{name='availabilityZone', value='aps1-az1'}, Tag{name='diskState', value='READY'}, Tag{name='nodeType', value='ELECTABLE'}, Tag{name='provider', value='AWS'}, Tag{name='region', value='AP_SOUTH_1'}, Tag{name='workloadType', value='OPERATIONAL'}]}, electionId=null, setVersion=245, topologyVersion=TopologyVersion{processId=699f2cd195c730a4600b66e1, counter=4}, lastWriteDate=Sun Mar 08 21:27:01 IST 2026, lastUpdateTimeNanos=17144960578300}
+2026-03-08 21:27:00 [cluster-ClusterId{value='69ad9c454b28c477ba4dfff8', description='null'}-ac-pqhkhyz-shard-00-01.yaylidp.mongodb.net:27017] INFO  org.mongodb.driver.cluster - Monitor thread successfully connected to server with description ServerDescription{address=ac-pqhkhyz-shard-00-01.yaylidp.mongodb.net:27017, type=REPLICA_SET_SECONDARY, cryptd=false, state=CONNECTED, ok=true, minWireVersion=0, maxWireVersion=25, maxDocumentSize=16777216, logicalSessionTimeoutMinutes=30, roundTripTimeNanos=3328560900, minRoundTripTimeNanos=0, setName='atlas-kxi7tp-shard-0', canonicalAddress=ac-pqhkhyz-shard-00-01.yaylidp.mongodb.net:27017, hosts=[ac-pqhkhyz-shard-00-00.yaylidp.mongodb.net:27017, ac-pqhkhyz-shard-00-01.yaylidp.mongodb.net:27017, ac-pqhkhyz-shard-00-02.yaylidp.mongodb.net:27017], passives=[], arbiters=[], primary='ac-pqhkhyz-shard-00-02.yaylidp.mongodb.net:27017', tagSet=TagSet{[Tag{name='availabilityZone', value='aps1-az3'}, Tag{name='diskState', value='READY'}, Tag{name='nodeType', value='ELECTABLE'}, Tag{name='provider', value='AWS'}, Tag{name='region', value='AP_SOUTH_1'}, Tag{name='workloadType', value='OPERATIONAL'}]}, electionId=null, setVersion=245, topologyVersion=TopologyVersion{processId=699f32112a645479ab48a7c3, counter=3}, lastWriteDate=Sun Mar 08 21:27:01 IST 2026, lastUpdateTimeNanos=17144961386100}
+2026-03-08 21:27:00 [cluster-ClusterId{value='69ad9c454b28c477ba4dfff8', description='null'}-ac-pqhkhyz-shard-00-02.yaylidp.mongodb.net:27017] INFO  org.mongodb.driver.cluster - Discovered replica set primary ac-pqhkhyz-shard-00-02.yaylidp.mongodb.net:27017 with max election id 7fffffff0000000000000103 and max set version 245
+2026-03-08 21:27:10 [main] WARN  o.s.b.s.a.UserDetailsServiceAutoConfiguration - 
+
+Using generated security password: 86795694-85ea-42c2-bfd7-bd6fffb03c1b
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2026-03-08 21:27:11 [main] INFO  o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with UserDetailsService bean with name inMemoryUserDetailsManager
+2026-03-08 21:27:26 [main] INFO  o.s.b.a.e.web.EndpointLinksResolver - Exposing 1 endpoint beneath base path '/actuator'
+2026-03-08 21:27:28 [main] INFO  o.s.boot.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
+2026-03-08 21:27:28 [main] INFO  c.eHealth.eHealth.EHealthApplication - Started EHealthApplication in 69.625 seconds (process running for 77.237)
+2026-03-08 21:55:32 [http-nio-8080-exec-2] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-03-08 21:55:32 [http-nio-8080-exec-2] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2026-03-08 21:55:33 [http-nio-8080-exec-2] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 1282 ms
+2026-03-08 21:55:36 [http-nio-8080-exec-2] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: POST | URL: /api/auth/logout | Controller: AuthController | Method: logout
+2026-03-08 21:55:36 [http-nio-8080-exec-1] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: POST | URL: /api/auth/logout | Controller: AuthController | Method: logout
+2026-03-08 21:55:40 [http-nio-8080-exec-4] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: POST | URL: /api/auth/login | Controller: AuthController | Method: login
+2026-03-08 21:55:46 [http-nio-8080-exec-5] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/auth/profile | Controller: AuthController | Method: getProfile
+2026-03-08 21:55:46 [http-nio-8080-exec-6] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/auth/profile | Controller: AuthController | Method: getProfile
+2026-03-08 21:55:48 [http-nio-8080-exec-7] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/patients/me | Controller: PatientController | Method: getMyProfile
+2026-03-08 21:55:48 [http-nio-8080-exec-8] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/patients/me | Controller: PatientController | Method: getMyProfile
+2026-03-08 21:55:48 [http-nio-8080-exec-9] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/appointments/aibot | Controller: AppointmentController | Method: getDoctorForAIBot
+2026-03-08 21:55:49 [http-nio-8080-exec-10] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/family/members | Controller: FamilyController | Method: members
+2026-03-08 21:55:50 [http-nio-8080-exec-1] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/family/members | Controller: FamilyController | Method: members
+2026-03-08 21:55:50 [http-nio-8080-exec-2] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/appointments/aibot | Controller: AppointmentController | Method: getDoctorForAIBot
+2026-03-08 21:57:43 [http-nio-8080-exec-7] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/appointments/aibot | Controller: AppointmentController | Method: getDoctorForAIBot
+2026-03-08 22:03:56 [http-nio-8080-exec-10] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/patients/me | Controller: PatientController | Method: getMyProfile
+2026-03-08 22:03:56 [http-nio-8080-exec-9] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/family/members | Controller: FamilyController | Method: members
+2026-03-08 22:04:01 [http-nio-8080-exec-1] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/patients/me | Controller: PatientController | Method: getMyProfile
+2026-03-08 22:04:02 [http-nio-8080-exec-2] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/family/members | Controller: FamilyController | Method: members
+2026-03-08 22:07:11 [http-nio-8080-exec-5] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/patients/me | Controller: PatientController | Method: getMyProfile
+2026-03-08 22:07:12 [http-nio-8080-exec-4] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/family/members | Controller: FamilyController | Method: members
+2026-03-08 22:10:41 [http-nio-8080-exec-8] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: POST | URL: /api/medical-records | Controller: MedicalRecordController | Method: addRecord
+2026-03-08 22:11:55 [http-nio-8080-exec-1] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/patients/me | Controller: PatientController | Method: getMyProfile
+2026-03-08 22:11:56 [http-nio-8080-exec-2] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/family/members | Controller: FamilyController | Method: members
+2026-03-08 22:12:33 [http-nio-8080-exec-3] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/auth/profile | Controller: AuthController | Method: getProfile
+2026-03-08 22:12:33 [http-nio-8080-exec-5] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/auth/profile | Controller: AuthController | Method: getProfile
+2026-03-08 22:12:33 [http-nio-8080-exec-4] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/patients/me | Controller: PatientController | Method: getMyProfile
+2026-03-08 22:12:35 [http-nio-8080-exec-6] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/patients/me | Controller: PatientController | Method: getMyProfile
+2026-03-08 22:12:35 [http-nio-8080-exec-7] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/appointments/aibot | Controller: AppointmentController | Method: getDoctorForAIBot
+2026-03-08 22:12:36 [http-nio-8080-exec-8] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/appointments/aibot | Controller: AppointmentController | Method: getDoctorForAIBot
+2026-03-08 22:13:56 [http-nio-8080-exec-2] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: POST | URL: /api/medical-records | Controller: MedicalRecordController | Method: addRecord
+2026-03-08 22:14:00 [http-nio-8080-exec-3] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/appointments/patient/69636a74335765fb13b03d08/doctors | Controller: AppointmentController | Method: getPatientDoctors
+2026-03-08 22:14:03 [http-nio-8080-exec-5] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/auth/profile | Controller: AuthController | Method: getProfile
+2026-03-08 22:14:03 [http-nio-8080-exec-4] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/appointments/patient/69636a74335765fb13b03d08/doctors | Controller: AppointmentController | Method: getPatientDoctors
+2026-03-08 22:14:06 [http-nio-8080-exec-6] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/patients/me | Controller: PatientController | Method: getMyProfile
+2026-03-08 22:14:23 [http-nio-8080-exec-7] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/appointments/patient/69636a74335765fb13b03d08/doctors | Controller: AppointmentController | Method: getPatientDoctors
+2026-03-08 22:30:49 [http-nio-8080-exec-2] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/appointments/patient/69636a74335765fb13b03d08/doctors | Controller: AppointmentController | Method: getPatientDoctors
+2026-03-08 22:30:49 [http-nio-8080-exec-1] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/appointments/patient/69636a74335765fb13b03d08 | Controller: AppointmentController | Method: getPatientAppointments
+2026-03-08 22:30:50 [http-nio-8080-exec-5] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/appointments/patient/69636a74335765fb13b03d08/doctors | Controller: AppointmentController | Method: getPatientDoctors
+2026-03-08 22:30:51 [http-nio-8080-exec-3] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/auth/profile | Controller: AuthController | Method: getProfile
+2026-03-08 22:30:52 [http-nio-8080-exec-4] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/patients/me | Controller: PatientController | Method: getMyProfile
+2026-03-08 22:30:52 [http-nio-8080-exec-6] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/appointments/patient/69636a74335765fb13b03d08 | Controller: AppointmentController | Method: getPatientAppointments
+2026-03-08 22:30:57 [http-nio-8080-exec-7] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/appointments/aibot | Controller: AppointmentController | Method: getDoctorForAIBot
+2026-03-08 22:30:57 [http-nio-8080-exec-8] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/auth/profile | Controller: AuthController | Method: getProfile
+2026-03-08 22:30:58 [http-nio-8080-exec-9] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/patients/me | Controller: PatientController | Method: getMyProfile
+2026-03-08 22:30:58 [http-nio-8080-exec-10] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/appointments/aibot | Controller: AppointmentController | Method: getDoctorForAIBot
+2026-03-08 22:35:04 [cluster-ClusterId{value='69ad9c454b28c477ba4dfff8', description='null'}-ac-pqhkhyz-shard-00-00.yaylidp.mongodb.net:27017] INFO  org.mongodb.driver.cluster - Exception in monitor thread while connecting to server ac-pqhkhyz-shard-00-00.yaylidp.mongodb.net:27017
+com.mongodb.MongoSocketReadException: Exception receiving message
+	at com.mongodb.internal.connection.InternalStreamConnection.translateReadException(InternalStreamConnection.java:809)
+	at com.mongodb.internal.connection.InternalStreamConnection.receiveResponseBuffers(InternalStreamConnection.java:857)
+	at com.mongodb.internal.connection.InternalStreamConnection.receiveCommandMessageResponse(InternalStreamConnection.java:517)
+	at com.mongodb.internal.connection.InternalStreamConnection.receive(InternalStreamConnection.java:469)
+	at com.mongodb.internal.connection.DefaultServerMonitor$ServerMonitor.doHeartbeat(DefaultServerMonitor.java:311)
+	at com.mongodb.internal.connection.DefaultServerMonitor$ServerMonitor.lookupServerDescription(DefaultServerMonitor.java:262)
+	at com.mongodb.internal.connection.DefaultServerMonitor$ServerMonitor.run(DefaultServerMonitor.java:203)
+Caused by: java.net.SocketException: Connection reset
+	at java.base/sun.nio.ch.NioSocketImpl.implRead(NioSocketImpl.java:316)
+	at java.base/sun.nio.ch.NioSocketImpl.read(NioSocketImpl.java:354)
+	at java.base/sun.nio.ch.NioSocketImpl$1.read(NioSocketImpl.java:798)
+	at java.base/java.net.Socket$SocketInputStream.implRead(Socket.java:974)
+	at java.base/java.net.Socket$SocketInputStream.read(Socket.java:964)
+	at java.base/sun.security.ssl.SSLSocketInputRecord.read(SSLSocketInputRecord.java:489)
+	at java.base/sun.security.ssl.SSLSocketInputRecord.readHeader(SSLSocketInputRecord.java:483)
+	at java.base/sun.security.ssl.SSLSocketInputRecord.bytesInCompletePacket(SSLSocketInputRecord.java:70)
+	at java.base/sun.security.ssl.SSLSocketImpl.readApplicationRecord(SSLSocketImpl.java:1461)
+	at java.base/sun.security.ssl.SSLSocketImpl$AppInputStream.read(SSLSocketImpl.java:1068)
+	at com.mongodb.internal.connection.SocketStream.read(SocketStream.java:182)
+	at com.mongodb.internal.connection.InternalStreamConnection.receiveResponseBuffers(InternalStreamConnection.java:824)
+	... 5 common frames omitted
+2026-03-08 22:35:04 [cluster-ClusterId{value='69ad9c454b28c477ba4dfff8', description='null'}-ac-pqhkhyz-shard-00-01.yaylidp.mongodb.net:27017] INFO  org.mongodb.driver.cluster - Exception in monitor thread while connecting to server ac-pqhkhyz-shard-00-01.yaylidp.mongodb.net:27017
+com.mongodb.MongoSocketReadException: Exception receiving message
+	at com.mongodb.internal.connection.InternalStreamConnection.translateReadException(InternalStreamConnection.java:809)
+	at com.mongodb.internal.connection.InternalStreamConnection.receiveResponseBuffers(InternalStreamConnection.java:857)
+	at com.mongodb.internal.connection.InternalStreamConnection.receiveCommandMessageResponse(InternalStreamConnection.java:517)
+	at com.mongodb.internal.connection.InternalStreamConnection.receive(InternalStreamConnection.java:469)
+	at com.mongodb.internal.connection.DefaultServerMonitor$ServerMonitor.doHeartbeat(DefaultServerMonitor.java:311)
+	at com.mongodb.internal.connection.DefaultServerMonitor$ServerMonitor.lookupServerDescription(DefaultServerMonitor.java:262)
+	at com.mongodb.internal.connection.DefaultServerMonitor$ServerMonitor.run(DefaultServerMonitor.java:203)
+Caused by: java.net.SocketException: Connection reset
+	at java.base/sun.nio.ch.NioSocketImpl.implRead(NioSocketImpl.java:316)
+	at java.base/sun.nio.ch.NioSocketImpl.read(NioSocketImpl.java:354)
+	at java.base/sun.nio.ch.NioSocketImpl$1.read(NioSocketImpl.java:798)
+	at java.base/java.net.Socket$SocketInputStream.implRead(Socket.java:974)
+	at java.base/java.net.Socket$SocketInputStream.read(Socket.java:964)
+	at java.base/sun.security.ssl.SSLSocketInputRecord.read(SSLSocketInputRecord.java:489)
+	at java.base/sun.security.ssl.SSLSocketInputRecord.readHeader(SSLSocketInputRecord.java:483)
+	at java.base/sun.security.ssl.SSLSocketInputRecord.bytesInCompletePacket(SSLSocketInputRecord.java:70)
+	at java.base/sun.security.ssl.SSLSocketImpl.readApplicationRecord(SSLSocketImpl.java:1461)
+	at java.base/sun.security.ssl.SSLSocketImpl$AppInputStream.read(SSLSocketImpl.java:1068)
+	at com.mongodb.internal.connection.SocketStream.read(SocketStream.java:182)
+	at com.mongodb.internal.connection.InternalStreamConnection.receiveResponseBuffers(InternalStreamConnection.java:824)
+	... 5 common frames omitted
+2026-03-08 22:35:04 [cluster-ClusterId{value='69ad9c454b28c477ba4dfff8', description='null'}-ac-pqhkhyz-shard-00-02.yaylidp.mongodb.net:27017] INFO  org.mongodb.driver.cluster - Exception in monitor thread while connecting to server ac-pqhkhyz-shard-00-02.yaylidp.mongodb.net:27017
+com.mongodb.MongoSocketReadException: Exception receiving message
+	at com.mongodb.internal.connection.InternalStreamConnection.translateReadException(InternalStreamConnection.java:809)
+	at com.mongodb.internal.connection.InternalStreamConnection.receiveResponseBuffers(InternalStreamConnection.java:857)
+	at com.mongodb.internal.connection.InternalStreamConnection.receiveCommandMessageResponse(InternalStreamConnection.java:517)
+	at com.mongodb.internal.connection.InternalStreamConnection.receive(InternalStreamConnection.java:469)
+	at com.mongodb.internal.connection.DefaultServerMonitor$ServerMonitor.doHeartbeat(DefaultServerMonitor.java:311)
+	at com.mongodb.internal.connection.DefaultServerMonitor$ServerMonitor.lookupServerDescription(DefaultServerMonitor.java:262)
+	at com.mongodb.internal.connection.DefaultServerMonitor$ServerMonitor.run(DefaultServerMonitor.java:203)
+Caused by: java.net.SocketException: Connection reset
+	at java.base/sun.nio.ch.NioSocketImpl.implRead(NioSocketImpl.java:316)
+	at java.base/sun.nio.ch.NioSocketImpl.read(NioSocketImpl.java:354)
+	at java.base/sun.nio.ch.NioSocketImpl$1.read(NioSocketImpl.java:798)
+	at java.base/java.net.Socket$SocketInputStream.implRead(Socket.java:974)
+	at java.base/java.net.Socket$SocketInputStream.read(Socket.java:964)
+	at java.base/sun.security.ssl.SSLSocketInputRecord.read(SSLSocketInputRecord.java:489)
+	at java.base/sun.security.ssl.SSLSocketInputRecord.readHeader(SSLSocketInputRecord.java:483)
+	at java.base/sun.security.ssl.SSLSocketInputRecord.bytesInCompletePacket(SSLSocketInputRecord.java:70)
+	at java.base/sun.security.ssl.SSLSocketImpl.readApplicationRecord(SSLSocketImpl.java:1461)
+	at java.base/sun.security.ssl.SSLSocketImpl$AppInputStream.read(SSLSocketImpl.java:1068)
+	at com.mongodb.internal.connection.SocketStream.read(SocketStream.java:182)
+	at com.mongodb.internal.connection.InternalStreamConnection.receiveResponseBuffers(InternalStreamConnection.java:824)
+	... 5 common frames omitted
+2026-03-08 22:35:25 [cluster-ClusterId{value='69ad9c454b28c477ba4dfff8', description='null'}-ac-pqhkhyz-shard-00-00.yaylidp.mongodb.net:27017] INFO  org.mongodb.driver.cluster - Exception in monitor thread while connecting to server ac-pqhkhyz-shard-00-00.yaylidp.mongodb.net:27017
+com.mongodb.MongoSocketException: No such host is known (ac-pqhkhyz-shard-00-00.yaylidp.mongodb.net)
+	at com.mongodb.internal.connection.ServerAddressHelper.getSocketAddresses(ServerAddressHelper.java:75)
+	at com.mongodb.internal.connection.SocketStream.initializeSocket(SocketStream.java:100)
+	at com.mongodb.internal.connection.SocketStream.open(SocketStream.java:79)
+	at com.mongodb.internal.connection.InternalStreamConnection.open(InternalStreamConnection.java:233)
+	at com.mongodb.internal.connection.DefaultServerMonitor$ServerMonitor.setupNewConnectionAndGetInitialDescription(DefaultServerMonitor.java:282)
+	at com.mongodb.internal.connection.DefaultServerMonitor$ServerMonitor.lookupServerDescription(DefaultServerMonitor.java:253)
+	at com.mongodb.internal.connection.DefaultServerMonitor$ServerMonitor.run(DefaultServerMonitor.java:203)
+Caused by: java.net.UnknownHostException: No such host is known (ac-pqhkhyz-shard-00-00.yaylidp.mongodb.net)
+	at java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Native Method)
+	at java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:52)
+	at java.base/java.net.InetAddress$PlatformResolver.lookupByName(InetAddress.java:1134)
+	at java.base/java.net.InetAddress.getAddressesFromNameService(InetAddress.java:1712)
+	at java.base/java.net.InetAddress$NameServiceAddresses.get(InetAddress.java:1060)
+	at java.base/java.net.InetAddress.getAllByName0(InetAddress.java:1702)
+	at java.base/java.net.InetAddress.getAllByName(InetAddress.java:1582)
+	at com.mongodb.internal.connection.DefaultInetAddressResolver.lookupByName(DefaultInetAddressResolver.java:34)
+	at com.mongodb.internal.connection.ServerAddressHelper.getSocketAddresses(ServerAddressHelper.java:71)
+	... 6 common frames omitted
+2026-03-08 22:35:26 [cluster-ClusterId{value='69ad9c454b28c477ba4dfff8', description='null'}-ac-pqhkhyz-shard-00-02.yaylidp.mongodb.net:27017] INFO  org.mongodb.driver.cluster - Exception in monitor thread while connecting to server ac-pqhkhyz-shard-00-02.yaylidp.mongodb.net:27017
+com.mongodb.MongoSocketException: No such host is known (ac-pqhkhyz-shard-00-02.yaylidp.mongodb.net)
+	at com.mongodb.internal.connection.ServerAddressHelper.getSocketAddresses(ServerAddressHelper.java:75)
+	at com.mongodb.internal.connection.SocketStream.initializeSocket(SocketStream.java:100)
+	at com.mongodb.internal.connection.SocketStream.open(SocketStream.java:79)
+	at com.mongodb.internal.connection.InternalStreamConnection.open(InternalStreamConnection.java:233)
+	at com.mongodb.internal.connection.DefaultServerMonitor$ServerMonitor.setupNewConnectionAndGetInitialDescription(DefaultServerMonitor.java:282)
+	at com.mongodb.internal.connection.DefaultServerMonitor$ServerMonitor.lookupServerDescription(DefaultServerMonitor.java:253)
+	at com.mongodb.internal.connection.DefaultServerMonitor$ServerMonitor.run(DefaultServerMonitor.java:203)
+Caused by: java.net.UnknownHostException: No such host is known (ac-pqhkhyz-shard-00-02.yaylidp.mongodb.net)
+	at java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Native Method)
+	at java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:52)
+	at java.base/java.net.InetAddress$PlatformResolver.lookupByName(InetAddress.java:1134)
+	at java.base/java.net.InetAddress.getAddressesFromNameService(InetAddress.java:1712)
+	at java.base/java.net.InetAddress$NameServiceAddresses.get(InetAddress.java:1060)
+	at java.base/java.net.InetAddress.getAllByName0(InetAddress.java:1702)
+	at java.base/java.net.InetAddress.getAllByName(InetAddress.java:1582)
+	at com.mongodb.internal.connection.DefaultInetAddressResolver.lookupByName(DefaultInetAddressResolver.java:34)
+	at com.mongodb.internal.connection.ServerAddressHelper.getSocketAddresses(ServerAddressHelper.java:71)
+	... 6 common frames omitted
+2026-03-08 22:35:27 [cluster-ClusterId{value='69ad9c454b28c477ba4dfff8', description='null'}-ac-pqhkhyz-shard-00-01.yaylidp.mongodb.net:27017] INFO  org.mongodb.driver.cluster - Exception in monitor thread while connecting to server ac-pqhkhyz-shard-00-01.yaylidp.mongodb.net:27017
+com.mongodb.MongoSocketException: No such host is known (ac-pqhkhyz-shard-00-01.yaylidp.mongodb.net)
+	at com.mongodb.internal.connection.ServerAddressHelper.getSocketAddresses(ServerAddressHelper.java:75)
+	at com.mongodb.internal.connection.SocketStream.initializeSocket(SocketStream.java:100)
+	at com.mongodb.internal.connection.SocketStream.open(SocketStream.java:79)
+	at com.mongodb.internal.connection.InternalStreamConnection.open(InternalStreamConnection.java:233)
+	at com.mongodb.internal.connection.DefaultServerMonitor$ServerMonitor.setupNewConnectionAndGetInitialDescription(DefaultServerMonitor.java:282)
+	at com.mongodb.internal.connection.DefaultServerMonitor$ServerMonitor.lookupServerDescription(DefaultServerMonitor.java:253)
+	at com.mongodb.internal.connection.DefaultServerMonitor$ServerMonitor.run(DefaultServerMonitor.java:203)
+Caused by: java.net.UnknownHostException: No such host is known (ac-pqhkhyz-shard-00-01.yaylidp.mongodb.net)
+	at java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Native Method)
+	at java.base/java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:52)
+	at java.base/java.net.InetAddress$PlatformResolver.lookupByName(InetAddress.java:1134)
+	at java.base/java.net.InetAddress.getAddressesFromNameService(InetAddress.java:1712)
+	at java.base/java.net.InetAddress$NameServiceAddresses.get(InetAddress.java:1060)
+	at java.base/java.net.InetAddress.getAllByName0(InetAddress.java:1702)
+	at java.base/java.net.InetAddress.getAllByName(InetAddress.java:1582)
+	at com.mongodb.internal.connection.DefaultInetAddressResolver.lookupByName(DefaultInetAddressResolver.java:34)
+	at com.mongodb.internal.connection.ServerAddressHelper.getSocketAddresses(ServerAddressHelper.java:71)
+	... 6 common frames omitted
+2026-03-08 22:35:39 [cluster-ClusterId{value='69ad9c454b28c477ba4dfff8', description='null'}-ac-pqhkhyz-shard-00-02.yaylidp.mongodb.net:27017] INFO  org.mongodb.driver.cluster - Monitor thread successfully connected to server with description ServerDescription{address=ac-pqhkhyz-shard-00-02.yaylidp.mongodb.net:27017, type=REPLICA_SET_PRIMARY, cryptd=false, state=CONNECTED, ok=true, minWireVersion=0, maxWireVersion=25, maxDocumentSize=16777216, logicalSessionTimeoutMinutes=30, roundTripTimeNanos=1270093700, minRoundTripTimeNanos=0, setName='atlas-kxi7tp-shard-0', canonicalAddress=ac-pqhkhyz-shard-00-02.yaylidp.mongodb.net:27017, hosts=[ac-pqhkhyz-shard-00-00.yaylidp.mongodb.net:27017, ac-pqhkhyz-shard-00-01.yaylidp.mongodb.net:27017, ac-pqhkhyz-shard-00-02.yaylidp.mongodb.net:27017], passives=[], arbiters=[], primary='ac-pqhkhyz-shard-00-02.yaylidp.mongodb.net:27017', tagSet=TagSet{[Tag{name='availabilityZone', value='aps1-az2'}, Tag{name='diskState', value='READY'}, Tag{name='nodeType', value='ELECTABLE'}, Tag{name='provider', value='AWS'}, Tag{name='region', value='AP_SOUTH_1'}, Tag{name='workloadType', value='OPERATIONAL'}]}, electionId=7fffffff0000000000000103, setVersion=245, topologyVersion=TopologyVersion{processId=699f2f767234e9b6a7645e5c, counter=6}, lastWriteDate=Sun Mar 08 22:35:40 IST 2026, lastUpdateTimeNanos=21264218141200}
+2026-03-08 22:35:40 [cluster-ClusterId{value='69ad9c454b28c477ba4dfff8', description='null'}-ac-pqhkhyz-shard-00-00.yaylidp.mongodb.net:27017] INFO  org.mongodb.driver.cluster - Monitor thread successfully connected to server with description ServerDescription{address=ac-pqhkhyz-shard-00-00.yaylidp.mongodb.net:27017, type=REPLICA_SET_SECONDARY, cryptd=false, state=CONNECTED, ok=true, minWireVersion=0, maxWireVersion=25, maxDocumentSize=16777216, logicalSessionTimeoutMinutes=30, roundTripTimeNanos=2227986500, minRoundTripTimeNanos=0, setName='atlas-kxi7tp-shard-0', canonicalAddress=ac-pqhkhyz-shard-00-00.yaylidp.mongodb.net:27017, hosts=[ac-pqhkhyz-shard-00-00.yaylidp.mongodb.net:27017, ac-pqhkhyz-shard-00-01.yaylidp.mongodb.net:27017, ac-pqhkhyz-shard-00-02.yaylidp.mongodb.net:27017], passives=[], arbiters=[], primary='ac-pqhkhyz-shard-00-02.yaylidp.mongodb.net:27017', tagSet=TagSet{[Tag{name='availabilityZone', value='aps1-az1'}, Tag{name='diskState', value='READY'}, Tag{name='nodeType', value='ELECTABLE'}, Tag{name='provider', value='AWS'}, Tag{name='region', value='AP_SOUTH_1'}, Tag{name='workloadType', value='OPERATIONAL'}]}, electionId=null, setVersion=245, topologyVersion=TopologyVersion{processId=699f2cd195c730a4600b66e1, counter=4}, lastWriteDate=Sun Mar 08 22:35:40 IST 2026, lastUpdateTimeNanos=21264314284600}
+2026-03-08 22:35:40 [cluster-ClusterId{value='69ad9c454b28c477ba4dfff8', description='null'}-ac-pqhkhyz-shard-00-02.yaylidp.mongodb.net:27017] INFO  org.mongodb.driver.cluster - Discovered replica set primary ac-pqhkhyz-shard-00-02.yaylidp.mongodb.net:27017 with max election id 7fffffff0000000000000103 and max set version 245
+2026-03-08 22:35:41 [cluster-ClusterId{value='69ad9c454b28c477ba4dfff8', description='null'}-ac-pqhkhyz-shard-00-01.yaylidp.mongodb.net:27017] INFO  org.mongodb.driver.cluster - Monitor thread successfully connected to server with description ServerDescription{address=ac-pqhkhyz-shard-00-01.yaylidp.mongodb.net:27017, type=REPLICA_SET_SECONDARY, cryptd=false, state=CONNECTED, ok=true, minWireVersion=0, maxWireVersion=25, maxDocumentSize=16777216, logicalSessionTimeoutMinutes=30, roundTripTimeNanos=2346478300, minRoundTripTimeNanos=0, setName='atlas-kxi7tp-shard-0', canonicalAddress=ac-pqhkhyz-shard-00-01.yaylidp.mongodb.net:27017, hosts=[ac-pqhkhyz-shard-00-00.yaylidp.mongodb.net:27017, ac-pqhkhyz-shard-00-01.yaylidp.mongodb.net:27017, ac-pqhkhyz-shard-00-02.yaylidp.mongodb.net:27017], passives=[], arbiters=[], primary='ac-pqhkhyz-shard-00-02.yaylidp.mongodb.net:27017', tagSet=TagSet{[Tag{name='availabilityZone', value='aps1-az3'}, Tag{name='diskState', value='READY'}, Tag{name='nodeType', value='ELECTABLE'}, Tag{name='provider', value='AWS'}, Tag{name='region', value='AP_SOUTH_1'}, Tag{name='workloadType', value='OPERATIONAL'}]}, electionId=null, setVersion=245, topologyVersion=TopologyVersion{processId=699f32112a645479ab48a7c3, counter=3}, lastWriteDate=Sun Mar 08 22:35:41 IST 2026, lastUpdateTimeNanos=21265328042800}
+2026-03-08 22:36:51 [http-nio-8080-exec-4] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/patients/me | Controller: PatientController | Method: getMyProfile
+2026-03-08 22:36:51 [http-nio-8080-exec-6] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/family/members | Controller: FamilyController | Method: members
+2026-03-08 22:37:15 [http-nio-8080-exec-8] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: POST | URL: /api/medical-records | Controller: MedicalRecordController | Method: addRecord
+2026-03-08 22:38:17 [http-nio-8080-exec-2] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/patients/me | Controller: PatientController | Method: getMyProfile
+2026-03-08 22:38:21 [http-nio-8080-exec-5] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/family/members | Controller: FamilyController | Method: members
+2026-03-08 22:40:14 [http-nio-8080-exec-1] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/auth/profile | Controller: AuthController | Method: getProfile
+2026-03-08 22:40:18 [http-nio-8080-exec-4] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/patients/me | Controller: PatientController | Method: getMyProfile
+2026-03-08 22:41:56 [http-nio-8080-exec-7] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/auth/profile | Controller: AuthController | Method: getProfile
+2026-03-08 22:41:56 [http-nio-8080-exec-10] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/patients/me | Controller: PatientController | Method: getMyProfile
+2026-03-08 22:41:58 [http-nio-8080-exec-8] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/appointments/aibot | Controller: AppointmentController | Method: getDoctorForAIBot
+2026-03-08 22:42:00 [http-nio-8080-exec-9] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/appointments/aibot | Controller: AppointmentController | Method: getDoctorForAIBot
+2026-03-08 22:43:26 [http-nio-8080-exec-1] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: POST | URL: /api/medical-records | Controller: MedicalRecordController | Method: addRecord
+2026-03-08 22:43:29 [http-nio-8080-exec-4] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/appointments/patient/69636a74335765fb13b03d08/doctors | Controller: AppointmentController | Method: getPatientDoctors
+2026-03-08 22:43:29 [http-nio-8080-exec-6] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/auth/profile | Controller: AuthController | Method: getProfile
+2026-03-08 22:43:31 [http-nio-8080-exec-10] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/patients/me | Controller: PatientController | Method: getMyProfile
+2026-03-08 22:43:31 [http-nio-8080-exec-7] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/appointments/patient/69636a74335765fb13b03d08/doctors | Controller: AppointmentController | Method: getPatientDoctors
+2026-03-08 22:43:33 [http-nio-8080-exec-8] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/appointments/patient/69636a74335765fb13b03d08/doctors | Controller: AppointmentController | Method: getPatientDoctors
+2026-03-08 22:44:23 [http-nio-8080-exec-9] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/auth/profile | Controller: AuthController | Method: getProfile
+2026-03-08 22:44:24 [http-nio-8080-exec-2] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/patients/me | Controller: PatientController | Method: getMyProfile
+2026-03-08 22:44:29 [http-nio-8080-exec-1] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/auth/profile | Controller: AuthController | Method: getProfile
+2026-03-08 22:44:29 [http-nio-8080-exec-3] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/appointments/aibot | Controller: AppointmentController | Method: getDoctorForAIBot
+2026-03-08 22:44:29 [http-nio-8080-exec-4] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/patients/me | Controller: PatientController | Method: getMyProfile
+2026-03-08 22:44:29 [http-nio-8080-exec-6] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: GET | URL: /api/appointments/aibot | Controller: AppointmentController | Method: getDoctorForAIBot
+2026-03-08 22:45:17 [http-nio-8080-exec-10] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: POST | URL: /api/auth/logout | Controller: AuthController | Method: logout
+2026-03-08 22:45:18 [http-nio-8080-exec-8] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: POST | URL: /api/auth/logout | Controller: AuthController | Method: logout
+2026-03-08 22:45:18 [http-nio-8080-exec-7] INFO  c.e.e.c.ControllerLoggingInterceptor - Request Method: POST | URL: /api/auth/logout | Controller: AuthController | Method: logout
+2026-03-08 22:45:23 [SpringApplicationShutdownHook] INFO  o.s.boot.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2026-03-08 22:45:23 [tomcat-shutdown] INFO  o.s.boot.tomcat.GracefulShutdown - Graceful shutdown complete
