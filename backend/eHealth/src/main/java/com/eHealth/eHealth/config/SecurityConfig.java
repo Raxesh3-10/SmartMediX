@@ -91,7 +91,7 @@ public class SecurityConfig {
     public UrlBasedCorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         // Ensure this matches your frontend URL exactly
-        configuration.setAllowedOrigins(List.of("http://localhost:5173","http://127.0.0.1:5173")); 
+        configuration.setAllowedOrigins(List.of("http://localhost:5173","http://127.0.0.1:5173","https://smartmedix.onrender.com")); 
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE","PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         // IMPORTANT: Allow Credentials is required for Cookies to be sent!
